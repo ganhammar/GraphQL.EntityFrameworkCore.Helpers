@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using GraphQL.Types;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Connection

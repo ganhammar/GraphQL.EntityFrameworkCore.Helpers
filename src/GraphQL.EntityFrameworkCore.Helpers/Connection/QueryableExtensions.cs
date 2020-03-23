@@ -14,6 +14,12 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
     {
         public static async Task<Connection<TModel>> AsConnection<TModel, TRequest>(this IQueryable<TModel> query, IConnectionInput<TRequest> request)
         {
+            var validationResult = request.IsValid<TModel, TRequest>();
+            if (validationResult.IsValid == false)
+            {
+                throw new Exception(validationResult.Errors.First());
+            }
+
             var connection = new Connection<TModel>
             {
                 PageInfo = new PageInfo(),
@@ -26,7 +32,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             connection.TotalCount = await query.CountAsync();
 
             var isAsc = request.IsAsc;
-            
+
             var (after, before, isAfter, isBefore) = GetPointer<TModel, TRequest>(request);
 
             var anyItemsBefore = false;
@@ -83,7 +89,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             return connection;
         }
 
-        private static (object after, object before, bool isAfter, bool isBefore) GetPointer<TModel, TRequest>(IConnectionInput<TRequest> request)
+        public static (object after, object before, bool isAfter, bool isBefore) GetPointer<TModel, TRequest>(IConnectionInput<TRequest> request)
         {
             var cursorType = ConnectionCursor.GetCursorType<TModel, TRequest>(request);
             var defaultValue = cursorType == typeof(string) ? string.Empty : Activator.CreateInstance(cursorType);

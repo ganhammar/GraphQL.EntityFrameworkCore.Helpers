@@ -196,6 +196,23 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
             result.Items.Count.ShouldBe(1);
         }
 
+        [Fact]
+        public void Should_BeValid_When_AfterAndBeforeIsntSet()
+        {
+            var request = new Request
+            {
+                First = 10,
+                IsAsc = true,
+                OrderBy = new string[] { "Id" },
+                Filter = "Leia",
+            };
+
+            var validationResult = request.IsValid<Human, Human>();
+
+            validationResult.IsValid.ShouldBeTrue();
+            validationResult.Errors.ShouldBeEmpty();
+        }
+
         public class Request : IConnectionInput<Human>
         {
             public IResolveFieldContext<object> Context { get; set; }
