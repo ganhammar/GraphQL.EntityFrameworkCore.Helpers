@@ -17,6 +17,11 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
         public static IQueryable<TQuery> Select<TQuery>(this IQueryable<TQuery> query, IResolveFieldContext<object> context)
         {
+            if (context == default)
+            {
+                return query;
+            }
+
             var entityType = typeof(TQuery);
             
             // The requested properties

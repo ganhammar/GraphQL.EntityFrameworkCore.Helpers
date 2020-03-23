@@ -21,7 +21,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             };
 
             // Filter list based on Filter property
-            query = query.ApplyFilter(request);
+            query = query.Filter(request.Filter);
 
             connection.TotalCount = await query.CountAsync();
 
@@ -65,10 +65,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
                 query = query.Take(request.First);
             }
 
-            if (request.Context != default)
-            {
-                query.Select(request.Context);
-            }
+            query.Select(request.Context);
 
             var items = await query.ToListAsync();
             var lambda = ConnectionCursor.GetLambdaForCursor<TModel, TRequest>(request);
@@ -247,64 +244,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
 
             return (IOrderedQueryable<TModel>)genericMethod
                 .Invoke(genericMethod, new object[] { query, selector });
-        }
-
-        private static IQueryable<TQuery> ApplyFilter<TQuery, TModel>(this IQueryable<TQuery> query, IConnectionInput<TModel> request)
-        {
-            if (string.IsNullOrEmpty(request.Filter))
-            {
-                return query;
-            }
-
-            var convertToStringMethod = typeof(object).GetMethod("ToString");
-            var concatMethod = typeof(string).GetMethod("Concat", new[] { typeof(string), typeof(string) });
-            var likeMethod = typeof(DbFunctionsExtensions).GetMethod("Like", new[] { typeof(DbFunctions), typeof(string), typeof(string) });
-
-            var queryEntityType = typeof(TQuery);
-
-            var arg = Expression.Parameter(queryEntityType, "x");
-            var compareToExpression = Expression.Constant($"%{request.Filter}%");
-
-            Expression clause = null;
-            queryEntityType
-                .GetProperties()
-                .Where(x => Attribute.IsDefined(x, typeof(FilterableAttribute)))
-                .ToList()
-                .ForEach(field =>
-                {
-                    Expression property = Expression.MakeMemberAccess(arg, field);
-
-                    if (field.PropertyType != typeof(string))
-                    {
-                        property = Expression.Call(property, convertToStringMethod);
-                    }
-
-                    property = Expression.Call(null, likeMethod, Expression.Constant(EF.Functions), property, compareToExpression);
-
-                    if (clause != null)
-                    {
-                        clause = Expression.Or(clause, property);
-                    }
-                    else
-                    {
-                        clause = property;
-                    }
-                });
-
-            if (clause == null)
-            {
-                return query;
-            }
-
-            clause = Expression.Lambda(clause, arg);
-
-            var method = GetWhereMethod();
-
-            MethodInfo genericMethod = method
-                .MakeGenericMethod(queryEntityType);
-
-            return (IQueryable<TQuery>)genericMethod
-                .Invoke(genericMethod, new object[] { query, clause });
         }
 
         private static MethodInfo GetWhereMethod() => typeof(System.Linq.Queryable)
