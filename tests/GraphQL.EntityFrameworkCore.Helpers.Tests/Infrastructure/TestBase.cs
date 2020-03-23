@@ -38,7 +38,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
         {
             var services = new ServiceCollection();
             var options = new DbContextOptionsBuilder<TestDbContext>()
-                .UseInMemoryDatabase("GraphQL.EntityFramework.Helpers.Database")
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
             var dbContext = new TestDbContext(options);
 
@@ -54,7 +54,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .AddTransient<HumanGraphType>()
                 .AddTransient<DroidGraphType>()
                 .AddTransient<TestDbContext>(_ => dbContext)
-                .AddGraphQLEntityFrameworkHelpers(dbContext);
+                .AddGraphQLEntityFrameworkCoreHelpers(dbContext);
 
             return services.BuildServiceProvider();
         }
