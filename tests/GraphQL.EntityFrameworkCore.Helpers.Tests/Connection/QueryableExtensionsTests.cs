@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using GraphQL.EntityFrameworkCore.Helpers.Connection;
 using GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure;
 using GraphQL.Types;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
@@ -292,6 +293,46 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
 
             validationResult.IsValid.ShouldBeFalse();
             validationResult.Errors.ShouldNotBeEmpty();
+        }
+
+        [Fact]
+        public async void Should_ResolveDroidsConnection_When_Requested()
+        {
+            var databaseContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var droids = await databaseContext.Droids
+                .Select(x => x.Id)
+                .OrderBy(x => x)
+                .ToListAsync();
+
+            Assert.NotEmpty(droids);
+
+            var query = @"
+                query droids {
+                    droids(orderBy: [""id""]) {
+                        edges {
+                            node {
+                                id
+                            }
+                        }
+                    }
+                }
+            ";
+
+            var expected = new
+            {
+                droids = new
+                {
+                    edges = droids.Select(x => new
+                    {
+                        node = new
+                        {
+                            id = x,
+                        },
+                    }),
+                },
+            };
+
+            AssertQuerySuccess(query, expected);
         }
 
         public class Request : IConnectionInput<Human>

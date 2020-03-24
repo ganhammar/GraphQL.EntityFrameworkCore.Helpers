@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GraphQL.DataLoader;
 using GraphQL.Types;
+using GraphQL.EntityFrameworkCore.Helpers.Connection;
 using Microsoft.EntityFrameworkCore;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
@@ -23,6 +24,17 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             FieldAsync<ListGraphType<HumanGraphType>>(
                 "Humans",
                 resolve: async context => await dbContext.Humans.Select(context).ToListAsync());
+
+            Connection<DroidGraphType>()
+                .Name("Droids")
+                .Paged()
+                .ResolveAsync(async context =>
+                {
+                    var request = new ConnectionInput();
+                    request.SetConnectionInput(context);
+
+                    return await dbContext.Droids.AsConnection(request);
+                });
         }
     }
 
@@ -84,5 +96,16 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                     return loader.LoadAsync(context.Source.Id);
                 });
         }
+    }
+
+    public class ConnectionInput : IConnectionInput<Droid>
+    {
+        public string After { get; set; }
+        public string Before { get; set; }
+        public int First { get; set; }
+        public bool IsAsc { get; set; }
+        public string[] OrderBy { get; set; }
+        public string Filter { get; set; }
+        public IResolveFieldContext<object> Context { get; set; }
     }
 }
