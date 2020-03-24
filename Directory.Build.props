@@ -1,3 +1,11 @@
 <Project>
 
+    <PropertyGroup>
+        <GraphQLVersion>3.0.0-preview-1490</GraphQLVersion>
+        <MicrosoftEntityFrameworkCoreVersion>3.1.2</MicrosoftEntityFrameworkCoreVersion>
+        <MicrosoftEntityFrameworkCoreInMemoryVersion>3.1.2</MicrosoftEntityFrameworkCoreInMemoryVersion>
+        <ShouldlyVersion>3.0.2</ShouldlyVersion>
+        <XunitVersion>2.4.1</XunitVersion>
+    </PropertyGroup>
+
 </Project>
