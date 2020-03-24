@@ -204,13 +204,94 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 First = 10,
                 IsAsc = true,
                 OrderBy = new string[] { "Id" },
-                Filter = "Leia",
             };
 
             var validationResult = request.IsValid<Human, Human>();
 
             validationResult.IsValid.ShouldBeTrue();
             validationResult.Errors.ShouldBeEmpty();
+        }
+
+        [Fact]
+        public void Should_BeValid_When_AfterIsSet()
+        {
+            var request = new Request
+            {
+                First = 10,
+                IsAsc = true,
+                OrderBy = new string[] { "Name" },
+                After = ConnectionCursor.ToCursor("Leia"),
+            };
+
+            var validationResult = request.IsValid<Human, Human>();
+
+            validationResult.IsValid.ShouldBeTrue();
+            validationResult.Errors.ShouldBeEmpty();
+        }
+
+        [Fact]
+        public void Should_BeValid_When_BeforeIsSet()
+        {
+            var request = new Request
+            {
+                First = 10,
+                IsAsc = true,
+                OrderBy = new string[] { "Name" },
+                Before = ConnectionCursor.ToCursor("Luke"),
+            };
+
+            var validationResult = request.IsValid<Human, Human>();
+
+            validationResult.IsValid.ShouldBeTrue();
+            validationResult.Errors.ShouldBeEmpty();
+        }
+
+        [Fact]
+        public void Should_NotBeValid_When_FirstIsntSet()
+        {
+            var request = new Request
+            {
+                IsAsc = true,
+                OrderBy = new string[] { "Name" },
+            };
+
+            var validationResult = request.IsValid<Human, Human>();
+
+            validationResult.IsValid.ShouldBeFalse();
+            validationResult.Errors.ShouldNotBeEmpty();
+        }
+
+        [Fact]
+        public void Should_NotBeValid_When_BeforeAndAfterIsSet()
+        {
+            var request = new Request
+            {
+                First = 10,
+                IsAsc = true,
+                OrderBy = new string[] { "Name" },
+                Before = ConnectionCursor.ToCursor("Luke"),
+                After = ConnectionCursor.ToCursor("Leia"),
+            };
+
+            var validationResult = request.IsValid<Human, Human>();
+
+            validationResult.IsValid.ShouldBeFalse();
+            validationResult.Errors.ShouldNotBeEmpty();
+        }
+
+        [Fact]
+        public void Should_NotBeValid_When_OrderByIsntSet()
+        {
+            var request = new Request
+            {
+                First = 10,
+                IsAsc = true,
+            };
+
+            var validationResult = request.IsValid<Human, Human>();
+
+            validationResult.IsValid.ShouldBeFalse();
+            validationResult.Errors.ShouldNotBeEmpty();
         }
 
         public class Request : IConnectionInput<Human>
