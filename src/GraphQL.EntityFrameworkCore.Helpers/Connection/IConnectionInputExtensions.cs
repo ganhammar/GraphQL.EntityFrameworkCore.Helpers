@@ -1,10 +1,26 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using GraphQL.Builders;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Connection
 {
     public static class ConnectionInputExtensions
     {
+        public static void SetConnectionInput<TRequest>(this IConnectionInput<TRequest> input,
+            IResolveConnectionContext<object> context)
+        {
+            var isAsc = context.GetArgument<bool?>("isAsc");
+
+            input.First = context.First ?? default(int);
+            input.After = context.After;
+            input.Before = context.Before;
+            input.IsAsc = isAsc != null ? isAsc.Value : true;
+            input.OrderBy = context.GetArgument<string[]>("orderBy");
+            input.Filter = context.GetArgument<string>("filter");
+            input.Context = context;
+        }
+
         public static ConnectionValidationResult IsValid<TModel, TRequest>(this IConnectionInput<TRequest> request)
         {
             var result = new ConnectionValidationResult();
@@ -68,7 +84,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
 
             foreach (var field in request.OrderBy)
             {
-                if (model.GetProperty(field) == null)
+                if (model.GetProperty(field, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance) == null)
                 {
                     return false;
                 }
