@@ -296,6 +296,43 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
         }
 
         [Fact]
+        public async Task Should_CastToReturnType_When_SourceAndReturnTypeIsDifferent()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var request = new CloneRequest
+            {
+                First = 10,
+                OrderBy = new string[] { "Id" },
+            };
+
+            var result = await dbContext.Humans.ToConnection(request);
+
+            result.TotalCount.ShouldBe(3);
+            result.Items.Count.ShouldBe(3);
+
+            var item = result.Items.First();
+
+            item.ShouldBeOfType<Clone>();
+            item.Name.ShouldNotBeNullOrEmpty();
+            item.ClonePlanet.ShouldNotBeNullOrEmpty();
+        }
+
+        [Fact]
+        public void Should_BeValid_When_SourceAndReturnTypeIsDifferent()
+        {
+            var request = new CloneRequest
+            {
+                First = 10,
+                OrderBy = new string[] { "Id" },
+            };
+
+            var validationResult = request.IsValid<Human, Clone>();
+
+            validationResult.IsValid.ShouldBeTrue();
+            validationResult.Errors.ShouldBeEmpty();
+        }
+
+        [Fact]
         public async void Should_ResolveDroidsConnection_When_Requested()
         {
             var databaseContext = ServiceProvider.GetRequiredService<TestDbContext>();
@@ -336,6 +373,23 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
         }
 
         public class Request : IConnectionInput<Human>
+        {
+            public IResolveFieldContext<object> Context { get; set; }
+            public string After { get; set; }
+            public string Before { get; set; }
+            public int First { get; set; }
+            public bool IsAsc { get; set; }
+            public string[] OrderBy { get; set; }
+            public string Filter { get; set; }
+        }
+
+        public class Clone : StarWarsCharacter
+        {
+            [MapsFrom("HomePlanet")]
+            public string ClonePlanet { get; set; }
+        }
+
+        public class CloneRequest : IConnectionInput<Clone>
         {
             public IResolveFieldContext<object> Context { get; set; }
             public string After { get; set; }

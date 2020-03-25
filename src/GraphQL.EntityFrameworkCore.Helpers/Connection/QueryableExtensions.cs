@@ -12,18 +12,18 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
 {
     public static class QueryableExtensions
     {
-        public static async Task<Connection<TModel>> ToConnection<TModel, TRequest>(this IQueryable<TModel> query, IConnectionInput<TRequest> request)
+        public static async Task<Connection<TReturnType>> ToConnection<TSourceType, TReturnType>(this IQueryable<TSourceType> query, IConnectionInput<TReturnType> request)
         {
-            var validationResult = request.IsValid<TModel, TRequest>();
+            var validationResult = request.IsValid<TSourceType, TReturnType>();
             if (validationResult.IsValid == false)
             {
                 throw new Exception(validationResult.Errors.First());
             }
 
-            var connection = new Connection<TModel>
+            var connection = new Connection<TReturnType>
             {
                 PageInfo = new PageInfo(),
-                Edges = new List<Edge<TModel>>(),
+                Edges = new List<Edge<TReturnType>>(),
             };
 
             // Filter list based on Filter property
@@ -33,7 +33,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
 
             var isAsc = request.IsAsc;
 
-            var (after, before, isAfter, isBefore) = GetPointer<TModel, TRequest>(request);
+            var (after, before, isAfter, isBefore) = GetPointer<TSourceType, TReturnType>(request);
 
             var anyItemsBefore = false;
 
@@ -74,24 +74,24 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             query.Select(request.Context);
 
             var items = await query.ToListAsync();
-            var lambda = ConnectionCursor.GetLambdaForCursor<TModel, TRequest>(request);
+            var lambda = ConnectionCursor.GetLambdaForCursor<TSourceType, TReturnType>(request);
             var (startCursor, endCursor) = ConnectionCursor.GetFirstAndLastCursor(items, lambda);
 
             connection.PageInfo.StartCursor = startCursor;
             connection.PageInfo.EndCursor = endCursor;
 
-            connection.Edges.AddRange(items.Select(x => new Edge<TModel>
+            connection.Edges.AddRange(items.Select(x => new Edge<TReturnType>
             {
-                Node = x,
+                Node = Create<TReturnType>(x),
                 Cursor = ConnectionCursor.GetCursor(x, lambda),
             }));
 
             return connection;
         }
 
-        public static (object after, object before, bool isAfter, bool isBefore) GetPointer<TModel, TRequest>(IConnectionInput<TRequest> request)
+        public static (object after, object before, bool isAfter, bool isBefore) GetPointer<TSourceType, TReturnType>(IConnectionInput<TReturnType> request)
         {
-            var cursorType = ConnectionCursor.GetCursorType<TModel, TRequest>(request);
+            var cursorType = ConnectionCursor.GetCursorType<TSourceType, TReturnType>(request);
             var defaultValue = cursorType == typeof(string) ? string.Empty : Activator.CreateInstance(cursorType);
             var before = ConnectionCursor.FromCursor<object>(request.Before);
             var after = ConnectionCursor.FromCursor<object>(request.After);
@@ -101,19 +101,19 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             return (after, before, isAfter, isBefore);
         }
 
-        private static IOrderedQueryable<TQuery> OrderBy<TQuery, TModel>(this IQueryable<TQuery> query, IConnectionInput<TModel> request)
+        private static IOrderedQueryable<TSourceType> OrderBy<TSourceType, TReturnType>(this IQueryable<TSourceType> query, IConnectionInput<TReturnType> request)
             => GetOrderBy(query, request, "OrderBy");
 
-        private static IOrderedQueryable<TQuery> OrderByDescending<TQuery, TModel>(this IQueryable<TQuery> query, IConnectionInput<TModel> request)
+        private static IOrderedQueryable<TSourceType> OrderByDescending<TSourceType, TReturnType>(this IQueryable<TSourceType> query, IConnectionInput<TReturnType> request)
             => GetOrderBy(query, request, "OrderByDescending");
 
-        private static IQueryable<TModel> Where<TModel, TRequest>(this IQueryable<TModel> query, IConnectionInput<TRequest> request)
+        private static IQueryable<TSourceType> Where<TSourceType, TReturnType>(this IQueryable<TSourceType> query, IConnectionInput<TReturnType> request)
         {
             var isAsc = request.IsAsc;
-            var cursorType = ConnectionCursor.GetCursorType<TModel, TRequest>(request);
-            var entityType = typeof(TModel);
+            var cursorType = ConnectionCursor.GetCursorType<TSourceType, TReturnType>(request);
+            var entityType = typeof(TSourceType);
 
-            var (after, before, isAfter, isBefore) = GetPointer<TModel, TRequest>(request);
+            var (after, before, isAfter, isBefore) = GetPointer<TSourceType, TReturnType>(request);
             var isGreaterThan = isBefore ? !isAsc : isAsc;
 
             var value = isBefore ? before : after;
@@ -156,7 +156,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             MethodInfo genericMethod = method
                 .MakeGenericMethod(entityType);
 
-            return (IQueryable<TModel>)genericMethod
+            return (IQueryable<TSourceType>)genericMethod
                 .Invoke(genericMethod, new object[] { query, clause });
         }
 
@@ -190,12 +190,12 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
 
         private static bool IsNullableType(Type t) => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Nullable<>);
 
-        private static Expression GetLambda<TQuery, TModel>(IQueryable<TQuery> query, IConnectionInput<TModel> request, ParameterExpression arg)
+        private static Expression GetLambda<TQuery, TSourceType>(IQueryable<TQuery> query, IConnectionInput<TSourceType> request, ParameterExpression arg)
         {
             var convertToString = typeof(object).GetMethod("ToString");
             var concatMethod = typeof(string).GetMethod("Concat", new[] { typeof(string), typeof(string) });
 
-            var modelEntityType = typeof(TModel);
+            var modelEntityType = typeof(TSourceType);
             var queryEntityType = typeof(TQuery);
 
             Expression selector = null;
@@ -225,10 +225,10 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             return selector;
         }
 
-        private static IOrderedQueryable<TModel> GetOrderBy<TModel, TRequest>(this IQueryable<TModel> query, IConnectionInput<TRequest> request, string methodName)
+        private static IOrderedQueryable<TSourceType> GetOrderBy<TSourceType, TReturnType>(this IQueryable<TSourceType> query, IConnectionInput<TReturnType> request, string methodName)
         {
-            var cursorType = ConnectionCursor.GetCursorType<TModel, TRequest>(request);
-            var entityType = typeof(TModel);
+            var cursorType = ConnectionCursor.GetCursorType<TSourceType, TReturnType>(request);
+            var entityType = typeof(TSourceType);
 
             ParameterExpression arg = Expression.Parameter(entityType, "x");
 
@@ -248,7 +248,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             MethodInfo genericMethod = method
                 .MakeGenericMethod(entityType, cursorType);
 
-            return (IOrderedQueryable<TModel>)genericMethod
+            return (IOrderedQueryable<TSourceType>)genericMethod
                 .Invoke(genericMethod, new object[] { query, selector });
         }
 
@@ -257,5 +257,63 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             .Where(m => m.Name == "Where" && m.IsGenericMethodDefinition)
             .Where(m => m.GetParameters().ToList().Count == 2)
             .First();
+
+        public static TReturnType Create<TReturnType>(object source)
+        {
+            var target = (TReturnType)Activator.CreateInstance(typeof(TReturnType));
+
+            Type targetType = target.GetType();
+            Type typeSource = source.GetType();
+
+            PropertyInfo[] properties = typeSource.GetProperties();
+            foreach (PropertyInfo property in properties)
+            {
+                if (property.CanRead == false)
+                {
+                    continue;
+                }
+
+                PropertyInfo targetProperty = targetType.GetProperty(property.Name);
+
+                if (targetProperty == default)
+                {
+                    var attribute = typeof(MapsFromAttribute);
+                    targetProperty = targetType
+                        .GetProperties()
+                        .Where(x => Attribute.IsDefined(x, attribute))
+                        .Where(x => ((MapsFromAttribute)x.GetCustomAttribute(attribute)).PropertyName == property.Name)
+                        .FirstOrDefault();
+
+                    if (targetProperty == default)
+                    {
+                        continue;
+                    }
+                }
+
+                if (targetProperty.CanWrite == false)
+                {
+                    continue;
+                }
+
+                if (targetProperty.GetSetMethod(true) != null && targetProperty.GetSetMethod(true).IsPrivate)
+                {
+                    continue;
+                }
+
+                if ((targetProperty.GetSetMethod().Attributes & MethodAttributes.Static) != 0)
+                {
+                    continue;
+                }
+
+                if (!targetProperty.PropertyType.IsAssignableFrom(property.PropertyType))
+                {
+                    continue;
+                }
+
+                targetProperty.SetValue(target, property.GetValue(source, null), null);
+            }
+
+            return target;
+        }
     }
 }
