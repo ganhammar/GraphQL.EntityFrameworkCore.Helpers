@@ -3,12 +3,16 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using GraphQL.EntityFrameworkCore.Helpers.Connection;
+using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public static class FilterList
     {
+        public static IQueryable<TQuery> Filter<TQuery>(this IQueryable<TQuery> query, IResolveFieldContext<object> context)
+            => query.Filter(context.GetArgument<string>("filter"));
+
         public static IQueryable<TQuery> Filter<TQuery>(this IQueryable<TQuery> query, string filter)
         {
             if (string.IsNullOrEmpty(filter))

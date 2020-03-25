@@ -38,5 +38,37 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
             result.ShouldBeEmpty();
         }
+
+        [Fact]
+        public async Task Should_FilterQueryForSpecific_When_FilterIsOnlyOneMatch()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var human = await dbContext.Humans.FirstOrDefaultAsync();
+
+            human.ShouldNotBeNull();
+
+            var query = $@"
+                query humans {{
+                    humans(filter: ""{human.Name}"") {{
+                        id
+                        name
+                    }}
+                }}
+            ";
+
+            var expected = new
+            {
+                humans = new []
+                {
+                    new
+                    {
+                        id = human.Id,
+                        name = human.Name,
+                    },
+                },
+            };
+
+            var result = AssertQuerySuccess(query, expected);
+        }
     }
 }

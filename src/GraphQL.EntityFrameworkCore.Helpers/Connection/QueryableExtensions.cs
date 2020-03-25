@@ -12,7 +12,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
 {
     public static class QueryableExtensions
     {
-        public static async Task<Connection<TModel>> AsConnection<TModel, TRequest>(this IQueryable<TModel> query, IConnectionInput<TRequest> request)
+        public static async Task<Connection<TModel>> ToConnection<TModel, TRequest>(this IQueryable<TModel> query, IConnectionInput<TRequest> request)
         {
             var validationResult = request.IsValid<TModel, TRequest>();
             if (validationResult.IsValid == false)

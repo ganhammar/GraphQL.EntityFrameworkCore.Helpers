@@ -24,7 +24,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 OrderBy = new string[] { "Id" },
             };
 
-            var result = await dbContext.Humans.AsConnection(request);
+            var result = await dbContext.Humans.ToConnection(request);
 
             result.TotalCount.ShouldBe(3);
             result.Items.Count.ShouldBe(3);
@@ -42,7 +42,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 After = ConnectionCursor.ToCursor("Leia"),
             };
 
-            var result = await dbContext.Humans.AsConnection(request);
+            var result = await dbContext.Humans.ToConnection(request);
 
             result.TotalCount.ShouldBe(3);
             result.Items.Count.ShouldBe(2);
@@ -60,7 +60,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 Before = ConnectionCursor.ToCursor("Luke"),
             };
 
-            var result = await dbContext.Humans.AsConnection(request);
+            var result = await dbContext.Humans.ToConnection(request);
 
             result.TotalCount.ShouldBe(3);
             result.Items.Count.ShouldBe(1);
@@ -78,7 +78,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 After = ConnectionCursor.ToCursor("1"),
             };
 
-            var result = await dbContext.Humans.AsConnection(request);
+            var result = await dbContext.Humans.ToConnection(request);
 
             result.TotalCount.ShouldBe(3);
             result.Items.Count.ShouldBe(2);
@@ -97,7 +97,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 After = ConnectionCursor.ToCursor("68316e17-5206-4af1-83b7-790bde49b184"),
             };
 
-            var result = await dbContext.Humans.AsConnection(request);
+            var result = await dbContext.Humans.ToConnection(request);
 
             result.TotalCount.ShouldBe(3);
         }
@@ -115,7 +115,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                     .ToString(ConnectionCursor.DateTimeFormatPattern)),
             };
 
-            var result = await dbContext.Humans.AsConnection(request);
+            var result = await dbContext.Humans.ToConnection(request);
 
             result.TotalCount.ShouldBe(3);
             result.Items.Count.ShouldBe(2);
@@ -135,7 +135,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                     .ToString(ConnectionCursor.DateTimeOffsetFormatPattern)),
             };
 
-            var result = await dbContext.Humans.AsConnection(request);
+            var result = await dbContext.Humans.ToConnection(request);
 
             result.TotalCount.ShouldBe(3);
             result.Items.Count.ShouldBe(2);
@@ -155,7 +155,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                     .ToString(ConnectionCursor.DateTimeFormatPattern)),
             };
 
-            var result = await dbContext.Humans.AsConnection(request);
+            var result = await dbContext.Humans.ToConnection(request);
 
             result.TotalCount.ShouldBe(3);
             result.Items.Count.ShouldBe(1);
@@ -173,7 +173,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 After = ConnectionCursor.ToCursor("Leia1"),
             };
 
-            var result = await dbContext.Humans.AsConnection(request);
+            var result = await dbContext.Humans.ToConnection(request);
 
             result.TotalCount.ShouldBe(3);
             result.Items.Count.ShouldBe(2);
@@ -191,7 +191,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 Filter = "Leia",
             };
 
-            var result = await dbContext.Humans.AsConnection(request);
+            var result = await dbContext.Humans.ToConnection(request);
 
             result.TotalCount.ShouldBe(1);
             result.Items.Count.ShouldBe(1);

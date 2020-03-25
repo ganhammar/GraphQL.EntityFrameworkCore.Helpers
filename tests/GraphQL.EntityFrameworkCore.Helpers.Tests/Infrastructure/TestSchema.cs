@@ -21,9 +21,13 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
     {
         public Query(TestDbContext dbContext)
         {
-            FieldAsync<ListGraphType<HumanGraphType>>(
-                "Humans",
-                resolve: async context => await dbContext.Humans.Select(context).ToListAsync());
+            Field<ListGraphType<HumanGraphType>>()
+                .Name("Humans")
+                .Filterable()
+                .ResolveAsync(async context => await dbContext.Humans
+                    .Filter(context)
+                    .Select(context)
+                    .ToListAsync());
 
             Connection<DroidGraphType>()
                 .Name("Droids")
@@ -33,7 +37,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                     var request = new ConnectionInput();
                     request.SetConnectionInput(context);
 
-                    return await dbContext.Droids.AsConnection(request);
+                    return await dbContext.Droids.ToConnection(request);
                 });
         }
     }
