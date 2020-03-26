@@ -33,11 +33,21 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
                 var propertyInfo = entityType.GetProperty(field, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
                 Expression property = Expression.Property(arg, field);
 
-                if (propertyInfo.PropertyType == typeof(DateTime))
+                if (propertyInfo.PropertyType.IsGenericType && propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                {
+                    var underlyingType = propertyInfo.PropertyType.GetGenericArguments()[0];
+
+                    property = Expression.Convert(
+                        Expression.Coalesce(property, Expression.Default(underlyingType)),
+                        underlyingType
+                    );
+                }
+
+                if (propertyInfo.PropertyType == typeof(DateTime) || propertyInfo.PropertyType == typeof(DateTime?))
                 {
                     property = Expression.Call(property, dateTimeToString, dateTimeFormat);
                 }
-                else if (propertyInfo.PropertyType == typeof(DateTimeOffset))
+                else if (propertyInfo.PropertyType == typeof(DateTimeOffset) || propertyInfo.PropertyType == typeof(DateTimeOffset?))
                 {
                     property = Expression.Call(property, dateTimeOffsetToString, dateTimeOffsetFormat);
                 }
