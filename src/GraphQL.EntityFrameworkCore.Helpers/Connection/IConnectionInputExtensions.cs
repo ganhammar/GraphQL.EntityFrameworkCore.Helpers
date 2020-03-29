@@ -28,15 +28,15 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             if (request.First == default)
             {
                 result.IsValid = false;
-                result.Errors.Add("First is required");
+                result.Errors.Add(new ConnectionError("First", "First is required"));
             }
 
             if (request.OrderBy == default || IsOrderByValid<TSourceType, TReturnType>(request) == false)
             {
                 result.IsValid = false;
-                result.Errors.Add(request.OrderBy == default
+                result.Errors.Add(new ConnectionError("OrderBy", request.OrderBy == default
                     ? "Order by is not defined"
-                    : "Cannot order by one or more of the provided fields");
+                    : "Cannot order by one or more of the provided fields"));
 
                 return result;
             }
@@ -46,13 +46,13 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             if (isAfter && IsAfterValid<TSourceType, TReturnType>(request) == false)
             {
                 result.IsValid = false;
-                result.Errors.Add("The after cursor is not valid");
+                result.Errors.Add(new ConnectionError("After", "The after cursor is not valid"));
             }
 
             if (isBefore && IsBeforeValid<TSourceType, TReturnType>(request) == false)
             {
                 result.IsValid = false;
-                result.Errors.Add("The before cursor is not valid");
+                result.Errors.Add(new ConnectionError("Before", "The before cursor is not valid"));
             }
 
             return result;
@@ -61,7 +61,19 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
         public class ConnectionValidationResult
         {
             public bool IsValid { get; set; } = true;
-            public List<string> Errors { get; set; } = new List<string>();
+            public List<ConnectionError> Errors { get; set; } = new List<ConnectionError>();
+        }
+
+        public class ConnectionError
+        {
+            public ConnectionError(string fieldName, string message)
+            {
+                FieldName = fieldName;
+                Message = message;
+            }
+
+            public string FieldName { get; set; }
+            public string Message { get; set; }
         }
 
         private static bool IsBeforeValid<TSourceType, TReturnType>(IConnectionInput<TReturnType> request)

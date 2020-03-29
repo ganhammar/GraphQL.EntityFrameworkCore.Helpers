@@ -18,7 +18,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             var validationResult = request.IsValid<TSourceType, TReturnType>();
             if (validationResult.IsValid == false)
             {
-                throw new Exception(validationResult.Errors.First());
+                throw new Exception(validationResult.Errors.First().Message);
             }
 
             var connection = new Connection<TReturnType>
