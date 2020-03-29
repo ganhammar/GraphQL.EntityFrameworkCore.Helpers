@@ -26,7 +26,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .Filterable()
                 .ResolveAsync(async context => await dbContext.Humans
                     .Filter(context)
-                    .Select(context)
+                    .Select(context, dbContext.Model)
                     .ToListAsync());
 
             Connection<DroidGraphType>()
@@ -37,7 +37,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                     var request = new ConnectionInput();
                     request.SetConnectionInput(context);
 
-                    return await dbContext.Droids.ToConnection(request);
+                    return await dbContext.Droids.ToConnection(request, dbContext.Model);
                 });
         }
     }
@@ -89,7 +89,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                         {
                             var humans = await dbContext.Humans
                                 .Where(x => x.Droids.Any(y => droidIds.Contains(y.Id)))
-                                .Select(context)
+                                .Select(context, dbContext.Model)
                                 .ToListAsync();
                             
                             return humans

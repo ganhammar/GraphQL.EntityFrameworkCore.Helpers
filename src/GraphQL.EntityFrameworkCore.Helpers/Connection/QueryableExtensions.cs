@@ -7,12 +7,13 @@ using System.Reflection;
 using System.Threading.Tasks;
 using GraphQL.Types.Relay.DataObjects;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Connection
 {
     public static class QueryableExtensions
     {
-        public static async Task<Connection<TReturnType>> ToConnection<TSourceType, TReturnType>(this IQueryable<TSourceType> query, IConnectionInput<TReturnType> request)
+        public static async Task<Connection<TReturnType>> ToConnection<TSourceType, TReturnType>(this IQueryable<TSourceType> query, IConnectionInput<TReturnType> request, IModel model)
         {
             var validationResult = request.IsValid<TSourceType, TReturnType>();
             if (validationResult.IsValid == false)
@@ -71,7 +72,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
                 query = query.Take(request.First);
             }
 
-            query.Select(request.Context);
+            query.Select(request.Context, model);
 
             var items = await query.ToListAsync();
             var lambda = ConnectionCursor.GetLambdaForCursor<TSourceType, TReturnType>(request);

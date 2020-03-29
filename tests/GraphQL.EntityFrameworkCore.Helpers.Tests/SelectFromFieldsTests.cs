@@ -89,7 +89,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests
             var resolveFieldContext = new ResolveFieldContext<object>();
             resolveFieldContext.SubFields = selection;
 
-            var result = await dbContext.Humans.Select(resolveFieldContext).ToListAsync();
+            var result = await dbContext.Humans.Select(resolveFieldContext, dbContext.Model).ToListAsync();
 
             result.ShouldNotBeNull();
 
@@ -110,7 +110,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests
             var resolveFieldContext = new ResolveFieldContext<object>();
             resolveFieldContext.SubFields = selection;
 
-            var result = await dbContext.Droids.Select(resolveFieldContext).ToListAsync();
+            var result = await dbContext.Droids.Select(resolveFieldContext, dbContext.Model).ToListAsync();
 
             result.ShouldNotBeNull();
 

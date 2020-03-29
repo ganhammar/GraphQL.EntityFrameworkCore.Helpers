@@ -13,9 +13,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public static class SelectFromFields
     {
-        public static IModel Model { get; set; }
-
-        public static IQueryable<TQuery> Select<TQuery>(this IQueryable<TQuery> query, IResolveFieldContext<object> context)
+        public static IQueryable<TQuery> Select<TQuery>(this IQueryable<TQuery> query, IResolveFieldContext<object> context, IModel model)
         {
             if (context == default)
             {
@@ -25,7 +23,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             var entityType = typeof(TQuery);
             
             // The requested properties
-            var properties = GetProperties(entityType, context.SubFields);
+            var properties = GetProperties(entityType, context.SubFields, model);
             
             // Input parameter, x
             var parameter = Expression.Parameter(entityType, "x");
@@ -46,9 +44,9 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return query.Select(lambda);
         }
 
-        private static List<PropertyInfo> GetProperties(Type entityType, IDictionary<string, Field> fields)
+        private static List<PropertyInfo> GetProperties(Type entityType, IDictionary<string, Field> fields, IModel model)
         {
-            var entity = Model.FindEntityType(entityType);
+            var entity = model.FindEntityType(entityType);
             var navigationProperties = entity.GetNavigations();
             var properties = new List<PropertyInfo>();
             var selection = GetSelection(fields);

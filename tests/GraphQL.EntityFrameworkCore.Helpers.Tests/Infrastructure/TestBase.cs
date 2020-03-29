@@ -53,8 +53,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .AddSingleton<ISchema, TestSchema>()
                 .AddTransient<HumanGraphType>()
                 .AddTransient<DroidGraphType>()
-                .AddTransient<TestDbContext>(_ => dbContext)
-                .AddGraphQLEntityFrameworkCoreHelpers(dbContext);
+                .AddTransient<TestDbContext>(_ => dbContext);
 
             return services.BuildServiceProvider();
         }

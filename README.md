@@ -2,7 +2,7 @@
 
 Helpers to add bidirectional cursor based paginaton to your endpoints with the `IQueryable` extension method `ToConnection`. The method expects a request that implements `IConnectionInput<T>` as input. Parameters is added to the `ConnectionBuilder` using the extension method `Paged(defaultPageSize)`.
 
-The `Select(IResolveFieldContext context)` extension methods helps you to avoid overfetching data by only selecting the fields requested. Foreign key fields are included by default as the value might be used for data loaded fields. `ToConnection` is using this method per default.
+The `Select(IResolveFieldContext context)` extension methods helps you to avoid overfetching data by only selecting the fields requested. Foreign key fields are included by default as the value might be used for data loaded fields (requires `DbContext.IModel`). `ToConnection` is using this method per default.
 
 With the `Filter(context)` extension method you can filter a list of items based on a search string. What columns should be filterable is determined by the `FilterableAttribute`. The filter parameter is applied `Filterable` extension.
 
@@ -10,15 +10,6 @@ With the `Filter(context)` extension method you can filter a list of items based
 
 ```
 dotnet add package GraphQL.EntityFrameworkCore.Helpers
-```
-
-### Configure
-
-```c#
-public void ConfigureServices(IServiceCollection services)
-{
-    services.AddGraphQLEntityFrameworkCoreHelpers(dbContext);
-}
 ```
 
 ### Examples
@@ -38,7 +29,8 @@ Connection<DroidGraphType>()
         var request = new ConnectionInput();
         request.SetConnectionInput(context);
 
-        return await dbContext.Droids.ToConnection(request);
+        return await dbContext.Droids
+            .ToConnection(request, dbContext.Model); // IModel is required for Select from Request
     });
 ```
 
@@ -47,7 +39,7 @@ Connection<DroidGraphType>()
 ```c#
 FieldAsync<ListGraphType<HumanGraphType>>(
     "Humans",
-    resolve: async context => await dbContext.Humans.Select(context).ToListAsync());
+    resolve: async context => await dbContext.Humans.Select(context, dbContext.Model).ToListAsync());
 ```
 
 #### Filter
@@ -71,6 +63,6 @@ Field<ListGraphType<HumanGraphType>>()
     .Filterable()
     .ResolveAsync(async context => await dbContext.Humans
         .Filter(context)
-        .Select(context)
+        .Select(context, dbContext.Model)
         .ToListAsync());
 ```
