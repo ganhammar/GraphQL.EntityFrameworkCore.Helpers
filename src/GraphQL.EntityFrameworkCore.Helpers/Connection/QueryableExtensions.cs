@@ -15,7 +15,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
     {
         public static async Task<Connection<TReturnType>> ToConnection<TSourceType, TReturnType>(this IQueryable<TSourceType> query, IConnectionInput<TReturnType> request, IModel model)
         {
-            var validationResult = request.IsValid<TSourceType, TReturnType>(model);
+            var validationResult = request.Validate<TSourceType, TReturnType>(model);
             if (validationResult.IsValid == false)
             {
                 throw new Exception(validationResult.Failures.First().Message);

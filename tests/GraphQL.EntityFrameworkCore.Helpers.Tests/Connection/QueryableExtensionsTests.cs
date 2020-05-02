@@ -209,7 +209,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 OrderBy = new string[] { "Id" },
             };
 
-            var validationResult = request.IsValid<Human, Human>(dbContext.Model);
+            var validationResult = request.Validate<Human, Human>(dbContext.Model);
 
             validationResult.IsValid.ShouldBeTrue();
             validationResult.Failures.ShouldBeEmpty();
@@ -225,7 +225,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 IsAsc = true,
             };
 
-            var validationResult = request.IsValid<Human, Human>(dbContext.Model);
+            var validationResult = request.Validate<Human, Human>(dbContext.Model);
 
             validationResult.IsValid.ShouldBeTrue();
             validationResult.Failures.ShouldBeEmpty();
@@ -243,7 +243,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 After = ConnectionCursor.ToCursor("Leia"),
             };
 
-            var validationResult = request.IsValid<Human, Human>(dbContext.Model);
+            var validationResult = request.Validate<Human, Human>(dbContext.Model);
 
             validationResult.IsValid.ShouldBeTrue();
             validationResult.Failures.ShouldBeEmpty();
@@ -261,7 +261,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 Before = ConnectionCursor.ToCursor("Luke"),
             };
 
-            var validationResult = request.IsValid<Human, Human>(dbContext.Model);
+            var validationResult = request.Validate<Human, Human>(dbContext.Model);
 
             validationResult.IsValid.ShouldBeTrue();
             validationResult.Failures.ShouldBeEmpty();
@@ -277,7 +277,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 OrderBy = new string[] { "Name" },
             };
 
-            var validationResult = request.IsValid<Human, Human>(dbContext.Model);
+            var validationResult = request.Validate<Human, Human>(dbContext.Model);
 
             validationResult.IsValid.ShouldBeFalse();
             validationResult.Failures.ShouldNotBeEmpty();
@@ -296,7 +296,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 After = ConnectionCursor.ToCursor("Leia"),
             };
 
-            var validationResult = request.IsValid<Human, Human>(dbContext.Model);
+            var validationResult = request.Validate<Human, Human>(dbContext.Model);
 
             validationResult.IsValid.ShouldBeFalse();
             validationResult.Failures.ShouldNotBeEmpty();
@@ -334,7 +334,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 OrderBy = new string[] { "Id" },
             };
 
-            var validationResult = request.IsValid<Human, Clone>(dbContext.Model);
+            var validationResult = request.Validate<Human, Clone>(dbContext.Model);
 
             validationResult.IsValid.ShouldBeTrue();
             validationResult.Failures.ShouldBeEmpty();
