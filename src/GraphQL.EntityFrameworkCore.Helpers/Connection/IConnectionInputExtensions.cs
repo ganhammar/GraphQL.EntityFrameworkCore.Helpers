@@ -23,21 +23,21 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             input.Context = context;
         }
 
-        public static ConnectionValidationResult IsValid<TSourceType, TReturnType>(this IConnectionInput<TReturnType> request, IModel model)
+        public static ValidationResult IsValid<TSourceType, TReturnType>(this IConnectionInput<TReturnType> request, IModel model)
         {
-            var result = new ConnectionValidationResult();
+            var result = new ValidationResult();
 
             if (request.First == default)
             {
                 result.IsValid = false;
-                result.Errors.Add(new ConnectionError("First", "First is required"));
+                result.Failures.Add(new ValidationFailure("First", "First is required"));
             }
 
             var orderBy = ConnectionCursor.GetOrderBy<TSourceType, TReturnType>(request, model);
             if (orderBy.Any() == false || IsOrderByValid<TSourceType, TReturnType>(orderBy) == false)
             {
                 result.IsValid = false;
-                result.Errors.Add(new ConnectionError("OrderBy", orderBy.Any() == false
+                result.Failures.Add(new ValidationFailure("OrderBy", orderBy.Any() == false
                     ? "Order by is not defined"
                     : "Cannot order by one or more of the provided fields"));
 
@@ -49,34 +49,16 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             if (isAfter && IsAfterValid<TSourceType, TReturnType>(request, model) == false)
             {
                 result.IsValid = false;
-                result.Errors.Add(new ConnectionError("After", "The after cursor is not valid"));
+                result.Failures.Add(new ValidationFailure("After", "The after cursor is not valid"));
             }
 
             if (isBefore && IsBeforeValid<TSourceType, TReturnType>(request, model) == false)
             {
                 result.IsValid = false;
-                result.Errors.Add(new ConnectionError("Before", "The before cursor is not valid"));
+                result.Failures.Add(new ValidationFailure("Before", "The before cursor is not valid"));
             }
 
             return result;
-        }
-
-        public class ConnectionValidationResult
-        {
-            public bool IsValid { get; set; } = true;
-            public List<ConnectionError> Errors { get; set; } = new List<ConnectionError>();
-        }
-
-        public class ConnectionError
-        {
-            public ConnectionError(string fieldName, string message)
-            {
-                FieldName = fieldName;
-                Message = message;
-            }
-
-            public string FieldName { get; set; }
-            public string Message { get; set; }
         }
 
         private static bool IsBeforeValid<TSourceType, TReturnType>(IConnectionInput<TReturnType> request, IModel model)

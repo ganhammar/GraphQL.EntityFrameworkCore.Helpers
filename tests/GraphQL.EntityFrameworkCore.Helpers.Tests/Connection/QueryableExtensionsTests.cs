@@ -212,7 +212,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
             var validationResult = request.IsValid<Human, Human>(dbContext.Model);
 
             validationResult.IsValid.ShouldBeTrue();
-            validationResult.Errors.ShouldBeEmpty();
+            validationResult.Failures.ShouldBeEmpty();
         }
 
         [Fact]
@@ -228,7 +228,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
             var validationResult = request.IsValid<Human, Human>(dbContext.Model);
 
             validationResult.IsValid.ShouldBeTrue();
-            validationResult.Errors.ShouldBeEmpty();
+            validationResult.Failures.ShouldBeEmpty();
         }
 
         [Fact]
@@ -246,7 +246,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
             var validationResult = request.IsValid<Human, Human>(dbContext.Model);
 
             validationResult.IsValid.ShouldBeTrue();
-            validationResult.Errors.ShouldBeEmpty();
+            validationResult.Failures.ShouldBeEmpty();
         }
 
         [Fact]
@@ -264,7 +264,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
             var validationResult = request.IsValid<Human, Human>(dbContext.Model);
 
             validationResult.IsValid.ShouldBeTrue();
-            validationResult.Errors.ShouldBeEmpty();
+            validationResult.Failures.ShouldBeEmpty();
         }
 
         [Fact]
@@ -280,7 +280,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
             var validationResult = request.IsValid<Human, Human>(dbContext.Model);
 
             validationResult.IsValid.ShouldBeFalse();
-            validationResult.Errors.ShouldNotBeEmpty();
+            validationResult.Failures.ShouldNotBeEmpty();
         }
 
         [Fact]
@@ -299,7 +299,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
             var validationResult = request.IsValid<Human, Human>(dbContext.Model);
 
             validationResult.IsValid.ShouldBeFalse();
-            validationResult.Errors.ShouldNotBeEmpty();
+            validationResult.Failures.ShouldNotBeEmpty();
         }
 
         [Fact]
@@ -337,7 +337,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
             var validationResult = request.IsValid<Human, Clone>(dbContext.Model);
 
             validationResult.IsValid.ShouldBeTrue();
-            validationResult.Errors.ShouldBeEmpty();
+            validationResult.Failures.ShouldBeEmpty();
         }
 
         [Fact]
