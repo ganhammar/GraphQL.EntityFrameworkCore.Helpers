@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using GraphQL.Builders;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Connection
 {
@@ -21,7 +23,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             input.Context = context;
         }
 
-        public static ConnectionValidationResult IsValid<TSourceType, TReturnType>(this IConnectionInput<TReturnType> request)
+        public static ConnectionValidationResult IsValid<TSourceType, TReturnType>(this IConnectionInput<TReturnType> request, IModel model)
         {
             var result = new ConnectionValidationResult();
 
@@ -31,25 +33,26 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
                 result.Errors.Add(new ConnectionError("First", "First is required"));
             }
 
-            if (request.OrderBy == default || IsOrderByValid<TSourceType, TReturnType>(request) == false)
+            var orderBy = ConnectionCursor.GetOrderBy<TSourceType, TReturnType>(request, model);
+            if (orderBy.Any() == false || IsOrderByValid<TSourceType, TReturnType>(orderBy) == false)
             {
                 result.IsValid = false;
-                result.Errors.Add(new ConnectionError("OrderBy", request.OrderBy == default
+                result.Errors.Add(new ConnectionError("OrderBy", orderBy.Any() == false
                     ? "Order by is not defined"
                     : "Cannot order by one or more of the provided fields"));
 
                 return result;
             }
 
-            var (_, _, isAfter, isBefore) = QueryableExtensions.GetPointer<TSourceType, TReturnType>(request);
+            var (_, _, isAfter, isBefore) = QueryableExtensions.GetPointer<TSourceType, TReturnType>(request, model);
 
-            if (isAfter && IsAfterValid<TSourceType, TReturnType>(request) == false)
+            if (isAfter && IsAfterValid<TSourceType, TReturnType>(request, model) == false)
             {
                 result.IsValid = false;
                 result.Errors.Add(new ConnectionError("After", "The after cursor is not valid"));
             }
 
-            if (isBefore && IsBeforeValid<TSourceType, TReturnType>(request) == false)
+            if (isBefore && IsBeforeValid<TSourceType, TReturnType>(request, model) == false)
             {
                 result.IsValid = false;
                 result.Errors.Add(new ConnectionError("Before", "The before cursor is not valid"));
@@ -76,25 +79,25 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             public string Message { get; set; }
         }
 
-        private static bool IsBeforeValid<TSourceType, TReturnType>(IConnectionInput<TReturnType> request)
-            => IsCursorDefined<TSourceType, TReturnType>(request, request.After) == false;
+        private static bool IsBeforeValid<TSourceType, TReturnType>(IConnectionInput<TReturnType> request, IModel model)
+            => IsCursorDefined<TSourceType, TReturnType>(request, request.After, model) == false;
 
-        private static bool IsAfterValid<TSourceType, TReturnType>(IConnectionInput<TReturnType> request)
-            => IsCursorDefined<TSourceType, TReturnType>(request, request.Before) == false;
+        private static bool IsAfterValid<TSourceType, TReturnType>(IConnectionInput<TReturnType> request, IModel model)
+            => IsCursorDefined<TSourceType, TReturnType>(request, request.Before, model) == false;
 
-        private static bool IsCursorDefined<TSourceType, TReturnType>(IConnectionInput<TReturnType> request, string cursor)
+        private static bool IsCursorDefined<TSourceType, TReturnType>(IConnectionInput<TReturnType> request, string cursor, IModel model)
         {
-            var type = GetOrderByType<TSourceType, TReturnType>(request);
+            var type = GetOrderByType<TSourceType, TReturnType>(request, model);
             var value = ConnectionCursor.FromCursor<object>(cursor);
 
             return value != null && (type == typeof(string) || !value.Equals(Activator.CreateInstance(type)));
         }
 
-        private static bool IsOrderByValid<TSourceType, TReturnType>(IConnectionInput<TReturnType> request)
+        private static bool IsOrderByValid<TSourceType, TReturnType>(List<string> orderBy)
         {
             var model = typeof(TSourceType);
 
-            foreach (var field in request.OrderBy)
+            foreach (var field in orderBy)
             {
                 if (model.GetProperty(field, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance) == null)
                 {
@@ -105,7 +108,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             return true;
         }
 
-        private static Type GetOrderByType<TSourceType, TReturnType>(IConnectionInput<TReturnType> request)
+        private static Type GetOrderByType<TSourceType, TReturnType>(IConnectionInput<TReturnType> request, IModel model)
         {
             if (request.OrderBy == default || request.OrderBy.Length == 0)
             {
@@ -115,7 +118,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             Type type = null;
             try
             {
-                type = ConnectionCursor.GetCursorType<TSourceType, TReturnType>(request);
+                type = ConnectionCursor.GetCursorType<TSourceType, TReturnType>(request, model);
             }
             catch
             { }

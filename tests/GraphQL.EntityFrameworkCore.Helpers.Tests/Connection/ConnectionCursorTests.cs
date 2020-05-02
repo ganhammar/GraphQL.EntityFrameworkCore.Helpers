@@ -1,16 +1,19 @@
 using System;
 using GraphQL.EntityFrameworkCore.Helpers.Connection;
+using GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure;
 using GraphQL.Types;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
 {
-    public class ConnectionCursorTests
+    public class ConnectionCursorTests : TestBase
     {
         [Fact]
         public void Should_GetCursorInCorrectFormat_When_CallingGetCursorOnNullableDateTime()
         {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
             var request = new Request
             {
                 OrderBy = new [] { "when" },
@@ -21,7 +24,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 When = DateTime.Now,
             };
 
-            var lambda = ConnectionCursor.GetLambdaForCursor<Source, Source>(request);
+            var lambda = ConnectionCursor.GetLambdaForCursor<Source, Source>(request, dbContext.Model);
 
             var cursor = lambda(model);
 
@@ -31,6 +34,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
         [Fact]
         public void Should_GetCursorInCorrectFormat_When_CallingGetCursorOnNullableDateTimeOffset()
         {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
             var request = new Request
             {
                 OrderBy = new [] { "whenInTheWorld" },
@@ -41,7 +45,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 WhenInTheWorld = DateTime.Now,
             };
 
-            var lambda = ConnectionCursor.GetLambdaForCursor<Source, Source>(request);
+            var lambda = ConnectionCursor.GetLambdaForCursor<Source, Source>(request, dbContext.Model);
 
             var cursor = lambda(model);
 
@@ -51,6 +55,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
         [Fact]
         public void Should_GetCursorWithDefaultDateTime_When_CallingGetCursorOnNullDateTime()
         {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
             var request = new Request
             {
                 OrderBy = new [] { "when" },
@@ -58,7 +63,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
 
             var model = new Source();
 
-            var lambda = ConnectionCursor.GetLambdaForCursor<Source, Source>(request);
+            var lambda = ConnectionCursor.GetLambdaForCursor<Source, Source>(request, dbContext.Model);
 
             var cursor = lambda(model);
 
@@ -68,6 +73,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
         [Fact]
         public void Should_GetCursorWithDefaultInt_When_CallingGetCursorOnNullInt()
         {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
             var request = new Request
             {
                 OrderBy = new [] { "number" },
@@ -75,7 +81,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
 
             var model = new Source();
 
-            var lambda = ConnectionCursor.GetLambdaForCursor<Source, Source>(request);
+            var lambda = ConnectionCursor.GetLambdaForCursor<Source, Source>(request, dbContext.Model);
 
             var cursor = lambda(model);
 
@@ -85,6 +91,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
         [Fact]
         public void Should_GetCursorWithDefaultFloat_When_CallingGetCursorOnNullFloat()
         {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
             var request = new Request
             {
                 OrderBy = new [] { "float" },
@@ -92,7 +99,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
 
             var model = new Source();
 
-            var lambda = ConnectionCursor.GetLambdaForCursor<Source, Source>(request);
+            var lambda = ConnectionCursor.GetLambdaForCursor<Source, Source>(request, dbContext.Model);
 
             var cursor = lambda(model);
 
@@ -102,6 +109,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
         [Fact]
         public void Should_GetCombinedCursorWithDefault_When_HavingMultipleNullOrderBy()
         {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
             var request = new Request
             {
                 OrderBy = new [] { "when", "number" },
@@ -109,7 +117,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
 
             var model = new Source();
 
-            var lambda = ConnectionCursor.GetLambdaForCursor<Source, Source>(request);
+            var lambda = ConnectionCursor.GetLambdaForCursor<Source, Source>(request, dbContext.Model);
 
             var cursor = lambda(model);
 
@@ -119,6 +127,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
         [Fact]
         public void Should_GetCombinedCursorWithFormatedValue_When_HavingMultipleOrderBy()
         {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
             var request = new Request
             {
                 OrderBy = new [] { "when", "number" },
@@ -129,7 +138,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 When = DateTime.Now,
             };
 
-            var lambda = ConnectionCursor.GetLambdaForCursor<Source, Source>(request);
+            var lambda = ConnectionCursor.GetLambdaForCursor<Source, Source>(request, dbContext.Model);
 
             var cursor = lambda(model);
 

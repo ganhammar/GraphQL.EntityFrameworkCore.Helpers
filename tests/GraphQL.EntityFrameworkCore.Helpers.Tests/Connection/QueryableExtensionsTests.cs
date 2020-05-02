@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using GraphQL.EntityFrameworkCore.Helpers.Connection;
 using GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure;
 using GraphQL.Types;
+using GraphQL.Types.Relay.DataObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
@@ -39,7 +40,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 First = 10,
                 IsAsc = true,
                 OrderBy = new string[] { "Name" },
-                After = ConnectionCursor.ToCursor("Leia"),
+                After = ConnectionCursor.ToCursor($"Leia{StarWarsData.LeiaId}"),
             };
 
             var result = await dbContext.Humans.ToConnection(request, dbContext.Model);
@@ -57,7 +58,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 First = 10,
                 IsAsc = true,
                 OrderBy = new string[] { "Name" },
-                Before = ConnectionCursor.ToCursor("Luke"),
+                Before = ConnectionCursor.ToCursor($"Luke{StarWarsData.LukeId}"),
             };
 
             var result = await dbContext.Humans.ToConnection(request, dbContext.Model);
@@ -200,6 +201,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
         [Fact]
         public void Should_BeValid_When_AfterAndBeforeIsntSet()
         {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
             var request = new Request
             {
                 First = 10,
@@ -207,7 +209,23 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 OrderBy = new string[] { "Id" },
             };
 
-            var validationResult = request.IsValid<Human, Human>();
+            var validationResult = request.IsValid<Human, Human>(dbContext.Model);
+
+            validationResult.IsValid.ShouldBeTrue();
+            validationResult.Errors.ShouldBeEmpty();
+        }
+
+        [Fact]
+        public void Should_BeValid_When_OrderByIsntSet()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var request = new Request
+            {
+                First = 10,
+                IsAsc = true,
+            };
+
+            var validationResult = request.IsValid<Human, Human>(dbContext.Model);
 
             validationResult.IsValid.ShouldBeTrue();
             validationResult.Errors.ShouldBeEmpty();
@@ -216,6 +234,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
         [Fact]
         public void Should_BeValid_When_AfterIsSet()
         {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
             var request = new Request
             {
                 First = 10,
@@ -224,7 +243,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 After = ConnectionCursor.ToCursor("Leia"),
             };
 
-            var validationResult = request.IsValid<Human, Human>();
+            var validationResult = request.IsValid<Human, Human>(dbContext.Model);
 
             validationResult.IsValid.ShouldBeTrue();
             validationResult.Errors.ShouldBeEmpty();
@@ -233,6 +252,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
         [Fact]
         public void Should_BeValid_When_BeforeIsSet()
         {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
             var request = new Request
             {
                 First = 10,
@@ -241,7 +261,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 Before = ConnectionCursor.ToCursor("Luke"),
             };
 
-            var validationResult = request.IsValid<Human, Human>();
+            var validationResult = request.IsValid<Human, Human>(dbContext.Model);
 
             validationResult.IsValid.ShouldBeTrue();
             validationResult.Errors.ShouldBeEmpty();
@@ -250,13 +270,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
         [Fact]
         public void Should_NotBeValid_When_FirstIsntSet()
         {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
             var request = new Request
             {
                 IsAsc = true,
                 OrderBy = new string[] { "Name" },
             };
 
-            var validationResult = request.IsValid<Human, Human>();
+            var validationResult = request.IsValid<Human, Human>(dbContext.Model);
 
             validationResult.IsValid.ShouldBeFalse();
             validationResult.Errors.ShouldNotBeEmpty();
@@ -265,6 +286,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
         [Fact]
         public void Should_NotBeValid_When_BeforeAndAfterIsSet()
         {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
             var request = new Request
             {
                 First = 10,
@@ -274,22 +296,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 After = ConnectionCursor.ToCursor("Leia"),
             };
 
-            var validationResult = request.IsValid<Human, Human>();
-
-            validationResult.IsValid.ShouldBeFalse();
-            validationResult.Errors.ShouldNotBeEmpty();
-        }
-
-        [Fact]
-        public void Should_NotBeValid_When_OrderByIsntSet()
-        {
-            var request = new Request
-            {
-                First = 10,
-                IsAsc = true,
-            };
-
-            var validationResult = request.IsValid<Human, Human>();
+            var validationResult = request.IsValid<Human, Human>(dbContext.Model);
 
             validationResult.IsValid.ShouldBeFalse();
             validationResult.Errors.ShouldNotBeEmpty();
@@ -320,13 +327,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
         [Fact]
         public void Should_BeValid_When_SourceAndReturnTypeIsDifferent()
         {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
             var request = new CloneRequest
             {
                 First = 10,
                 OrderBy = new string[] { "Id" },
             };
 
-            var validationResult = request.IsValid<Human, Clone>();
+            var validationResult = request.IsValid<Human, Clone>(dbContext.Model);
 
             validationResult.IsValid.ShouldBeTrue();
             validationResult.Errors.ShouldBeEmpty();
@@ -372,6 +380,28 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
             AssertQuerySuccess(query, expected);
         }
 
+        [Fact]
+        public async Task Should_BeValid_When_SourceAndReturnTypeIsDifferentAndImplementingMultiple()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var request = new MultipleCloneRequest
+            {
+                First = 10,
+                OrderBy = new string[] { "Id" },
+            };
+
+            var result = await dbContext.Humans.ToConnection(request, dbContext.Model);
+
+            result.TotalCount.ShouldBe(3);
+            result.Items.Count.ShouldBe(3);
+
+            var item = result.Items.First();
+
+            item.ShouldBeOfType<Clone>();
+            item.Name.ShouldNotBeNullOrEmpty();
+            item.ClonePlanet.ShouldNotBeNullOrEmpty();
+        }
+
         public class Request : IConnectionInput<Human>
         {
             public IResolveFieldContext<object> Context { get; set; }
@@ -390,6 +420,17 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
         }
 
         public class CloneRequest : IConnectionInput<Clone>
+        {
+            public IResolveFieldContext<object> Context { get; set; }
+            public string After { get; set; }
+            public string Before { get; set; }
+            public int First { get; set; }
+            public bool IsAsc { get; set; }
+            public string[] OrderBy { get; set; }
+            public string Filter { get; set; }
+        }
+
+        public class MultipleCloneRequest : Connection<Clone>, IConnectionInput<Clone>
         {
             public IResolveFieldContext<object> Context { get; set; }
             public string After { get; set; }

@@ -5,6 +5,8 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Connection
 {
@@ -13,7 +15,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
         public static readonly string DateTimeFormatPattern = "yyyy-MM-dd HH:mm:ss.fffffff";
         public static readonly string DateTimeOffsetFormatPattern = "yyyy-MM-dd HH:mm:ss.fffffff zzz";
 
-        public static Func<TModel, object> GetLambdaForCursor<TModel, TRequest>(IConnectionInput<TRequest> request)
+        public static Func<TSourceType, object> GetLambdaForCursor<TSourceType, TReturnType>(IConnectionInput<TReturnType> request, IModel model)
         {
             var objectToString = typeof(object).GetMethod("ToString");
             var dateTimeToString = typeof(DateTime).GetMethod("ToString", new Type[] { typeof(string) });
@@ -23,12 +25,13 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
 
             var concatMethod = typeof(string).GetMethod("Concat", new[] { typeof(string), typeof(string) });
 
-            var entityType = typeof(TModel);
+            var entityType = typeof(TSourceType);
 
             ParameterExpression arg = Expression.Parameter(entityType, "x");
             Expression selector = null;
 
-            request.OrderBy.ToList().ForEach(field =>
+            var orderBy = GetOrderBy<TSourceType, TReturnType>(request, model);
+            orderBy.ForEach(field =>
             {
                 var propertyInfo = entityType.GetProperty(field, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
                 Expression property = Expression.Property(arg, field);
@@ -70,7 +73,38 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
                 }
             });
 
-            return (Func<TModel, object>)Expression.Lambda(selector, new ParameterExpression[] { arg }).Compile();
+            return (Func<TSourceType, object>)Expression.Lambda(selector, new ParameterExpression[] { arg }).Compile();
+        }
+
+        public static List<string> GetOrderBy<TSourceType, TReturnType>(IConnectionInput<TReturnType> request, IModel model)
+        {
+            var orderBy = request.OrderBy != default ? request.OrderBy.ToList() : new List<string>();
+            var entityType = model.FindEntityType(typeof(TSourceType));
+            var primaryKeys = entityType?.FindPrimaryKey().Properties
+                    .Select(x => x.Name)
+                    .ToList();
+            var sourceType = typeof(TSourceType);
+
+            var hasUniqueColumn = false;
+            orderBy.ForEach(x =>
+            {
+                var sourceProperty = sourceType.GetProperty(x, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                var property = entityType?.FindProperty(sourceProperty.Name);
+                var isUnique = Attribute.IsDefined(sourceProperty, typeof(UniqueAttribute));
+
+                if ((property != default && (property.IsPrimaryKey() || entityType.FindForeignKeys(property).Where(y => y.IsUnique).Any()))
+                    || isUnique || new[] { typeof(Guid), typeof(DateTime), typeof(DateTimeOffset) }.Contains(sourceProperty.PropertyType))
+                {
+                    hasUniqueColumn = true;
+                }
+            });
+
+            if (!hasUniqueColumn && primaryKeys != default && primaryKeys.Any())
+            {
+                orderBy.AddRange(primaryKeys);
+            }
+
+            return orderBy;
         }
         
         public static (string firstCursor, string lastCursor) GetFirstAndLastCursor<TType, TCursor>(
@@ -93,20 +127,21 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             return (firstCursor, lastCursor);
         }
 
-        public static Type GetCursorType<TModel, TRequest>(IConnectionInput<TRequest> request)
+        public static Type GetCursorType<TSourceType, TReturnType>(IConnectionInput<TReturnType> request, IModel dbModel)
         {
-            if (request.OrderBy == null || request.OrderBy.Length == 0)
+            var orderBy = GetOrderBy<TSourceType, TReturnType>(request, dbModel);
+            if (orderBy == null || orderBy.Count == 0)
             {
                 throw new Exception("Order by is not defined");
             }
 
-            if (request.OrderBy.Length > 1)
+            if (orderBy.Count > 1)
             {
                 return typeof(string);
             }
 
-            var model = typeof(TModel);
-            var property = model.GetProperty(request.OrderBy.First(), BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+            var model = typeof(TSourceType);
+            var property = model.GetProperty(orderBy.First(), BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
             if (property == null)
             {

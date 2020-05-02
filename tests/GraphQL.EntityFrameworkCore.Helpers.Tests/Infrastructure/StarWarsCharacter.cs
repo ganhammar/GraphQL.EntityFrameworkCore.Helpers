@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using GraphQL.EntityFrameworkCore.Helpers.Connection;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
 {
@@ -13,8 +14,10 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
     public class Human : StarWarsCharacter
     {
         public string HomePlanet { get; set; }
+        [Unique]
         public int Order { get; set; }
         public DateTime CreatedAt { get; set; }
+        [Unique]
         public DateTime? UpdatedAt { get; set; }
         public DateTimeOffset UpdatedAtLocalTime { get; set; }
         public IEnumerable<Human> Friends { get; set; }

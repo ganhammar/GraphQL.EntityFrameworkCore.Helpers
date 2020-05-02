@@ -6,11 +6,15 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
 {
     public static class StarWarsData
     {
+        public static Guid LukeId = Guid.NewGuid();
+        public static Guid LeiaId = Guid.NewGuid();
+        public static Guid VaderId = Guid.NewGuid();
+
         public static async Task Seed(TestDbContext dbContext)
         {
             var luke = new Human
             {
-                Id = Guid.NewGuid(),
+                Id = LukeId,
                 Name = "Luke",
                 HomePlanet = "Tatooine",
                 Order = 2,
@@ -19,7 +23,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             };
             var leia = new Human
             {
-                Id = Guid.NewGuid(),
+                Id = LeiaId,
                 Name = "Leia",
                 HomePlanet = "Alderaan",
                 Friends = new List<Human> { luke },
@@ -33,7 +37,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             dbContext.Humans.Add(leia);
             dbContext.Humans.Add(new Human
             {
-                Id = Guid.NewGuid(),
+                Id = VaderId,
                 Name = "Vader",
                 HomePlanet = "Tatooine",
                 Order = 11,
