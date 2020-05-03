@@ -73,7 +73,7 @@ Field<ListGraphType<HumanGraphType>>()
     .Name("Humans")
     .Filterable()
     .ResolveAsync(async context => await dbContext.Humans
-        .Filter(context)
+        .Filter(context, dbContext.Model)
         .Select(context, dbContext.Model)
         .ToListAsync());
 ```

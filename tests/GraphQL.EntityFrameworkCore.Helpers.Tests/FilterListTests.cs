@@ -1,5 +1,8 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure;
+using GraphQL.Language.AST;
+using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
@@ -14,7 +17,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         {
             var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
 
-            var result = await dbContext.Humans.Filter("Leia").ToListAsync();
+            var result = await dbContext.Humans.Filter(GetContext("Leia"), dbContext.Model).ToListAsync();
 
             result.Count.ShouldBe(1);
         }
@@ -24,7 +27,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         {
             var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
 
-            var result = await dbContext.Humans.Filter("L").ToListAsync();
+            var result = await dbContext.Humans.Filter(GetContext("L"), dbContext.Model).ToListAsync();
 
             result.Count.ShouldBe(2);
         }
@@ -34,7 +37,36 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         {
             var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
 
-            var result = await dbContext.Humans.Filter("Jar Jar Binks").ToListAsync();
+            var result = await dbContext.Humans.Filter(GetContext("Jar Jar Binks"), dbContext.Model).ToListAsync();
+
+            result.ShouldBeEmpty();
+        }
+
+        [Fact]
+        public async Task Should_ReturnItems_When_NotQueryingForHomePlanet()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+
+            var context = new ResolveFieldContext<object>();
+
+            context.Arguments = new Dictionary<string, object>();
+            context.Arguments.Add("filter", "Tatooine");
+
+            context.SubFields = new Dictionary<string, Field>();
+            context.SubFields.Add("name", new Field(new NameNode("name"), new NameNode("Name")));
+            context.SubFields.Add("homePlanet", new Field(new NameNode("homePlanet"), new NameNode("HomePlanet")));
+
+            var result = await dbContext.Humans.Filter(context, dbContext.Model).ToListAsync();
+
+            result.Count.ShouldBe(2);
+        }
+
+        [Fact]
+        public async Task Should_NotReturnItems_When_NotQueryingFilterableField()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+
+            var result = await dbContext.Humans.Filter(GetContext("Tatooine"), dbContext.Model).ToListAsync();
 
             result.ShouldBeEmpty();
         }
@@ -69,6 +101,19 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             };
 
             var result = AssertQuerySuccess(query, expected);
+        }
+
+        private static IResolveFieldContext<object> GetContext(string filter)
+        {
+            var context = new ResolveFieldContext<object>();
+
+            context.Arguments = new Dictionary<string, object>();
+            context.Arguments.Add("filter", filter);
+
+            context.SubFields = new Dictionary<string, Field>();
+            context.SubFields.Add("name", new Field(new NameNode("name"), new NameNode("Name")));
+
+            return context;
         }
     }
 }

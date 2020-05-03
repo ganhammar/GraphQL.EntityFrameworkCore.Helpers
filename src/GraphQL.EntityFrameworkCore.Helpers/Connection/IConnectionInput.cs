@@ -1,4 +1,3 @@
-using System;
 using GraphQL.Types;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Connection
@@ -10,7 +9,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
         int First { get; set; }
         bool IsAsc { get; set; }
         string[] OrderBy { get; set; }
-        string Filter { get; set; }
         IResolveFieldContext<object> Context { get; set; }
     }
 }

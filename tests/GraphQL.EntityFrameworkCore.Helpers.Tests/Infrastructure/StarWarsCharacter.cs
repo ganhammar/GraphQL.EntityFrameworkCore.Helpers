@@ -13,6 +13,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
 
     public class Human : StarWarsCharacter
     {
+        [Filterable]
         public string HomePlanet { get; set; }
         [Unique]
         public int Order { get; set; }

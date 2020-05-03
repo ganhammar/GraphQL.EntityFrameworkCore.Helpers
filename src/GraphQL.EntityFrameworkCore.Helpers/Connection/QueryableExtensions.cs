@@ -28,7 +28,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             };
 
             // Filter list based on Filter property
-            query = query.Filter(request.Filter);
+            query = query.Filter(request.Context, model);
 
             connection.TotalCount = await query.CountAsync();
 

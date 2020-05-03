@@ -19,7 +19,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             input.Before = context.Before;
             input.IsAsc = isAsc != null ? isAsc.Value : true;
             input.OrderBy = context.GetArgument<string[]>("orderBy");
-            input.Filter = context.GetArgument<string>("filter");
             input.Context = context;
         }
 

@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using GraphQL.EntityFrameworkCore.Helpers.Connection;
 using GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure;
+using GraphQL.Language.AST;
 using GraphQL.Types;
 using GraphQL.Types.Relay.DataObjects;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +25,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 First = 10,
                 IsAsc = true,
                 OrderBy = new string[] { "Id" },
+                Context = GetContext(),
             };
 
             var result = await dbContext.Humans.ToConnection(request, dbContext.Model);
@@ -41,6 +44,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 IsAsc = true,
                 OrderBy = new string[] { "Name" },
                 After = ConnectionCursor.ToCursor($"Leia{StarWarsData.LeiaId}"),
+                Context = GetContext(),
             };
 
             var result = await dbContext.Humans.ToConnection(request, dbContext.Model);
@@ -59,6 +63,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 IsAsc = true,
                 OrderBy = new string[] { "Name" },
                 Before = ConnectionCursor.ToCursor($"Luke{StarWarsData.LukeId}"),
+                Context = GetContext(),
             };
 
             var result = await dbContext.Humans.ToConnection(request, dbContext.Model);
@@ -77,6 +82,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 IsAsc = true,
                 OrderBy = new string[] { "Order" },
                 After = ConnectionCursor.ToCursor("1"),
+                Context = GetContext(),
             };
 
             var result = await dbContext.Humans.ToConnection(request, dbContext.Model);
@@ -96,6 +102,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 IsAsc = true,
                 OrderBy = new string[] { "Id" },
                 After = ConnectionCursor.ToCursor("68316e17-5206-4af1-83b7-790bde49b184"),
+                Context = GetContext(),
             };
 
             var result = await dbContext.Humans.ToConnection(request, dbContext.Model);
@@ -114,6 +121,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 OrderBy = new string[] { "CreatedAt" },
                 After = ConnectionCursor.ToCursor(DateTime.Now.AddMinutes(-90)
                     .ToString(ConnectionCursor.DateTimeFormatPattern)),
+                Context = GetContext(),
             };
 
             var result = await dbContext.Humans.ToConnection(request, dbContext.Model);
@@ -134,6 +142,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 OrderBy = new string[] { "UpdatedAtLocalTime" },
                 After = ConnectionCursor.ToCursor(DateTimeOffset.Now.AddMinutes(-90)
                     .ToString(ConnectionCursor.DateTimeOffsetFormatPattern)),
+                Context = GetContext(),
             };
 
             var result = await dbContext.Humans.ToConnection(request, dbContext.Model);
@@ -154,6 +163,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 OrderBy = new string[] { "UpdatedAt" },
                 After = ConnectionCursor.ToCursor(DateTime.Now.AddMinutes(-1)
                     .ToString(ConnectionCursor.DateTimeFormatPattern)),
+                Context = GetContext(),
             };
 
             var result = await dbContext.Humans.ToConnection(request, dbContext.Model);
@@ -172,6 +182,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 IsAsc = true,
                 OrderBy = new string[] { "Name", "Order" },
                 After = ConnectionCursor.ToCursor("Leia1"),
+                Context = GetContext(),
             };
 
             var result = await dbContext.Humans.ToConnection(request, dbContext.Model);
@@ -189,7 +200,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 First = 10,
                 IsAsc = true,
                 OrderBy = new string[] { "Id" },
-                Filter = "Leia",
+                Context = GetContext("Leia"),
             };
 
             var result = await dbContext.Humans.ToConnection(request, dbContext.Model);
@@ -207,6 +218,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 First = 10,
                 IsAsc = true,
                 OrderBy = new string[] { "Id" },
+                Context = GetContext(),
             };
 
             var validationResult = request.Validate<Human, Human>(dbContext.Model);
@@ -223,6 +235,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
             {
                 First = 10,
                 IsAsc = true,
+                Context = GetContext(),
             };
 
             var validationResult = request.Validate<Human, Human>(dbContext.Model);
@@ -241,6 +254,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 IsAsc = true,
                 OrderBy = new string[] { "Name" },
                 After = ConnectionCursor.ToCursor("Leia"),
+                Context = GetContext(),
             };
 
             var validationResult = request.Validate<Human, Human>(dbContext.Model);
@@ -259,6 +273,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 IsAsc = true,
                 OrderBy = new string[] { "Name" },
                 Before = ConnectionCursor.ToCursor("Luke"),
+                Context = GetContext(),
             };
 
             var validationResult = request.Validate<Human, Human>(dbContext.Model);
@@ -275,6 +290,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
             {
                 IsAsc = true,
                 OrderBy = new string[] { "Name" },
+                Context = GetContext(),
             };
 
             var validationResult = request.Validate<Human, Human>(dbContext.Model);
@@ -294,6 +310,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 OrderBy = new string[] { "Name" },
                 Before = ConnectionCursor.ToCursor("Luke"),
                 After = ConnectionCursor.ToCursor("Leia"),
+                Context = GetContext(),
             };
 
             var validationResult = request.Validate<Human, Human>(dbContext.Model);
@@ -310,6 +327,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
             {
                 First = 10,
                 OrderBy = new string[] { "Id" },
+                Context = GetContext(),
             };
 
             var result = await dbContext.Humans.ToConnection(request, dbContext.Model);
@@ -332,6 +350,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
             {
                 First = 10,
                 OrderBy = new string[] { "Id" },
+                Context = GetContext(),
             };
 
             var validationResult = request.Validate<Human, Clone>(dbContext.Model);
@@ -388,6 +407,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
             {
                 First = 10,
                 OrderBy = new string[] { "Id" },
+                Context = GetContext(),
             };
 
             var result = await dbContext.Humans.ToConnection(request, dbContext.Model);
@@ -402,6 +422,23 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
             item.ClonePlanet.ShouldNotBeNullOrEmpty();
         }
 
+        private static IResolveFieldContext<object> GetContext(string filter = default)
+        {
+            var context = new ResolveFieldContext<object>();
+
+            context.Arguments = new Dictionary<string, object>();
+
+            if (filter != default)
+            {
+                context.Arguments.Add("filter", filter);
+            }
+
+            context.SubFields = new Dictionary<string, Field>();
+            context.SubFields.Add("name", new Field(new NameNode("name"), new NameNode("Name")));
+
+            return context;
+        }
+
         public class Request : IConnectionInput<Human>
         {
             public IResolveFieldContext<object> Context { get; set; }
@@ -410,7 +447,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
             public int First { get; set; }
             public bool IsAsc { get; set; }
             public string[] OrderBy { get; set; }
-            public string Filter { get; set; }
         }
 
         public class Clone : StarWarsCharacter
@@ -427,7 +463,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
             public int First { get; set; }
             public bool IsAsc { get; set; }
             public string[] OrderBy { get; set; }
-            public string Filter { get; set; }
         }
 
         public class MultipleCloneRequest : Connection<Clone>, IConnectionInput<Clone>
@@ -438,7 +473,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
             public int First { get; set; }
             public bool IsAsc { get; set; }
             public string[] OrderBy { get; set; }
-            public string Filter { get; set; }
         }
     }
 }

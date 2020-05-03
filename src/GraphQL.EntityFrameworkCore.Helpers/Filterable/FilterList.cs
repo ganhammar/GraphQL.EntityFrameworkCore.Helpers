@@ -5,16 +5,16 @@ using System.Reflection;
 using GraphQL.EntityFrameworkCore.Helpers.Connection;
 using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public static class FilterList
     {
-        public static IQueryable<TQuery> Filter<TQuery>(this IQueryable<TQuery> query, IResolveFieldContext<object> context)
-            => query.Filter(context.GetArgument<string>("filter"));
-
-        public static IQueryable<TQuery> Filter<TQuery>(this IQueryable<TQuery> query, string filter)
+        public static IQueryable<TQuery> Filter<TQuery>(this IQueryable<TQuery> query, IResolveFieldContext<object> context, IModel model)
         {
+            var filter = context?.GetArgument<string>("filter");
+            
             if (string.IsNullOrEmpty(filter))
             {
                 return query;
@@ -24,14 +24,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             var concatMethod = typeof(string).GetMethod("Concat", new[] { typeof(string), typeof(string) });
             var likeMethod = typeof(DbFunctionsExtensions).GetMethod("Like", new[] { typeof(DbFunctions), typeof(string), typeof(string) });
 
-            var queryEntityType = typeof(TQuery);
+            var entityType = typeof(TQuery);
 
-            var arg = Expression.Parameter(queryEntityType, "x");
+            var arg = Expression.Parameter(entityType, "x");
             var compareToExpression = Expression.Constant($"%{filter}%");
 
             Expression clause = null;
-            queryEntityType
-                .GetProperties()
+            ResolveFieldContextHelpers
+                .GetProperties(entityType, context.SubFields, model)
                 .Where(x => Attribute.IsDefined(x, typeof(FilterableAttribute)))
                 .ToList()
                 .ForEach(field =>
@@ -65,7 +65,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             var method = GetWhereMethod();
 
             MethodInfo genericMethod = method
-                .MakeGenericMethod(queryEntityType);
+                .MakeGenericMethod(entityType);
 
             return (IQueryable<TQuery>)genericMethod
                 .Invoke(genericMethod, new object[] { query, clause });
