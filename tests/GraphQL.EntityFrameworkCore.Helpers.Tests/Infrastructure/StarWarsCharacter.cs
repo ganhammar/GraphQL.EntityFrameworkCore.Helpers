@@ -14,7 +14,10 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
     public class Human : StarWarsCharacter
     {
         [Filterable]
-        public string HomePlanet { get; set; }
+        public string Species { get; set; }
+        [Filterable]
+        public string EyeColor { get; set; }
+        public Planet HomePlanet { get; set; }
         [Unique]
         public int Order { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -30,5 +33,18 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
         public string PrimaryFunction { get; set; }
         public Guid OwnerId { get; set; }
         public Human Owner { get; set; }
+    }
+
+    public class Planet
+    {
+        public Guid Id { get; set; }
+        [Filterable]
+        public string Name { get; set; }
+        [Filterable]
+        public string Region { get; set; }
+        [Filterable]
+        public string Sector { get; set; }
+        [Filterable]
+        public string System { get; set; }
     }
 }

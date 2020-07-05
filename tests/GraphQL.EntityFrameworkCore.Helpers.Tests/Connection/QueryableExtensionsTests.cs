@@ -43,7 +43,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 First = 10,
                 IsAsc = true,
                 OrderBy = new string[] { "Name" },
-                After = ConnectionCursor.ToCursor($"Leia{StarWarsData.LeiaId}"),
+                After = ConnectionCursor.ToCursor($"Anakin{StarWarsData.AnakinId}"),
                 Context = GetContext(),
             };
 
@@ -62,7 +62,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 First = 10,
                 IsAsc = true,
                 OrderBy = new string[] { "Name" },
-                Before = ConnectionCursor.ToCursor($"Luke{StarWarsData.LukeId}"),
+                Before = ConnectionCursor.ToCursor($"Leia{StarWarsData.LeiaId}"),
                 Context = GetContext(),
             };
 
@@ -128,7 +128,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
 
             result.TotalCount.ShouldBe(3);
             result.Items.Count.ShouldBe(2);
-            result.Items.First().Name.ShouldBe("Vader");
+            result.Items.First().Name.ShouldBe("Anakin");
         }
 
         [Fact]
@@ -149,7 +149,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
 
             result.TotalCount.ShouldBe(3);
             result.Items.Count.ShouldBe(2);
-            result.Items.First().Name.ShouldBe("Vader");
+            result.Items.First().Name.ShouldBe("Anakin");
         }
 
         [Fact]
@@ -181,7 +181,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 First = 10,
                 IsAsc = true,
                 OrderBy = new string[] { "Name", "Order" },
-                After = ConnectionCursor.ToCursor("Leia1"),
+                After = ConnectionCursor.ToCursor("Anakin11"),
                 Context = GetContext(),
             };
 
@@ -339,7 +339,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
 
             item.ShouldBeOfType<Clone>();
             item.Name.ShouldNotBeNullOrEmpty();
-            item.ClonePlanet.ShouldNotBeNullOrEmpty();
+            item.CloneColor.ShouldNotBeNullOrEmpty();
         }
 
         [Fact]
@@ -419,7 +419,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
 
             item.ShouldBeOfType<Clone>();
             item.Name.ShouldNotBeNullOrEmpty();
-            item.ClonePlanet.ShouldNotBeNullOrEmpty();
+            item.CloneColor.ShouldNotBeNullOrEmpty();
         }
 
         private static IResolveFieldContext<object> GetContext(string filter = default)
@@ -451,8 +451,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
 
         public class Clone : StarWarsCharacter
         {
-            [MapsFrom("HomePlanet")]
-            public string ClonePlanet { get; set; }
+            [MapsFrom("EyeColor")]
+            public string CloneColor { get; set; }
         }
 
         public class CloneRequest : IConnectionInput<Clone>

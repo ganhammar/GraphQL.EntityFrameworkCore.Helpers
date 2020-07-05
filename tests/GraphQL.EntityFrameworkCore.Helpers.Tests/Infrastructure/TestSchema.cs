@@ -42,13 +42,27 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
         }
     }
 
+    public class PlanetGraphType : ObjectGraphType<Planet>
+    {
+        public PlanetGraphType()
+        {
+            Field(x => x.Id, type: typeof(IdGraphType));
+            Field(x => x.Name);
+            Field(x => x.Region);
+            Field(x => x.Sector);
+            Field(x => x.System);
+        }
+    }
+
     public class HumanGraphType : ObjectGraphType<Human>
     {
         public HumanGraphType(IDataLoaderContextAccessor accessor, TestDbContext dbContext)
         {
             Field(x => x.Id, type: typeof(IdGraphType));
             Field(x => x.Name);
-            Field(x => x.HomePlanet);
+            Field(x => x.HomePlanet, type: typeof(PlanetGraphType));
+            Field(x => x.Species);
+            Field(x => x.EyeColor);
             Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
                 .Name("Friends")
                 .ResolveAsync(context =>

@@ -6,17 +6,39 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
 {
     public static class StarWarsData
     {
-        public static Guid LukeId = Guid.NewGuid();
+        public static Guid AnakinId = Guid.NewGuid();
         public static Guid LeiaId = Guid.NewGuid();
-        public static Guid VaderId = Guid.NewGuid();
+        public static Guid LukeId = Guid.NewGuid();
+
+        public static Guid TatooineId = Guid.NewGuid();
+        public static Guid AlderaanId = Guid.NewGuid();
 
         public static async Task Seed(TestDbContext dbContext)
         {
+            var tatooine = new Planet
+            {
+                Id = TatooineId,
+                Name = "Tatooine",
+                Region = "Outer Rim",
+                Sector = "Arkanis",
+                System = "Tatoo",
+            };
+            var alderaan = new Planet
+            {
+                Id = AlderaanId,
+                Name = "Alderaan",
+                Region = "Core Worlds",
+                Sector = "Alderaan",
+                System = "Alderaan",
+            };
+            
             var luke = new Human
             {
                 Id = LukeId,
                 Name = "Luke",
-                HomePlanet = "Tatooine",
+                Species = "Human",
+                HomePlanet = tatooine,
+                EyeColor = "Blue",
                 Order = 2,
                 CreatedAt = DateTime.Now.AddHours(-1),
                 UpdatedAtLocalTime = DateTimeOffset.Now.AddHours(-1),
@@ -25,7 +47,9 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             {
                 Id = LeiaId,
                 Name = "Leia",
-                HomePlanet = "Alderaan",
+                Species = "Human",
+                HomePlanet = alderaan,
+                EyeColor = "Brown",
                 Friends = new List<Human> { luke },
                 Order = 1,
                 CreatedAt = DateTime.Now.AddHours(-3),
@@ -37,9 +61,11 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             dbContext.Humans.Add(leia);
             dbContext.Humans.Add(new Human
             {
-                Id = VaderId,
-                Name = "Vader",
-                HomePlanet = "Tatooine",
+                Id = AnakinId,
+                Name = "Anakin",
+                Species = "Human",
+                HomePlanet = tatooine,
+                EyeColor = "Blue",
                 Order = 11,
                 CreatedAt = DateTime.Now.AddHours(-2),
                 UpdatedAtLocalTime = DateTimeOffset.Now.AddHours(-2),

@@ -43,18 +43,18 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         }
 
         [Fact]
-        public async Task Should_ReturnItems_When_NotQueryingForHomePlanet()
+        public async Task Should_ReturnItems_When_NotQueryingForEyeColor()
         {
             var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
 
             var context = new ResolveFieldContext<object>();
 
             context.Arguments = new Dictionary<string, object>();
-            context.Arguments.Add("filter", "Tatooine");
+            context.Arguments.Add("filter", "Blue");
 
             context.SubFields = new Dictionary<string, Field>();
             context.SubFields.Add("name", new Field(new NameNode("name"), new NameNode("Name")));
-            context.SubFields.Add("homePlanet", new Field(new NameNode("homePlanet"), new NameNode("HomePlanet")));
+            context.SubFields.Add("eyeColor", new Field(new NameNode("eyeColor"), new NameNode("EyeColor")));
 
             var result = await dbContext.Humans.Filter(context, dbContext.Model).ToListAsync();
 
@@ -66,7 +66,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         {
             var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
 
-            var result = await dbContext.Humans.Filter(GetContext("Tatooine"), dbContext.Model).ToListAsync();
+            var result = await dbContext.Humans.Filter(GetContext("Blue"), dbContext.Model).ToListAsync();
 
             result.ShouldBeEmpty();
         }

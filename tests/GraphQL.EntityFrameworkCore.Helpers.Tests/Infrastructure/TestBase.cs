@@ -51,6 +51,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .AddSingleton<IDataLoaderContextAccessor, DataLoaderContextAccessor>()
                 .AddSingleton<IDocumentExecutionListener, DataLoaderDocumentListener>()
                 .AddSingleton<ISchema, TestSchema>()
+                .AddTransient<PlanetGraphType>()
                 .AddTransient<HumanGraphType>()
                 .AddTransient<DroidGraphType>()
                 .AddTransient<TestDbContext>(_ => dbContext);
