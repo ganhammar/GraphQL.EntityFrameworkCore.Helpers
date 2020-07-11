@@ -60,9 +60,21 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
         {
             Field(x => x.Id, type: typeof(IdGraphType));
             Field(x => x.Name);
-            Field(x => x.HomePlanet, type: typeof(PlanetGraphType));
             Field(x => x.Species);
             Field(x => x.EyeColor);
+            Field<PlanetGraphType, Planet>()
+                .Name("HomePlanet")
+                .ResolveAsync(context =>
+                {
+                    var loader = accessor.Context.GetOrAddBatchLoader<Guid, Planet>(
+                        "GetHomePlanets",
+                        async (planetIds) => await dbContext.Planets
+                            .Where(x => planetIds.Contains(x.Id))
+                            .Select(context, dbContext.Model)
+                            .ToDictionaryAsync(x => x.Id, x => x));
+
+                    return loader.LoadAsync(context.Source.HomePlanetId);
+                });
             Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
                 .Name("Friends")
                 .ResolveAsync(context =>

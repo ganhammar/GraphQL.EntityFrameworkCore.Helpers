@@ -31,6 +31,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 Sector = "Alderaan",
                 System = "Alderaan",
             };
+            dbContext.Planets.Add(tatooine);
+            dbContext.Planets.Add(alderaan);
             
             var luke = new Human
             {

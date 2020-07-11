@@ -13,5 +13,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
 
         public DbSet<Human> Humans { get; set; }
         public DbSet<Droid> Droids { get; set; }
+        public DbSet<Planet> Planets { get; set; }
     }
 }

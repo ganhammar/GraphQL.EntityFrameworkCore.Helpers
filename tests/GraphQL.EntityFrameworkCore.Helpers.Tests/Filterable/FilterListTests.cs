@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure;
 using GraphQL.Language.AST;
@@ -43,7 +44,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         }
 
         [Fact]
-        public async Task Should_ReturnItems_When_NotQueryingForEyeColor()
+        public async Task Should_ReturnItems_When_QueryingForEyeColor()
         {
             var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
 
@@ -98,6 +99,137 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                         name = human.Name,
                     },
                 },
+            };
+
+            var result = AssertQuerySuccess(query, expected);
+        }
+
+        [Fact]
+        public async Task Should_ReturnItems_When_FilteringOnDataLoadedProperty()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var homePlanetName = "tatooine";
+            var humans = await dbContext.Humans
+                .Include(x => x.HomePlanet)
+                .Include(x => x.Friends)
+                .Where(x => EF.Functions.Like(x.HomePlanet.Name, homePlanetName))
+                .Select(x => new
+                {
+                    id = x.Id,
+                    name = x.Name,
+                    homePlanet = new
+                    {
+                        name = x.HomePlanet.Name,
+                    },
+                    friends = x.Friends.Select(y => new
+                    {
+                        name = y.Name,
+                    }),
+                })
+                .ToListAsync();
+
+            humans.Count.ShouldBe(2);
+
+            var query = $@"
+                query humans {{
+                    humans(filter: ""{homePlanetName}"") {{
+                        id
+                        name
+                        homePlanet {{
+                            name
+                        }}
+                        friends {{
+                            name
+                        }}
+                    }}
+                }}
+            ";
+
+            var expected = new
+            {
+                humans,
+            };
+
+            var result = AssertQuerySuccess(query, expected);
+        }
+
+        [Fact]
+        public async Task Should_ReturnLukeAndLeia_When_FilteringOnLeiaWithFriends()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var name = "leia";
+            var humans = await dbContext.Humans
+                .Include(x => x.Friends)
+                .Where(x => EF.Functions.Like(x.Name, name) || x.Friends.Any(y => EF.Functions.Like(y.Name, name)))
+                .Select(x => new
+                {
+                    id = x.Id,
+                    name = x.Name,
+                    friends = x.Friends.Select(y => new
+                    {
+                        name = y.Name,
+                    }),
+                })
+                .ToListAsync();
+
+            humans.Count.ShouldBe(2);
+
+            var query = $@"
+                query humans {{
+                    humans(filter: ""{name}"") {{
+                        id
+                        name
+                        friends {{
+                            name
+                        }}
+                    }}
+                }}
+            ";
+
+            var expected = new
+            {
+                humans,
+            };
+
+            var result = AssertQuerySuccess(query, expected);
+        }
+
+        [Fact]
+        public async Task Should_ReturnVader_When_FilteringOnAnakinWithFriends()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var name = "anakin";
+            var humans = await dbContext.Humans
+                .Include(x => x.Friends)
+                .Where(x => EF.Functions.Like(x.Name, name) || x.Friends.Any(y => EF.Functions.Like(y.Name, name)))
+                .Select(x => new
+                {
+                    id = x.Id,
+                    name = x.Name,
+                    friends = x.Friends.Select(y => new
+                    {
+                        name = y.Name,
+                    }),
+                })
+                .ToListAsync();
+
+            humans.Count.ShouldBe(1);
+
+            var query = $@"
+                query humans {{
+                    humans(filter: ""{name}"") {{
+                        id
+                        name
+                        friends {{
+                            name
+                        }}
+                    }}
+                }}
+            ";
+
+            var expected = new
+            {
+                humans,
             };
 
             var result = AssertQuerySuccess(query, expected);
