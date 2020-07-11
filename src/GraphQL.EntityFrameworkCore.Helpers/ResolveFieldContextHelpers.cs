@@ -34,8 +34,13 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                         }
 
                         var navigationProperty = navigationProperties.Where(x => x.Name == property.Name).First();
+                        var foreignKeyProperties = navigationProperty.ForeignKey.Properties
+                            .Where(x => x.PropertyInfo != null).Select(x => x.PropertyInfo);
 
-                        properties.AddRange(navigationProperty.ForeignKey.Properties.Select(x => x.PropertyInfo));
+                        if (foreignKeyProperties.Any())
+                        {
+                            properties.AddRange(foreignKeyProperties);
+                        }
                     }
                     else
                     {
@@ -56,7 +61,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return properties;
         }
 
-        private static IDictionary<string, Field> GetSelection(IDictionary<string, Field> fields)
+        public static IDictionary<string, Field> GetSelection(IDictionary<string, Field> fields)
         {
             // The query is a connection, get the selection from node instead
             if (fields.Any(x => x.Key == "edges"))
