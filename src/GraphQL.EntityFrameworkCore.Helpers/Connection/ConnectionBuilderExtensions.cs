@@ -1,4 +1,5 @@
 using GraphQL.Builders;
+using GraphQL.EntityFrameworkCore.Helpers.Filterable;
 using GraphQL.Types;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Connection

@@ -14,49 +14,46 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         public static List<PropertyInfo> GetProperties(Type entityType, IDictionary<string, Field> fields, IModel model)
         {
             var entity = model.FindEntityType(entityType);
-            var navigationProperties = entity.GetNavigations();
             var properties = new List<PropertyInfo>();
             var selection = GetSelection(fields);
+            var navigationProperties = entity.GetNavigations();
 
             foreach (var field in selection)
             {
                 // Ignore case, camelCase vs PascalCase
                 var property = entityType.GetProperty(field.Value.Name, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
-                if (property != null)
+                if (property != null && navigationProperties.Any(x => x.Name == property.Name) == false)
                 {
-                    // If navigation property, include foreign key value(s) and expect data loader
-                    if (navigationProperties.Any(x => x.Name == property.Name))
-                    {
-                        if (typeof(IEnumerable).IsAssignableFrom(property.PropertyType))
-                        {
-                            continue;
-                        }
+                    properties.Add(property);
+                }
+            }
 
-                        var navigationProperty = navigationProperties.Where(x => x.Name == property.Name).First();
-                        var foreignKeyProperties = navigationProperty.ForeignKey.Properties
-                            .Where(x => x.PropertyInfo != null).Select(x => x.PropertyInfo);
+            // Include foreign key value(s) and expect data loader or is data loaded
+            foreach (var navigationProperty in navigationProperties)
+            {
+                if (typeof(IEnumerable).IsAssignableFrom(navigationProperty.PropertyInfo.PropertyType))
+                {
+                    continue;
+                }
 
-                        if (foreignKeyProperties.Any())
-                        {
-                            properties.AddRange(foreignKeyProperties);
-                        }
-                    }
-                    else
-                    {
-                        properties.Add(property);
-                    }
+                var foreignKeyProperties = navigationProperty.ForeignKey.Properties
+                    .Where(x => x.PropertyInfo != null).Select(x => x.PropertyInfo);
+
+                if (foreignKeyProperties.Any())
+                {
+                    properties.AddRange(foreignKeyProperties);
                 }
             }
 
             // Include primary key
-            entity.FindPrimaryKey().Properties.ToList().ForEach(x =>
+            foreach (var property in entity.FindPrimaryKey().Properties)
             {
-                if (properties.Any(y => y.Name == x.PropertyInfo.Name) == false)
+                if (properties.Any(y => y.Name == property.PropertyInfo.Name) == false)
                 {
-                    properties.Add(x.PropertyInfo);
+                    properties.Add(property.PropertyInfo);
                 }
-            });
+            }
 
             return properties;
         }

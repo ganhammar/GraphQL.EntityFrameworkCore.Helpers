@@ -10,15 +10,15 @@ using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
-namespace GraphQL.EntityFrameworkCore.Helpers
+namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
 {
     public static class FilterList
     {
         public static IQueryable<TQuery> Filter<TQuery>(this IQueryable<TQuery> query, IResolveFieldContext<object> context, IModel model)
         {
-            var filter = context?.GetArgument<string>("filter");
+            var filter = GetFilter(context);
             
-            if (string.IsNullOrEmpty(filter))
+            if (filter == default)
             {
                 return query;
             }
@@ -26,11 +26,72 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return AddWhere(query, filter, context, model);
         }
 
-        private static IQueryable<TQuery> AddWhere<TQuery>(this IQueryable<TQuery> query, string filter, IResolveFieldContext<object> context, IModel model)
+        private static FilterableInput GetFilter(IResolveFieldContext<object> context)
+        {
+            if (context == default)
+            {
+                return default;
+            }
+
+            var fields = GetOperationBranch(context.Operation.SelectionSet, context.FieldName);
+
+            foreach (Field field in fields)
+            {
+                var filter = field.Arguments?.FirstOrDefault(x => x.Name.ToLower() == "filter");
+
+                if (filter != default)
+                {
+                    var filterInputReference = (VariableReference)filter.Children.First(x => x.GetType() == typeof(VariableReference));
+                    var input = GetFilterableInput(filterInputReference.Name, context);
+
+                    if (context.FieldName == field.Name || input.Mode == FilterableModes.Deep)
+                    {
+                        return input;
+                    }
+                }
+            }
+
+            return default;
+        }
+
+        private static FilterableInput GetFilterableInput(string inputName, IResolveFieldContext<object> context)
+        {
+            var variable = context.Variables.First(x => x.Name == inputName);
+            var arguments = variable.Value as IDictionary<string, object>;
+
+            return (FilterableInput)arguments.ToObject(typeof(FilterableInput));
+        }
+
+        private static List<Field> GetOperationBranch(SelectionSet operation, string target)
+        {
+            var result = new List<Field>();
+
+            foreach (Field selection in operation.Selections)
+            {
+                if (selection.Name == target)
+                {
+                    result.Add(selection);
+                }
+                else
+                {
+                    var children = GetOperationBranch(selection.SelectionSet, target);
+
+                    if (children.Any())
+                    {
+                        result.AddRange(children);
+                        result.Add(selection);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        private static IQueryable<TQuery> AddWhere<TQuery>(this IQueryable<TQuery> query, FilterableInput filter, IResolveFieldContext<object> context, IModel model)
         {
             var entityType = typeof(TQuery);
             var argument = Expression.Parameter(entityType);
-            var expressions = GetSelectionPaths(argument, filter, entityType, context.SubFields, model, query);
+            var expressions = GetSelectionPaths(argument, filter.Fields, entityType, context.SubFields, model, query);
 
             if (expressions == default)
             {
@@ -54,7 +115,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 .Invoke(genericMethod, new object[] { query, clause });
         }
 
-        private static List<Expression> GetSelectionPaths<TQuery>(Expression argument, string filter, Type entityType, IDictionary<string, Field> selection, IModel model, IQueryable<TQuery> query)
+        private static List<Expression> GetSelectionPaths<TQuery>(Expression argument, IEnumerable<FilterableInputField> fields, Type entityType, IDictionary<string, Field> selection, IModel model, IQueryable<TQuery> query)
         {
             var result = new List<Expression>();
             var entity = model.FindEntityType(entityType);
@@ -80,7 +141,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
                             GetSelectionPaths(
                                 subArgument,
-                                filter,
+                                GetFilterFields(field.Value.Name, fields),
                                 targetType,
                                 ToDictionary(field),
                                 model,
@@ -95,7 +156,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                         {
                             result.AddRange(GetSelectionPaths(
                                 Expression.Property(argument, property.Name),
-                                filter,
+                                GetFilterFields(field.Value.Name, fields),
                                 targetType,
                                 ToDictionary(field),
                                 model,
@@ -106,21 +167,39 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 }
             }
 
-            result.Add(GetExpression(argument, filter, entityType, selection, model));
+            var expression = GetExpression(argument, fields, entityType, selection, model);
+            if (expression != default)
+            {
+                result.Add(expression);
+            }
 
             return result;
         }
 
+        private static IEnumerable<FilterableInputField> GetFilterFields(string fieldName, IEnumerable<FilterableInputField> fields)
+        {
+            var subFilter = fields.FirstOrDefault(x => x.Target.Equals(fieldName, StringComparison.InvariantCultureIgnoreCase));
+
+            if (subFilter == default)
+            {
+                return fields.Where(x => x.Target.Equals("All", StringComparison.InvariantCultureIgnoreCase));
+            }
+            
+            return subFilter.Fields;
+        }
+
+        private static string GetFilterValueForField(string fieldName, IEnumerable<FilterableInputField> fields)
+            => fields.FirstOrDefault(x => x.Target.Equals(fieldName, StringComparison.InvariantCultureIgnoreCase))?.Value 
+                ?? fields.FirstOrDefault(x => x.Target.Equals("All", StringComparison.InvariantCultureIgnoreCase))?.Value;
+
         private static Dictionary<string, Field> ToDictionary(KeyValuePair<string, Field> field)
             => field.Value.SelectionSet.Selections.ToDictionary(x => (x as Field).Name, x => x as Field);
 
-        private static Expression GetExpression(Expression argument, string filter, Type entityType, IDictionary<string, Field> selection, IModel model)
+        private static Expression GetExpression(Expression argument, IEnumerable<FilterableInputField> fields, Type entityType, IDictionary<string, Field> selection, IModel model)
         {
             var convertToStringMethod = typeof(object).GetMethod("ToString");
             var concatMethod = typeof(string).GetMethod("Concat", new[] { typeof(string), typeof(string) });
             var likeMethod = typeof(DbFunctionsExtensions).GetMethod("Like", new[] { typeof(DbFunctions), typeof(string), typeof(string) });
-
-            var compareToExpression = Expression.Constant($"%{filter}%");
 
             Expression clause = default;
             ResolveFieldContextHelpers
@@ -129,6 +208,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 .ToList()
                 .ForEach(field =>
                 {
+                    var filter = GetFilterValueForField(field.Name, fields);
+
+                    if (filter == default)
+                    {
+                        return;
+                    }
+
+                    var compareToExpression = Expression.Constant($"%{filter}%");
                     Expression property = Expression.MakeMemberAccess(argument, field);
 
                     if (field.PropertyType != typeof(string))

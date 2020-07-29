@@ -1,13 +1,12 @@
 using GraphQL.Builders;
-using GraphQL.Types;
 
-namespace GraphQL.EntityFrameworkCore.Helpers
+namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
 {
     public static class ConnectionBuilderExtensions
     {
         public static ConnectionBuilder<TSourceType> Filterable<TSourceType>(this ConnectionBuilder<TSourceType> builder)
         {
-            builder.Argument<StringGraphType>("filter", "String to filter the list by");
+            builder.Argument<FilterableInputGraphType>("filter", string.Empty);
 
             return builder;
         }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using GraphQL.EntityFrameworkCore.Helpers.Connection;
+using GraphQL.EntityFrameworkCore.Helpers.Filterable;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
 {
@@ -47,5 +48,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
         public string Sector { get; set; }
         [Filterable]
         public string System { get; set; }
+        public IEnumerable<Human> Habitants { get; set; }
     }
 }

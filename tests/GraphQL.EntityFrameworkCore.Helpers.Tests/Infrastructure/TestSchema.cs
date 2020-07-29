@@ -5,6 +5,7 @@ using GraphQL.DataLoader;
 using GraphQL.Types;
 using GraphQL.EntityFrameworkCore.Helpers.Connection;
 using Microsoft.EntityFrameworkCore;
+using GraphQL.EntityFrameworkCore.Helpers.Filterable;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
 {
@@ -39,18 +40,47 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
 
                     return await dbContext.Droids.ToConnection(request, dbContext.Model);
                 });
+            
+            Field<ListGraphType<PlanetGraphType>>()
+                .Name("Planets")
+                .Filterable()
+                .ResolveAsync(async context => await dbContext.Planets
+                    .Filter(context, dbContext.Model)
+                    .Select(context, dbContext.Model)
+                    .ToListAsync());
         }
     }
 
     public class PlanetGraphType : ObjectGraphType<Planet>
     {
-        public PlanetGraphType()
+        public PlanetGraphType(IDataLoaderContextAccessor accessor, TestDbContext dbContext)
         {
             Field(x => x.Id, type: typeof(IdGraphType));
             Field(x => x.Name);
             Field(x => x.Region);
-            Field(x => x.Sector);
+            Field(x => x.Sector).Name("StarSector");
             Field(x => x.System);
+            Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
+                .Name("Habitants")
+                .ResolveAsync(context =>
+                {
+                    var loader = accessor.Context.GetOrAddCollectionBatchLoader<Guid, Human>(
+                        "GetHabitants",
+                        async (planetIds) =>
+                        {
+                            var humans = await dbContext.Humans
+                                .Where(x => planetIds.Contains(x.HomePlanetId))
+                                .Filter(context, dbContext.Model)
+                                .Select(context, dbContext.Model)
+                                .ToListAsync();
+
+                            return humans
+                                .Select(x => new KeyValuePair<Guid, Human>(x.HomePlanetId, x))
+                                .ToLookup(x => x.Key, x => x.Value);
+                        });
+
+                    return loader.LoadAsync(context.Source.Id);
+                });
         }
     }
 
@@ -84,12 +114,13 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                         async (humanIds) =>
                         {
                             var humans = await dbContext.Humans
-                                .Where(x => humanIds.Contains(x.Id))
                                 .Include(x => x.Friends)
+                                .Where(x => x.Friends.Any(y => humanIds.Contains(y.Id)))
+                                .Filter(context, dbContext.Model)
                                 .ToListAsync();
 
                             return humans
-                                .SelectMany(x => x.Friends.Select(y => new KeyValuePair<Guid, Human>(x.Id, y)))
+                                .SelectMany(x => x.Friends.Select(y => new KeyValuePair<Guid, Human>(y.Id, x)))
                                 .ToLookup(x => x.Key, x => x.Value);
                         });
 

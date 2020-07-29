@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading;
 using GraphQL.Conversion;
 using GraphQL.DataLoader;
+using GraphQL.EntityFrameworkCore.Helpers.Filterable;
 using GraphQL.Execution;
 using GraphQL.SystemTextJson;
 using GraphQL.Types;
@@ -48,6 +49,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             }
 
             services
+                .AddGraphQLEntityFrameworkCoreHelpers()
                 .AddSingleton<IDataLoaderContextAccessor, DataLoaderContextAccessor>()
                 .AddSingleton<IDocumentExecutionListener, DataLoaderDocumentListener>()
                 .AddSingleton<ISchema, TestSchema>()
