@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -8,18 +9,18 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public static class FieldHelpers
     {
-        private static Dictionary<string, Dictionary<EventStreamFieldType, string>> _properties = new Dictionary<string, Dictionary<EventStreamFieldType, string>>();
+        public static ConcurrentDictionary<string, ConcurrentDictionary<EventStreamFieldType, string>> _properties = new ConcurrentDictionary<string, ConcurrentDictionary<EventStreamFieldType, string>>();
 
         public static void Map(Type entityType, EventStreamFieldType field, PropertyInfo property)
         {
             if (_properties.ContainsKey(entityType.FullName) == false)
             {
-                _properties.Add(entityType.FullName, new Dictionary<EventStreamFieldType, string>());
+                _properties.TryAdd(entityType.FullName, new ConcurrentDictionary<EventStreamFieldType, string>());
             }
 
             if (_properties[entityType.FullName].ContainsKey(field) == false)
             {
-                _properties[entityType.FullName].Add(field, property.Name);
+                _properties[entityType.FullName].TryAdd(field, property.Name);
             }
             else
             {
