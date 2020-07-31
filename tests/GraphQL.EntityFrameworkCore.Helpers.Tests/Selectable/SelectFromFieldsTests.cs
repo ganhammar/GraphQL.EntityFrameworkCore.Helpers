@@ -77,6 +77,46 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests
 
             var result = AssertQuerySuccess(query, expected);
         }
+
+        [Fact]
+        public async Task Should_ReturnPlanetsWithHabitants_When_FieldsHasBeenRenamed()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var planets = await dbContext.Planets
+                .Include(x => x.Habitants)
+                .Select(x => new
+                {
+                    id = x.Id,
+                    name = x.Name,
+                    residents = x.Habitants.Select(y => new
+                    {
+                        id = y.Id,
+                    }),
+                })
+                .ToListAsync();
+
+            planets.Count().ShouldBe(2);
+            planets.First().residents.ShouldNotBeEmpty();
+
+            var query = @"
+                query planets {
+                    planets {
+                        id
+                        name
+                        residents {
+                            id
+                        }
+                    }
+                }
+            ";
+
+            var expected = new
+            {
+                planets,
+            };
+
+            var result = AssertQuerySuccess(query, expected);
+        }
         
         [Fact]
         public async Task Should_ReturnHumansWithOnlyRequestedFields_When_SelectingFromFieldContext()
