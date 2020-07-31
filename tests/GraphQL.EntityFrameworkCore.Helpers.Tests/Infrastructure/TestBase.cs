@@ -5,7 +5,6 @@ using System.Text.Json;
 using System.Threading;
 using GraphQL.Conversion;
 using GraphQL.DataLoader;
-using GraphQL.EntityFrameworkCore.Helpers.Filterable;
 using GraphQL.Execution;
 using GraphQL.SystemTextJson;
 using GraphQL.Types;

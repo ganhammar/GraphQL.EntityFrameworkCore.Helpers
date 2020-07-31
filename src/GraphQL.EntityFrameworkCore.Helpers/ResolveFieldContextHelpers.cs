@@ -21,7 +21,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             foreach (var field in selection)
             {
                 // Ignore case, camelCase vs PascalCase
-                var property = entityType.GetProperty(field.Value.Name, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                var property = entityType.GetProperty(FieldHelpers.GetPropertyName(entityType, field.Value.Name), BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
                 if (property != null && navigationProperties.Any(x => x.Name == property.Name) == false)
                 {

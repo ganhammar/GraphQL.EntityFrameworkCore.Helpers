@@ -58,10 +58,13 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             Field(x => x.Id, type: typeof(IdGraphType));
             Field(x => x.Name);
             Field(x => x.Region);
-            Field(x => x.Sector).Name("StarSector");
+            Field(x => x.Sector)
+                .Property(x => x.Sector)
+                .Name("StarSector");
             Field(x => x.System);
             Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
-                .Name("Habitants")
+                .Name("Residents")
+                .Property(x => x.Habitants)
                 .ResolveAsync(context =>
                 {
                     var loader = accessor.Context.GetOrAddCollectionBatchLoader<Guid, Human>(

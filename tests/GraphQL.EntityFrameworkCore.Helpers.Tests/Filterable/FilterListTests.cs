@@ -364,7 +364,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
                 {
                     id = x.Id,
                     name = x.Name,
-                    habitants = x.Habitants
+                    residents = x.Habitants
                         .Where(y => EF.Functions.Like(y.Name, humanName) ||
                             y.Friends.Any(z => EF.Functions.Like(z.Name, humanName)))
                         .Select(y => new
@@ -387,7 +387,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
                     planets(filter: $filterInput) {{
                         id
                         name
-                        habitants {{
+                        residents {{
                             name
                             friends {{
                                 name
@@ -536,6 +536,50 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
             var expected = new
             {
                 humans,
+            };
+
+            var result = AssertQuerySuccess(query, expected, inputs);
+        }
+
+        [Fact]
+        public async Task Should_Return_When_FilteringOnStarSector()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var sectorName = "alderaan";
+            var planets = await dbContext.Planets
+                .Where(x => EF.Functions.Like(x.Sector, sectorName))
+                .Select(x => new
+                {
+                    starSector = x.Sector,
+                })
+                .ToListAsync();
+
+            planets.Count.ShouldBe(1);
+
+            var query = $@"
+                query planets($filterInput: FilterInput) {{
+                    planets(filter: $filterInput) {{
+                        starSector
+                    }}
+                }}
+            ";
+
+            var inputs = $@"
+                {{
+                    ""filterInput"": {{
+                        ""fields"": [
+                            {{
+                                ""target"": ""starSector"",
+                                ""value"": ""{sectorName}""
+                            }}
+                        ]
+                    }}
+                }}
+            ".ToInputs();
+
+            var expected = new
+            {
+                planets,
             };
 
             var result = AssertQuerySuccess(query, expected, inputs);

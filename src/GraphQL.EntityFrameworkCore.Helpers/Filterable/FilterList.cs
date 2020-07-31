@@ -124,7 +124,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
             foreach (var field in selection)
             {
                 // Ignore case, camelCase vs PascalCase
-                var property = entityType.GetProperty(field.Value.Name, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                var property = entityType.GetProperty(FieldHelpers.GetPropertyName(entityType, field.Value.Name), BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
                 if (property != null)
                 {
@@ -208,7 +208,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
                 .ToList()
                 .ForEach(field =>
                 {
-                    var filter = GetFilterValueForField(field.Name, fields);
+                    var filter = GetFilterValueForField(FieldHelpers.GetSchemaName(entityType, field.Name), fields);
 
                     if (filter == default)
                     {
