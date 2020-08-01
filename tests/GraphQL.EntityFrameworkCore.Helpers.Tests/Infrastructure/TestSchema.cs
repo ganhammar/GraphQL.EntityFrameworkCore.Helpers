@@ -59,7 +59,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             Field(x => x.Name);
             Field(x => x.Region);
             Field(x => x.Sector)
-                .Property(x => x.Sector)
+                .FilterableProperty(x => x.Sector)
                 .Name("StarSector");
             Field(x => x.System);
             Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()

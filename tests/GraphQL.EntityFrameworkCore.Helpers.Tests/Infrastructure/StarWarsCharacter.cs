@@ -44,7 +44,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
         public string Name { get; set; }
         [Filterable]
         public string Region { get; set; }
-        [Filterable]
         public string Sector { get; set; }
         [Filterable]
         public string System { get; set; }

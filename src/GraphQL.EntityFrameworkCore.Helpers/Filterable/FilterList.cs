@@ -255,7 +255,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
             Expression orClause = default;
             ResolveFieldContextHelpers
                 .GetProperties(entityType, selection, model)
-                .Where(x => Attribute.IsDefined(x, typeof(FilterableAttribute)))
+                .Where(FilterableHelpers.IsFilterable)
                 .ToList()
                 .ForEach(field =>
                 {

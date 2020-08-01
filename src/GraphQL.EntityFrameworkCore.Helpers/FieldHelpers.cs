@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using GraphQL.Types;
 
@@ -9,7 +10,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public static class FieldHelpers
     {
-        public static ConcurrentDictionary<string, ConcurrentDictionary<EventStreamFieldType, string>> _properties = new ConcurrentDictionary<string, ConcurrentDictionary<EventStreamFieldType, string>>();
+        private static ConcurrentDictionary<string, ConcurrentDictionary<EventStreamFieldType, string>> _properties = new ConcurrentDictionary<string, ConcurrentDictionary<EventStreamFieldType, string>>();
 
         public static void Map(Type entityType, EventStreamFieldType field, PropertyInfo property)
         {
@@ -56,6 +57,34 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 .FirstOrDefault();
 
             return property?.Key.Name ?? propertyName;
+        }
+
+        public static PropertyInfo GetPropertyInfo<TSourceType, TProperty>(Expression<Func<TSourceType, TProperty>> accessor)
+        {
+            var type = typeof(TSourceType);
+
+            var member = accessor.Body as MemberExpression;
+            if (member == null) {
+                throw new ArgumentException(string.Format(
+                    "Expression '{0}' refers to a method, not a property.",
+                    accessor.ToString()));
+            }
+
+            PropertyInfo propInfo = member.Member as PropertyInfo;
+            if (propInfo == null) {
+                throw new ArgumentException(string.Format(
+                    "Expression '{0}' refers to a field, not a property.",
+                    accessor.ToString()));
+            }
+
+            if (type != propInfo.ReflectedType && !type.IsSubclassOf(propInfo.ReflectedType)) {
+                throw new ArgumentException(string.Format(
+                    "Expression '{0}' refers to a property that is not from type {1}.",
+                    accessor.ToString(),
+                    type));
+            }
+
+            return propInfo;
         }
     }
 }
