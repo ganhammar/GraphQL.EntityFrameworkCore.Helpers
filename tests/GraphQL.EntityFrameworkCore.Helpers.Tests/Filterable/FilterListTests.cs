@@ -585,6 +585,224 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
             var result = AssertQuerySuccess(query, expected, inputs);
         }
 
+        [Fact]
+        public async Task Should_Return_When_FilteringOnStarSectorAndAll()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var sectorName = "alderaan";
+            var planets = await dbContext.Planets
+                .Where(x => EF.Functions.Like(x.Sector, sectorName))
+                .Select(x => new
+                {
+                    id = x.Id,
+                    starSector = x.Sector,
+                })
+                .ToListAsync();
+
+            planets.Count.ShouldBe(1);
+
+            var query = $@"
+                query planets($filterInput: FilterInput) {{
+                    planets(filter: $filterInput) {{
+                        id
+                        starSector
+                    }}
+                }}
+            ";
+
+            var inputs = $@"
+                {{
+                    ""filterInput"": {{
+                        ""fields"": [
+                            {{
+                                ""target"": ""All"",
+                                ""value"": ""xxyyzz""
+                            }},
+                            {{
+                                ""target"": ""starSector"",
+                                ""value"": ""{sectorName}""
+                            }}
+                        ]
+                    }}
+                }}
+            ".ToInputs();
+
+            var expected = new
+            {
+                planets,
+            };
+
+            var result = AssertQuerySuccess(query, expected, inputs);
+        }
+
+        [Fact]
+        public void Should_NotReturn_When_FilteringOnStarSectorAndAllWithAndOperand()
+        {
+            var sectorName = "alderaan";
+
+            var query = $@"
+                query planets($filterInput: FilterInput) {{
+                    planets(filter: $filterInput) {{
+                        name
+                        starSector
+                    }}
+                }}
+            ";
+
+            var inputs = $@"
+                {{
+                    ""filterInput"": {{
+                        ""fields"": [
+                            {{
+                                ""target"": ""All"",
+                                ""value"": ""xxyyzz"",
+                                ""operand"": ""And""
+                            }},
+                            {{
+                                ""target"": ""starSector"",
+                                ""value"": ""{sectorName}""
+                            }}
+                        ]
+                    }}
+                }}
+            ".ToInputs();
+
+            var expected = @"{
+                ""planets"": []
+            }";
+
+            var result = AssertQuerySuccess(query, expected, inputs);
+        }
+
+        [Fact]
+        public async Task Should_ReturnOnlyLuke_When_FilteringOnStarSectorAndName()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var sectorName = "arkanis";
+            var humanName = "luke";
+            var humans = await dbContext.Humans
+                .Include(x => x.HomePlanet)
+                .Where(x => EF.Functions.Like(x.HomePlanet.Sector, sectorName))
+                .Where(x => EF.Functions.Like(x.Name, humanName))
+                .Select(x => new
+                {
+                    name = x.Name,
+                    homePlanet = new
+                    {
+                        starSector = x.HomePlanet.Sector,
+                    },
+                })
+                .ToListAsync();
+
+            humans.Count().ShouldBe(1);
+
+            var query = $@"
+                query humans($filterInput: FilterInput) {{
+                    humans(filter: $filterInput) {{
+                        name
+                        homePlanet {{
+                            starSector
+                        }}
+                    }}
+                }}
+            ";
+
+            var inputs = $@"
+                {{
+                    ""filterInput"": {{
+                        ""fields"": [
+                            {{
+                                ""target"": ""name"",
+                                ""value"": ""{humanName}"",
+                                ""operand"": ""And""
+                            }},
+                            {{
+                                ""target"": ""homePlanet"",
+                                ""fields"": [
+                                    {{
+                                        ""target"": ""starSector"",
+                                        ""value"": ""{sectorName}"",
+                                        ""operand"": ""And""
+                                    }}
+                                ]
+                            }}
+                        ]
+                    }}
+                }}
+            ".ToInputs();
+
+            var expected = new
+            {
+                humans,
+            };
+
+            var result = AssertQuerySuccess(query, expected, inputs);
+        }
+
+        [Fact]
+        public async Task Should_ReturnLukeAndAnakin_When_FilteringOnStarSectorOrName()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var sectorName = "arkanis";
+            var humanName = "luke";
+            var humans = await dbContext.Humans
+                .Include(x => x.HomePlanet)
+                .Where(x => EF.Functions.Like(x.HomePlanet.Sector, sectorName) || EF.Functions.Like(x.Name, humanName))
+                .Select(x => new
+                {
+                    name = x.Name,
+                    homePlanet = new
+                    {
+                        starSector = x.HomePlanet.Sector,
+                    },
+                })
+                .ToListAsync();
+
+            humans.Count().ShouldBe(2);
+
+            var query = $@"
+                query humans($filterInput: FilterInput) {{
+                    humans(filter: $filterInput) {{
+                        name
+                        homePlanet {{
+                            starSector
+                        }}
+                    }}
+                }}
+            ";
+
+            var inputs = $@"
+                {{
+                    ""filterInput"": {{
+                        ""fields"": [
+                            {{
+                                ""target"": ""name"",
+                                ""value"": ""{humanName}"",
+                                ""operand"": ""Or""
+                            }},
+                            {{
+                                ""target"": ""homePlanet"",
+                                ""fields"": [
+                                    {{
+                                        ""target"": ""starSector"",
+                                        ""value"": ""{sectorName}"",
+                                        ""operand"": ""Or""
+                                    }}
+                                ]
+                            }}
+                        ]
+                    }}
+                }}
+            ".ToInputs();
+
+            var expected = new
+            {
+                humans,
+            };
+
+            var result = AssertQuerySuccess(query, expected, inputs);
+        }
+
         private static IResolveFieldContext<object> GetContext(string filter, string[] fields)
         {
             var context = new ResolveFieldContext<object>();
