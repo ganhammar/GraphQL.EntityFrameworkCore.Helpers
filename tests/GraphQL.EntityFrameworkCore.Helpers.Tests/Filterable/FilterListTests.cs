@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -787,6 +788,141 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
                                         ""target"": ""starSector"",
                                         ""value"": ""{sectorName}"",
                                         ""operand"": ""Or""
+                                    }}
+                                ]
+                            }}
+                        ]
+                    }}
+                }}
+            ".ToInputs();
+
+            var expected = new
+            {
+                humans,
+            };
+
+            var result = AssertQuerySuccess(query, expected, inputs);
+        }
+
+        [Fact]
+        public async Task Should_FilterFriends_When_FilteringDeep()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var humanName = "luke";
+            var humans = await dbContext.Humans
+                .Include(x => x.Friends)
+                .Where(x => EF.Functions.Like(x.Name, humanName) || x.Friends.Any(y => EF.Functions.Like(y.Name, humanName)))
+                .Select(x => new
+                {
+                    name = x.Name,
+                    friends = x.Friends
+                        .Where(y => EF.Functions.Like(y.Name, humanName))
+                        .Select(y => new
+                        {
+                            name = y.Name,
+                        }),
+                })
+                .ToListAsync();
+
+            var test = await dbContext.Humans.Include(x => x.Friends).ToListAsync();
+
+            humans.Count().ShouldBe(2);
+            humans.First(x => x.name.Equals(humanName, StringComparison.InvariantCultureIgnoreCase)).friends.ShouldBeEmpty();
+            humans.First(x => x.name.Equals(humanName, StringComparison.InvariantCultureIgnoreCase) == false).friends.Count().ShouldBe(1);
+
+            var query = $@"
+                query humans($filterInput: FilterInput) {{
+                    humans(filter: $filterInput) {{
+                        name
+                        friends {{
+                            name
+                        }}
+                    }}
+                }}
+            ";
+
+            var inputs = $@"
+                {{
+                    ""filterInput"": {{
+                        ""mode"": ""Deep"",
+                        ""fields"": [
+                            {{
+                                ""target"": ""name"",
+                                ""value"": ""{humanName}""
+                            }},
+                            {{
+                                ""target"": ""friends"",
+                                ""fields"": [
+                                    {{
+                                        ""target"": ""name"",
+                                        ""value"": ""{humanName}""
+                                    }}
+                                ]
+                            }}
+                        ]
+                    }}
+                }}
+            ".ToInputs();
+
+            var expected = new
+            {
+                humans,
+            };
+
+            var result = AssertQuerySuccess(query, expected, inputs);
+        }
+
+        [Fact]
+        public async Task Should_NotFilterFriends_When_FilteringShallow()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var humanName = "luke";
+            var humans = await dbContext.Humans
+                .Include(x => x.Friends)
+                .Where(x => EF.Functions.Like(x.Name, humanName) || x.Friends.Any(y => EF.Functions.Like(y.Name, humanName)))
+                .Select(x => new
+                {
+                    name = x.Name,
+                    friends = x.Friends
+                        .Select(y => new
+                        {
+                            name = y.Name,
+                        }),
+                })
+                .ToListAsync();
+
+            var test = await dbContext.Humans.Include(x => x.Friends).ToListAsync();
+
+            humans.Count().ShouldBe(2);
+            humans.First(x => x.name.Equals(humanName, StringComparison.InvariantCultureIgnoreCase)).friends.Count().ShouldBe(1);
+            humans.First(x => x.name.Equals(humanName, StringComparison.InvariantCultureIgnoreCase) == false).friends.Count().ShouldBe(1);
+
+            var query = $@"
+                query humans($filterInput: FilterInput) {{
+                    humans(filter: $filterInput) {{
+                        name
+                        friends {{
+                            name
+                        }}
+                    }}
+                }}
+            ";
+
+            var inputs = $@"
+                {{
+                    ""filterInput"": {{
+                        ""mode"": ""Shallow"",
+                        ""fields"": [
+                            {{
+                                ""target"": ""name"",
+                                ""value"": ""{humanName}""
+                            }},
+                            {{
+                                ""target"": ""friends"",
+                                ""fields"": [
+                                    {{
+                                        ""target"": ""name"",
+                                        ""value"": ""{humanName}""
                                     }}
                                 ]
                             }}
