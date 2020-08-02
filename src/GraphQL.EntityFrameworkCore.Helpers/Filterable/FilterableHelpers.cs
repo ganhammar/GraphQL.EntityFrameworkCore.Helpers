@@ -14,6 +14,11 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
         {
             _properties.TryAdd(entityType.FullName, property.Name);
         }
+
+        public static void Add(Type entityType, string schemaName)
+        {
+            _properties.TryAdd(entityType.FullName, schemaName);
+        }
         
         public static bool IsFilterable(PropertyInfo property)
         {

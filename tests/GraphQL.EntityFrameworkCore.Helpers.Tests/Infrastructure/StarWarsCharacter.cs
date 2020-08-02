@@ -37,15 +37,10 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
         public Human Owner { get; set; }
     }
 
-    public class Planet
+    public class Planet : StarWarsCharacter
     {
-        public Guid Id { get; set; }
-        [Filterable]
-        public string Name { get; set; }
-        [Filterable]
         public string Region { get; set; }
         public string Sector { get; set; }
-        [Filterable]
         public string System { get; set; }
         public IEnumerable<Human> Habitants { get; set; }
     }

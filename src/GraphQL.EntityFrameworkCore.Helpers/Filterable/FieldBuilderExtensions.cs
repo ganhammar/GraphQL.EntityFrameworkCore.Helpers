@@ -23,5 +23,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
 
             return field;
         }
+
+        public static FieldBuilder<TSourceType, TReturnType> FilterableProperty<TSourceType, TReturnType>(this FieldBuilder<TSourceType, TReturnType> field)
+        {
+            var type = typeof(TSourceType);
+
+            FilterableHelpers.Add(type, field.FieldType.Name);
+
+            return field;
+        }
     }
 }

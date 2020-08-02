@@ -61,7 +61,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             Field(x => x.Sector)
                 .FilterableProperty(x => x.Sector)
                 .Name("StarSector");
-            Field(x => x.System);
+            Field(x => x.System)
+                .FilterableProperty();
             Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
                 .Name("Residents")
                 .Property(x => x.Habitants)
