@@ -88,7 +88,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
 
         public ExecutionResult AssertQueryWithErrors(
             string query,
-            string expected,
+            string expected = default,
             Inputs inputs = null,
             object root = null,
             IDictionary<string, object> userContext = null,
@@ -96,7 +96,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             int expectedErrorCount = 0,
             bool renderErrors = false)
         {
-            var queryResult = CreateQueryResult(expected);
+            var queryResult = expected != default ? CreateQueryResult(expected) : default;
             return AssertQueryIgnoreErrors(
                 query,
                 queryResult,
@@ -110,7 +110,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
 
         public ExecutionResult AssertQueryIgnoreErrors(
             string query,
-            ExecutionResult expectedExecutionResult,
+            ExecutionResult expectedExecutionResult = default,
             Inputs inputs= null,
             object root = null,
             IDictionary<string, object> userContext = null,
@@ -132,12 +132,15 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 }
             }).GetAwaiter().GetResult();
 
-            var renderResult = renderErrors ? runResult : new ExecutionResult { Data = runResult.Data };
+            if (expectedExecutionResult != default)
+            {
+                var renderResult = renderErrors ? runResult : new ExecutionResult { Data = runResult.Data };
 
-            var writtenResult = Writer.WriteToStringAsync(renderResult).GetAwaiter().GetResult();
-            var expectedResult = Writer.WriteToStringAsync(expectedExecutionResult).GetAwaiter().GetResult();
+                var writtenResult = Writer.WriteToStringAsync(renderResult).GetAwaiter().GetResult();
+                var expectedResult = Writer.WriteToStringAsync(expectedExecutionResult).GetAwaiter().GetResult();
 
-            writtenResult.ShouldBe(expectedResult);
+                writtenResult.ShouldBe(expectedResult);
+            }
 
             var errors = runResult.Errors ?? new ExecutionErrors();
 

@@ -439,6 +439,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
             }
 
             context.FieldName = "humans";
+            context.Path = new List<string> { "humans" };
 
             var field = new Field(new NameNode(context.FieldName), new NameNode(context.FieldName));
             field.SelectionSet = new SelectionSet();

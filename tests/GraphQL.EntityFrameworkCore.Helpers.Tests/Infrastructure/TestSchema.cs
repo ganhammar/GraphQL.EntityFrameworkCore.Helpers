@@ -104,6 +104,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                         "GetHomePlanets",
                         async (planetIds) => await dbContext.Planets
                             .Where(x => planetIds.Contains(x.Id))
+                            .Filter(context, dbContext.Model)
                             .Select(context, dbContext.Model)
                             .ToDictionaryAsync(x => x.Id, x => x));
 

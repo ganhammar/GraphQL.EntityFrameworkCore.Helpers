@@ -293,12 +293,12 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
                 {
                     id = x.Id,
                     name = x.Name,
-                    homePlanet = new
+                    homePlanet = x.HomePlanet.Name.Equals(homePlanetName, StringComparison.InvariantCultureIgnoreCase) ? new
                     {
                         name = x.HomePlanet.Name,
-                    },
+                    } : default(object),
                     friends = x.Friends
-                        .Where(y => y.HomePlanet.Name.ToLower() == homePlanetName)
+                        .Where(y => y.HomePlanet.Name.Equals(homePlanetName, StringComparison.InvariantCultureIgnoreCase))
                         .Select(y => new
                         {
                             name = y.Name,
@@ -824,8 +824,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
                 })
                 .ToListAsync();
 
-            var test = await dbContext.Humans.Include(x => x.Friends).ToListAsync();
-
             humans.Count().ShouldBe(2);
             humans.First(x => x.name.Equals(humanName, StringComparison.InvariantCultureIgnoreCase)).friends.ShouldBeEmpty();
             humans.First(x => x.name.Equals(humanName, StringComparison.InvariantCultureIgnoreCase) == false).friends.Count().ShouldBe(1);
@@ -891,8 +889,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
                 })
                 .ToListAsync();
 
-            var test = await dbContext.Humans.Include(x => x.Friends).ToListAsync();
-
             humans.Count().ShouldBe(2);
             humans.First(x => x.name.Equals(humanName, StringComparison.InvariantCultureIgnoreCase)).friends.Count().ShouldBe(1);
             humans.First(x => x.name.Equals(humanName, StringComparison.InvariantCultureIgnoreCase) == false).friends.Count().ShouldBe(1);
@@ -939,6 +935,87 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
             var result = AssertQuerySuccess(query, expected, inputs);
         }
 
+        [Fact]
+        public async Task Should_FilterDataLoadedProperties_When_FilteringDeepWithDifferentNameDeep()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var humans = await dbContext.Humans
+                .Include(x => x.Friends)
+                    .ThenInclude(x => x.HomePlanet)
+                .Where(x => EF.Functions.Like(x.Name, "luke") || // All three filters applies
+                    x.Friends.Any(y => EF.Functions.Like(y.Name, "leia")) ||
+                    x.Friends.Any(y => EF.Functions.Like(y.HomePlanet.Name, "tatooine")))
+                .Select(x => new
+                {
+                    name = x.Name,
+                    friends = x.Friends
+                        .Where(y => EF.Functions.Like(y.Name, "leia") || // The two child filters applies
+                            EF.Functions.Like(y.HomePlanet.Name, "tatooine"))
+                        .Select(y => new
+                        {
+                            name = y.Name,
+                            homePlanet = EF.Functions.Like(y.HomePlanet.Name, "tatooine") ? new // Only the last filter applies
+                            {
+                                name = y.HomePlanet.Name,
+                            } : default(object),
+                        }),
+                })
+                .ToListAsync();
+
+            var query = $@"
+                query humans($filterInput: FilterInput) {{
+                    humans(filter: $filterInput) {{
+                        name
+                        friends {{
+                            name
+                            homePlanet {{
+                                name
+                            }}
+                        }}
+                    }}
+                }}
+            ";
+
+            var inputs = $@"
+                {{
+                    ""filterInput"": {{
+                        ""mode"": ""Deep"",
+                        ""fields"": [
+                            {{
+                                ""target"": ""name"",
+                                ""value"": ""luke""
+                            }},
+                            {{
+                                ""target"": ""friends"",
+                                ""fields"": [
+                                    {{
+                                        ""target"": ""name"",
+                                        ""value"": ""leia""
+                                    }},
+                                    {{
+                                        ""target"": ""homePlanet"",
+                                        ""fields"": [
+                                            {{
+                                                ""target"": ""name"",
+                                                ""value"": ""tatooine""
+                                            }}
+                                        ]
+                                    }}
+                                ]
+                            }}
+                        ]
+                    }}
+                }}
+            ".ToInputs();
+
+            var expected = new
+            {
+                humans,
+            };
+
+            var result = AssertQuerySuccess(query, expected, inputs);
+        }
+
         private static IResolveFieldContext<object> GetContext(string filter, string[] fields)
         {
             var context = new ResolveFieldContext<object>();
@@ -964,6 +1041,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
             }
 
             context.FieldName = "humans";
+            context.Path = new List<string> { "humans" };
 
             var field = new Field(new NameNode(context.FieldName), new NameNode(context.FieldName));
             field.SelectionSet = new SelectionSet();

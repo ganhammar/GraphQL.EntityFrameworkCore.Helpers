@@ -17,10 +17,16 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
         public static IQueryable<TQuery> Filter<TQuery>(this IQueryable<TQuery> query, IResolveFieldContext<object> context, IModel model)
         {
             var filter = GetFilter(context);
-            
+
             if (filter == default)
             {
                 return query;
+            }
+
+            var validationResult = filter.Validate(context);
+            if (validationResult.IsValid == false)
+            {
+                throw new Exception(validationResult.Failures.First().Message);
             }
 
             return AddWheres(query, filter, context, model);
@@ -91,7 +97,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
         {
             var entityType = typeof(TQuery);
             var argument = Expression.Parameter(entityType);
-            var expressions = GetSelectionPaths(argument, filter.Fields, entityType, context.SubFields, model, query);
+            var expressions = GetSelectionPaths(argument, filter.GetApplicableFilterFields(context), entityType, context.SubFields, model, query);
 
             if (expressions == default)
             {

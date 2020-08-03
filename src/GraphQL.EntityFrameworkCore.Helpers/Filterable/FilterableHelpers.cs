@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Reflection;
-using GraphQL.Types;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
 {
