@@ -637,7 +637,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
         }
 
         [Fact]
-        public void Should_NotReturn_When_FilteringOnStarSectorAndAllWithAndOperand()
+        public void Should_NotReturn_When_FilteringOnStarSectorAndAllWithAndOperator()
         {
             var sectorName = "alderaan";
 
@@ -657,7 +657,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
                             {{
                                 ""target"": ""All"",
                                 ""value"": ""xxyyzz"",
-                                ""operand"": ""And""
+                                ""operator"": ""And""
                             }},
                             {{
                                 ""target"": ""starSector"",
@@ -715,7 +715,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
                             {{
                                 ""target"": ""name"",
                                 ""value"": ""{humanName}"",
-                                ""operand"": ""And""
+                                ""operator"": ""And""
                             }},
                             {{
                                 ""target"": ""homePlanet"",
@@ -723,7 +723,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
                                     {{
                                         ""target"": ""starSector"",
                                         ""value"": ""{sectorName}"",
-                                        ""operand"": ""And""
+                                        ""operator"": ""And""
                                     }}
                                 ]
                             }}
@@ -779,7 +779,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
                             {{
                                 ""target"": ""name"",
                                 ""value"": ""{humanName}"",
-                                ""operand"": ""Or""
+                                ""operator"": ""Or""
                             }},
                             {{
                                 ""target"": ""homePlanet"",
@@ -787,7 +787,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
                                     {{
                                         ""target"": ""starSector"",
                                         ""value"": ""{sectorName}"",
-                                        ""operand"": ""Or""
+                                        ""operator"": ""Or""
                                     }}
                                 ]
                             }}

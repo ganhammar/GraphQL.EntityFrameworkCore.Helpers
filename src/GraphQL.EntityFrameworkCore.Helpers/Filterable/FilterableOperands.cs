@@ -2,7 +2,7 @@ using System.ComponentModel;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
 {
-    public enum FilterableOperands
+    public enum FilterableOperators
     {
         [Description("Treated as separate where clauses")]
         And,

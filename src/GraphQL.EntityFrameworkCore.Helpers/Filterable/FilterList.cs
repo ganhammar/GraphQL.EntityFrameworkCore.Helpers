@@ -104,11 +104,11 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
                 return query;
             }
 
-            if (expressions.ContainsKey(FilterableOperands.Or) && expressions[FilterableOperands.Or].Any())
+            if (expressions.ContainsKey(FilterableOperators.Or) && expressions[FilterableOperators.Or].Any())
             {
                 Expression clause = default;
 
-                expressions[FilterableOperands.Or].ForEach(x =>
+                expressions[FilterableOperators.Or].ForEach(x =>
                 {
                     clause = clause == default ? x : Expression.Or(clause, x);
                 });
@@ -116,9 +116,9 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
                 query = query.AddWhere(argument, entityType, clause);
             }
 
-            if (expressions.ContainsKey(FilterableOperands.And) && expressions[FilterableOperands.And].Any())
+            if (expressions.ContainsKey(FilterableOperators.And) && expressions[FilterableOperators.And].Any())
             {
-                expressions[FilterableOperands.And].ForEach(clause =>
+                expressions[FilterableOperators.And].ForEach(clause =>
                 {
                     query = query.AddWhere(argument, entityType, clause);
                 });
@@ -139,9 +139,9 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
                 .Invoke(genericMethod, new object[] { query, clause });
         }
 
-        private static Dictionary<FilterableOperands, List<Expression>> GetSelectionPaths<TQuery>(Expression argument, IEnumerable<FilterableInputField> fields, Type entityType, IDictionary<string, Field> selection, IModel model, IQueryable<TQuery> query)
+        private static Dictionary<FilterableOperators, List<Expression>> GetSelectionPaths<TQuery>(Expression argument, IEnumerable<FilterableInputField> fields, Type entityType, IDictionary<string, Field> selection, IModel model, IQueryable<TQuery> query)
         {
-            var result = new Dictionary<FilterableOperands, List<Expression>>();
+            var result = new Dictionary<FilterableOperators, List<Expression>>();
             var entity = model.FindEntityType(entityType);
             var navigationProperties = entity.GetNavigations();
 
@@ -199,14 +199,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
             return result;
         }
 
-        private static Dictionary<FilterableOperands, List<Expression>> Merge(this Dictionary<FilterableOperands, List<Expression>> main, Dictionary<FilterableOperands, List<Expression>> second, Func<Expression, Expression> mergeAction = default)
+        private static Dictionary<FilterableOperators, List<Expression>> Merge(this Dictionary<FilterableOperators, List<Expression>> main, Dictionary<FilterableOperators, List<Expression>> second, Func<Expression, Expression> mergeAction = default)
         {
             if (second == default)
             {
                 return main;
             }
 
-            foreach(KeyValuePair<FilterableOperands, List<Expression>> entry in second)
+            foreach(KeyValuePair<FilterableOperators, List<Expression>> entry in second)
             {
                 if (main.ContainsKey(entry.Key) == false)
                 {
@@ -248,11 +248,11 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
         private static Dictionary<string, Field> ToDictionary(KeyValuePair<string, Field> field)
             => field.Value.SelectionSet.Selections.ToDictionary(x => (x as Field).Name, x => x as Field);
 
-        private static Dictionary<FilterableOperands, List<Expression>> GetExpression(Expression argument, IEnumerable<FilterableInputField> fields, Type entityType, IDictionary<string, Field> selection, IModel model)
+        private static Dictionary<FilterableOperators, List<Expression>> GetExpression(Expression argument, IEnumerable<FilterableInputField> fields, Type entityType, IDictionary<string, Field> selection, IModel model)
         {
-            var result = new Dictionary<FilterableOperands, List<Expression>>();
-            result.Add(FilterableOperands.Or, new List<Expression>());
-            result.Add(FilterableOperands.And, new List<Expression>());
+            var result = new Dictionary<FilterableOperators, List<Expression>>();
+            result.Add(FilterableOperators.Or, new List<Expression>());
+            result.Add(FilterableOperators.And, new List<Expression>());
 
             var convertToStringMethod = typeof(object).GetMethod("ToString");
             var concatMethod = typeof(string).GetMethod("Concat", new[] { typeof(string), typeof(string) });
@@ -282,7 +282,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
 
                     property = Expression.Call(null, likeMethod, Expression.Constant(EF.Functions), property, compareToExpression);
 
-                    if (filter.Operand == FilterableOperands.Or)
+                    if (filter.Operator == FilterableOperators.Or)
                     {
                         if (orClause != null)
                         {
@@ -295,13 +295,13 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
                     }
                     else
                     {
-                        result[FilterableOperands.And].Add(property);
+                        result[FilterableOperators.And].Add(property);
                     }
                 });
             
             if (orClause != default)
             {
-                result[FilterableOperands.Or].Add(orClause);
+                result[FilterableOperators.Or].Add(orClause);
             }
 
             return result;

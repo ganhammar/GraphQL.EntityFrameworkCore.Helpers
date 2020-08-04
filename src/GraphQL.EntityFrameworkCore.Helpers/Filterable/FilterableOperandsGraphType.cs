@@ -2,11 +2,11 @@ using GraphQL.Types;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
 {
-    public class FilterableOperandsGraphType : EnumerationGraphType<FilterableOperands>
+    public class FilterableOperatorsGraphType : EnumerationGraphType<FilterableOperators>
     {
-        public FilterableOperandsGraphType()
+        public FilterableOperatorsGraphType()
         {
-            Name = "FilterOperand";
+            Name = "FilterOperator";
         }
     }
 }
