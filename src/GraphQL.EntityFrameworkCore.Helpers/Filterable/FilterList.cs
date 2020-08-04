@@ -241,9 +241,12 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
             return subFilter.Fields;
         }
 
-        private static FilterableInputField GetFilterValueForField(string fieldName, IEnumerable<FilterableInputField> fields)
-            => fields.FirstOrDefault(x => x.Target.Equals(fieldName, StringComparison.InvariantCultureIgnoreCase)) 
-                ?? fields.FirstOrDefault(x => x.Target.Equals("All", StringComparison.InvariantCultureIgnoreCase));
+        private static IEnumerable<FilterableInputField> GetFilterValueForField(string fieldName, IEnumerable<FilterableInputField> fields)
+        {
+            var matches = fields.Where(x => x.Target.Equals(fieldName, StringComparison.InvariantCultureIgnoreCase));
+
+            return matches.Any() ? matches : fields.Where(x => x.Target.Equals("All", StringComparison.InvariantCultureIgnoreCase));
+        }
 
         private static Dictionary<string, Field> ToDictionary(KeyValuePair<string, Field> field)
             => field.Value.SelectionSet.Selections.ToDictionary(x => (x as Field).Name, x => x as Field);
@@ -266,51 +269,54 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
                 .ToList()
                 .ForEach(field =>
                 {
-                    var filter = GetFilterValueForField(FieldHelpers.GetSchemaName(entityType, field.Name), fields);
+                    var filters = GetFilterValueForField(FieldHelpers.GetSchemaName(entityType, field.Name), fields);
 
-                    if (filter?.Value == default)
+                    if (filters.Any() == false)
                     {
                         return;
                     }
 
-                    Expression property = Expression.MakeMemberAccess(argument, field);
-
-                    if (field.PropertyType != typeof(string))
+                    foreach(var filter in filters)
                     {
-                        property = Expression.Call(property, convertToStringMethod);
-                    }
+                        Expression property = Expression.MakeMemberAccess(argument, field);
 
-                    Expression compareToExpression = default;
-                    var isEqual = true;
-
-                    switch(filter.ValueOperator)
-                    {
-                        case FilterableValueOperators.Like: case FilterableValueOperators.Notlike:
-                            compareToExpression = Expression.Constant($"%{filter.Value}%");
-                            isEqual = filter.ValueOperator == FilterableValueOperators.Like;
-                            break;
-                        case FilterableValueOperators.Equal: case FilterableValueOperators.Notequal:
-                            compareToExpression = Expression.Constant(filter.Value);
-                            isEqual = filter.ValueOperator == FilterableValueOperators.Equal;
-                            break;
-                    }
-
-                    property = Expression.Equal(Expression.Call(null, likeMethod, Expression.Constant(EF.Functions), property, compareToExpression), Expression.Constant(isEqual));
-
-                    if (filter.Operator == FilterableFieldOperators.Or)
-                    {
-                        if (orClause != null)
+                        if (field.PropertyType != typeof(string))
                         {
-                            orClause = Expression.Or(orClause, property);
+                            property = Expression.Call(property, convertToStringMethod);
+                        }
+
+                        Expression compareToExpression = default;
+                        var isEqual = true;
+
+                        switch(filter.ValueOperator)
+                        {
+                            case FilterableValueOperators.Like: case FilterableValueOperators.Notlike:
+                                compareToExpression = Expression.Constant($"%{filter.Value}%");
+                                isEqual = filter.ValueOperator == FilterableValueOperators.Like;
+                                break;
+                            case FilterableValueOperators.Equal: case FilterableValueOperators.Notequal:
+                                compareToExpression = Expression.Constant(filter.Value);
+                                isEqual = filter.ValueOperator == FilterableValueOperators.Equal;
+                                break;
+                        }
+
+                        property = Expression.Equal(Expression.Call(null, likeMethod, Expression.Constant(EF.Functions), property, compareToExpression), Expression.Constant(isEqual));
+
+                        if (filter.Operator == FilterableFieldOperators.Or)
+                        {
+                            if (orClause != null)
+                            {
+                                orClause = Expression.Or(orClause, property);
+                            }
+                            else
+                            {
+                                orClause = property;
+                            }
                         }
                         else
                         {
-                            orClause = property;
+                            result[FilterableFieldOperators.And].Add(property);
                         }
-                    }
-                    else
-                    {
-                        result[FilterableFieldOperators.And].Add(property);
                     }
                 });
             

@@ -1213,6 +1213,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
                 .Where(x => EF.Functions.Like(x.EyeColor, eyeColor) == false)
                 .Select(x => new
                 {
+                    name = x.Name,
                     eyeColor = x.EyeColor,
                     homePlanet = new {
                         name = x.HomePlanet.Name,
@@ -1255,6 +1256,59 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
                                         ""operator"": ""and""
                                     }}
                                 ]
+                            }}
+                        ]
+                    }}
+                }}
+            ".ToInputs();
+
+            var expected = new
+            {
+                humans,
+            };
+
+            var result = AssertQuerySuccess(query, expected, inputs);
+        }
+
+        [Fact]
+        public async Task Should_ReturnAll_When_FilteringOnBlueOrBrownEyeColorUsingEquals()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var humans = await dbContext.Humans
+                .Select(x => new
+                {
+                    name = x.Name,
+                    eyeColor = x.EyeColor,
+                })
+                .ToListAsync();
+
+            humans.Count().ShouldBe(3);
+
+            var query = $@"
+                query humans($filterInput: FilterInput) {{
+                    humans(filter: $filterInput) {{
+                        name
+                        eyeColor
+                    }}
+                }}
+            ";
+
+            var inputs = $@"
+                {{
+                    ""filterInput"": {{
+                        ""mode"": ""Deep"",
+                        ""fields"": [
+                            {{
+                                ""target"": ""eyeColor"",
+                                ""value"": ""blue"",
+                                ""valueOperator"": ""equal"",
+                                ""operator"": ""or""
+                            }},
+                            {{
+                                ""target"": ""eyeColor"",
+                                ""value"": ""brown"",
+                                ""valueOperator"": ""equal"",
+                                ""operator"": ""or""
                             }}
                         ]
                     }}
