@@ -4,8 +4,9 @@ using System.Linq;
 using GraphQL.DataLoader;
 using GraphQL.Types;
 using GraphQL.EntityFrameworkCore.Helpers.Connection;
-using Microsoft.EntityFrameworkCore;
+using GraphQL.EntityFrameworkCore.Helpers.Selectable;
 using GraphQL.EntityFrameworkCore.Helpers.Filterable;
+using Microsoft.EntityFrameworkCore;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
 {

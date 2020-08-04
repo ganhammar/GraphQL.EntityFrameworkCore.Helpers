@@ -4,7 +4,7 @@ using System.Linq.Expressions;
 using GraphQL.Types;
 using Microsoft.EntityFrameworkCore.Metadata;
 
-namespace GraphQL.EntityFrameworkCore.Helpers
+namespace GraphQL.EntityFrameworkCore.Helpers.Selectable
 {
     public static class SelectFromFields
     {
