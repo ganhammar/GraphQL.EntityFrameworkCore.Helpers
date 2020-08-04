@@ -104,11 +104,11 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
                 return query;
             }
 
-            if (expressions.ContainsKey(FilterableOperators.Or) && expressions[FilterableOperators.Or].Any())
+            if (expressions.ContainsKey(FilterableFieldOperators.Or) && expressions[FilterableFieldOperators.Or].Any())
             {
                 Expression clause = default;
 
-                expressions[FilterableOperators.Or].ForEach(x =>
+                expressions[FilterableFieldOperators.Or].ForEach(x =>
                 {
                     clause = clause == default ? x : Expression.Or(clause, x);
                 });
@@ -116,9 +116,9 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
                 query = query.AddWhere(argument, entityType, clause);
             }
 
-            if (expressions.ContainsKey(FilterableOperators.And) && expressions[FilterableOperators.And].Any())
+            if (expressions.ContainsKey(FilterableFieldOperators.And) && expressions[FilterableFieldOperators.And].Any())
             {
-                expressions[FilterableOperators.And].ForEach(clause =>
+                expressions[FilterableFieldOperators.And].ForEach(clause =>
                 {
                     query = query.AddWhere(argument, entityType, clause);
                 });
@@ -139,9 +139,9 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
                 .Invoke(genericMethod, new object[] { query, clause });
         }
 
-        private static Dictionary<FilterableOperators, List<Expression>> GetSelectionPaths<TQuery>(Expression argument, IEnumerable<FilterableInputField> fields, Type entityType, IDictionary<string, Field> selection, IModel model, IQueryable<TQuery> query)
+        private static Dictionary<FilterableFieldOperators, List<Expression>> GetSelectionPaths<TQuery>(Expression argument, IEnumerable<FilterableInputField> fields, Type entityType, IDictionary<string, Field> selection, IModel model, IQueryable<TQuery> query)
         {
-            var result = new Dictionary<FilterableOperators, List<Expression>>();
+            var result = new Dictionary<FilterableFieldOperators, List<Expression>>();
             var entity = model.FindEntityType(entityType);
             var navigationProperties = entity.GetNavigations();
 
@@ -199,14 +199,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
             return result;
         }
 
-        private static Dictionary<FilterableOperators, List<Expression>> Merge(this Dictionary<FilterableOperators, List<Expression>> main, Dictionary<FilterableOperators, List<Expression>> second, Func<Expression, Expression> mergeAction = default)
+        private static Dictionary<FilterableFieldOperators, List<Expression>> Merge(this Dictionary<FilterableFieldOperators, List<Expression>> main, Dictionary<FilterableFieldOperators, List<Expression>> second, Func<Expression, Expression> mergeAction = default)
         {
             if (second == default)
             {
                 return main;
             }
 
-            foreach(KeyValuePair<FilterableOperators, List<Expression>> entry in second)
+            foreach(KeyValuePair<FilterableFieldOperators, List<Expression>> entry in second)
             {
                 if (main.ContainsKey(entry.Key) == false)
                 {
@@ -248,15 +248,16 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
         private static Dictionary<string, Field> ToDictionary(KeyValuePair<string, Field> field)
             => field.Value.SelectionSet.Selections.ToDictionary(x => (x as Field).Name, x => x as Field);
 
-        private static Dictionary<FilterableOperators, List<Expression>> GetExpression(Expression argument, IEnumerable<FilterableInputField> fields, Type entityType, IDictionary<string, Field> selection, IModel model)
+        private static Dictionary<FilterableFieldOperators, List<Expression>> GetExpression(Expression argument, IEnumerable<FilterableInputField> fields, Type entityType, IDictionary<string, Field> selection, IModel model)
         {
-            var result = new Dictionary<FilterableOperators, List<Expression>>();
-            result.Add(FilterableOperators.Or, new List<Expression>());
-            result.Add(FilterableOperators.And, new List<Expression>());
+            var result = new Dictionary<FilterableFieldOperators, List<Expression>>();
+            result.Add(FilterableFieldOperators.Or, new List<Expression>());
+            result.Add(FilterableFieldOperators.And, new List<Expression>());
 
             var convertToStringMethod = typeof(object).GetMethod("ToString");
             var concatMethod = typeof(string).GetMethod("Concat", new[] { typeof(string), typeof(string) });
             var likeMethod = typeof(DbFunctionsExtensions).GetMethod("Like", new[] { typeof(DbFunctions), typeof(string), typeof(string) });
+            var equalMethod = typeof(Expression).GetMethod(nameof(string.Equals), new[] { typeof(Expression), typeof(Expression) });
 
             Expression orClause = default;
             ResolveFieldContextHelpers
@@ -272,7 +273,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
                         return;
                     }
 
-                    var compareToExpression = Expression.Constant($"%{filter.Value}%");
                     Expression property = Expression.MakeMemberAccess(argument, field);
 
                     if (field.PropertyType != typeof(string))
@@ -280,9 +280,24 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
                         property = Expression.Call(property, convertToStringMethod);
                     }
 
-                    property = Expression.Call(null, likeMethod, Expression.Constant(EF.Functions), property, compareToExpression);
+                    Expression compareToExpression = default;
+                    var isEqual = true;
 
-                    if (filter.Operator == FilterableOperators.Or)
+                    switch(filter.ValueOperator)
+                    {
+                        case FilterableValueOperators.Like: case FilterableValueOperators.Notlike:
+                            compareToExpression = Expression.Constant($"%{filter.Value}%");
+                            isEqual = filter.ValueOperator == FilterableValueOperators.Like;
+                            break;
+                        case FilterableValueOperators.Equal: case FilterableValueOperators.Notequal:
+                            compareToExpression = Expression.Constant(filter.Value);
+                            isEqual = filter.ValueOperator == FilterableValueOperators.Equal;
+                            break;
+                    }
+
+                    property = Expression.Equal(Expression.Call(null, likeMethod, Expression.Constant(EF.Functions), property, compareToExpression), Expression.Constant(isEqual));
+
+                    if (filter.Operator == FilterableFieldOperators.Or)
                     {
                         if (orClause != null)
                         {
@@ -295,13 +310,13 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
                     }
                     else
                     {
-                        result[FilterableOperators.And].Add(property);
+                        result[FilterableFieldOperators.And].Add(property);
                     }
                 });
             
             if (orClause != default)
             {
-                result[FilterableOperators.Or].Add(orClause);
+                result[FilterableFieldOperators.Or].Add(orClause);
             }
 
             return result;

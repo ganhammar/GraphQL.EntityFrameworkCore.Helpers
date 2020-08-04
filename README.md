@@ -102,12 +102,13 @@ The simplest way to filter a list is by filtering all filterable properties to s
 ```javascript
 {
     "filterInput": {
-        "mode": "Shallow", // Default (Not required)
+        "mode": "shallow", // Default (Not required)
         "fields": [
             {
-                "target": "All", // Default (Not required)
-                "value": "SearchTerm",
-                "operator": "Or" // Default (Not required)
+                "target": "all", // Default (Not required)
+                "value": "search term",
+                "operator": "or", // Default (Not required)
+                "valueOperator": "like" // Default (Not required)
             }
         ]
     }
@@ -117,6 +118,8 @@ The simplest way to filter a list is by filtering all filterable properties to s
 The input can apply to all requested data loaded properties as well as the main query or just the main query. This is determined by the specified mode, `Shallow` to only appply to main or `Deep` to apply to all filterable fields.
 
 All fields that is using the `Or`-operator is combined into one where-clause where one of them needs to be true, fields that is using the `And`-operator is separated into it's own where-clauses.
+
+The search term can be compared to the field value using diffrent operators; `like`, `notlike`, `equal` or `notequal`.
 
 Below is a more complex query where the main query   is filtered to only include humans that come from the planet Tatooine and has a blue eye color, to also apply this to the data loaded property _homePlanet_ the mode needs to be changed to `Deep`.
 

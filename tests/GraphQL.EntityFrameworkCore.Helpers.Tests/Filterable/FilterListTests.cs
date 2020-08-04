@@ -1016,6 +1016,259 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
             var result = AssertQuerySuccess(query, expected, inputs);
         }
 
+        [Fact]
+        public async Task Should_BeAbleToFilter_When_UsingEqualOperator()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var humanName = "luke";
+            var humans = await dbContext.Humans
+                .Where(x => EF.Functions.Like(x.Name, humanName))
+                .Select(x => new
+                {
+                    name = x.Name,
+                })
+                .ToListAsync();
+
+            humans.Count.ShouldBe(1);
+
+            var query = $@"
+                query humans($filterInput: FilterInput) {{
+                    humans(filter: $filterInput) {{
+                        name
+                    }}
+                }}
+            ";
+
+            var inputs = $@"
+                {{
+                    ""filterInput"": {{
+                        ""mode"": ""Deep"",
+                        ""fields"": [
+                            {{
+                                ""target"": ""name"",
+                                ""value"": ""{humanName}"",
+                                ""valueOperator"": ""Equal""
+                            }}
+                        ]
+                    }}
+                }}
+            ".ToInputs();
+
+            var expected = new
+            {
+                humans,
+            };
+
+            var result = AssertQuerySuccess(query, expected, inputs);
+        }
+
+        [Fact]
+        public async Task Should_NotReturnAny_When_FilteringOnLukWithEqual()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var humanName = "luk";
+            var humans = await dbContext.Humans
+                .Where(x => EF.Functions.Like(x.Name, humanName))
+                .Select(x => new
+                {
+                    name = x.Name,
+                })
+                .ToListAsync();
+
+            humans.ShouldBeEmpty();
+
+            var query = $@"
+                query humans($filterInput: FilterInput) {{
+                    humans(filter: $filterInput) {{
+                        name
+                    }}
+                }}
+            ";
+
+            var inputs = $@"
+                {{
+                    ""filterInput"": {{
+                        ""mode"": ""Deep"",
+                        ""fields"": [
+                            {{
+                                ""target"": ""name"",
+                                ""value"": ""{humanName}"",
+                                ""valueOperator"": ""Equal""
+                            }}
+                        ]
+                    }}
+                }}
+            ".ToInputs();
+
+            var expected = new
+            {
+                humans,
+            };
+
+            var result = AssertQuerySuccess(query, expected, inputs);
+        }
+
+        [Fact]
+        public async Task Should_NotReturnLuke_When_FilteringOnNotEqualLuke()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var humanName = "luke";
+            var humans = await dbContext.Humans
+                .Where(x => EF.Functions.Like(x.Name, humanName) == false)
+                .Select(x => new
+                {
+                    name = x.Name,
+                })
+                .ToListAsync();
+
+            humans.Count().ShouldBe(2);
+
+            var query = $@"
+                query humans($filterInput: FilterInput) {{
+                    humans(filter: $filterInput) {{
+                        name
+                    }}
+                }}
+            ";
+
+            var inputs = $@"
+                {{
+                    ""filterInput"": {{
+                        ""mode"": ""Deep"",
+                        ""fields"": [
+                            {{
+                                ""target"": ""name"",
+                                ""value"": ""{humanName}"",
+                                ""valueOperator"": ""notequal""
+                            }}
+                        ]
+                    }}
+                }}
+            ".ToInputs();
+
+            var expected = new
+            {
+                humans,
+            };
+
+            var result = AssertQuerySuccess(query, expected, inputs);
+        }
+
+        [Fact]
+        public async Task Should_NotReturnLukeOrLeia_When_FilteringOnNotLikeL()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var humanName = "l";
+            var humans = await dbContext.Humans
+                .Where(x => EF.Functions.Like(x.Name, $"%{humanName}%") == false)
+                .Select(x => new
+                {
+                    name = x.Name,
+                })
+                .ToListAsync();
+
+            humans.Count().ShouldBe(1);
+            humans.First().name.ShouldBe("Anakin");
+
+            var query = $@"
+                query humans($filterInput: FilterInput) {{
+                    humans(filter: $filterInput) {{
+                        name
+                    }}
+                }}
+            ";
+
+            var inputs = $@"
+                {{
+                    ""filterInput"": {{
+                        ""mode"": ""Deep"",
+                        ""fields"": [
+                            {{
+                                ""target"": ""name"",
+                                ""value"": ""{humanName}"",
+                                ""valueOperator"": ""notlike""
+                            }}
+                        ]
+                    }}
+                }}
+            ".ToInputs();
+
+            var expected = new
+            {
+                humans,
+            };
+
+            var result = AssertQuerySuccess(query, expected, inputs);
+        }
+
+        [Fact]
+        public async Task Should_NotReturnAny_When_FilteringOnEqualTatooineButNotEqualBlueEyes()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var planetName = "tatooine";
+            var eyeColor = "blue";
+            var humans = await dbContext.Humans
+                .Include(x => x.HomePlanet)
+                .Where(x => EF.Functions.Like(x.HomePlanet.Name, planetName))
+                .Where(x => EF.Functions.Like(x.EyeColor, eyeColor) == false)
+                .Select(x => new
+                {
+                    eyeColor = x.EyeColor,
+                    homePlanet = new {
+                        name = x.HomePlanet.Name,
+                    },
+                })
+                .ToListAsync();
+
+            humans.ShouldBeEmpty();
+
+            var query = $@"
+                query humans($filterInput: FilterInput) {{
+                    humans(filter: $filterInput) {{
+                        name
+                        eyeColor
+                        homePlanet {{
+                            name
+                        }}
+                    }}
+                }}
+            ";
+
+            var inputs = $@"
+                {{
+                    ""filterInput"": {{
+                        ""mode"": ""Deep"",
+                        ""fields"": [
+                            {{
+                                ""target"": ""eyeColor"",
+                                ""value"": ""{eyeColor}"",
+                                ""valueOperator"": ""notequal"",
+                                ""operator"": ""and""
+                            }},
+                            {{
+                                ""target"": ""homePlanet"",
+                                ""fields"": [
+                                    {{
+                                        ""target"": ""name"",
+                                        ""value"": ""{planetName}"",
+                                        ""valueOperator"": ""equal"",
+                                        ""operator"": ""and""
+                                    }}
+                                ]
+                            }}
+                        ]
+                    }}
+                }}
+            ".ToInputs();
+
+            var expected = new
+            {
+                humans,
+            };
+
+            var result = AssertQuerySuccess(query, expected, inputs);
+        }
+
         private static IResolveFieldContext<object> GetContext(string filter, string[] fields)
         {
             var context = new ResolveFieldContext<object>();

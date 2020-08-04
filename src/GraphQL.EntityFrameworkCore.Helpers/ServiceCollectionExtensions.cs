@@ -7,7 +7,8 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection AddGraphQLEntityFrameworkCoreHelpers(this IServiceCollection services)
         {
             services.AddSingleton<FilterableModesGraphType>();
-            services.AddSingleton<FilterableOperatorsGraphType>();
+            services.AddSingleton<FilterableFieldOperatorsGraphType>();
+            services.AddSingleton<FilterableValueOperatorsGraphType>();
             services.AddSingleton<FilterableInputFieldGraphType>();
             services.AddSingleton<FilterableInputGraphType>();
             
