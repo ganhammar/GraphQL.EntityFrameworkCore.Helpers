@@ -200,7 +200,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
                 First = 10,
                 IsAsc = true,
                 OrderBy = new string[] { "Id" },
-                Context = GetContext("Leia"),
+                Context = GetContext(filter: "Leia"),
             };
 
             var result = await dbContext.Humans.ToConnection(request, dbContext.Model);
@@ -420,67 +420,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
             item.ShouldBeOfType<Clone>();
             item.Name.ShouldNotBeNullOrEmpty();
             item.CloneColor.ShouldNotBeNullOrEmpty();
-        }
-
-        private static IResolveFieldContext<object> GetContext(string filter = default, string[] fields = default)
-        {
-            if (fields == default)
-            {
-                fields = new[] { "name" };
-            }
-
-            var context = new ResolveFieldContext<object>();
-
-            context.SubFields = new Dictionary<string, Field>();
-
-            foreach(var fieldName in fields)
-            {
-                context.SubFields.Add(fieldName, new Field(new NameNode(fieldName), new NameNode(fieldName)));
-            }
-
-            context.FieldName = "humans";
-            context.Path = new List<string> { "humans" };
-
-            var field = new Field(new NameNode(context.FieldName), new NameNode(context.FieldName));
-            field.SelectionSet = new SelectionSet();
-
-            foreach(var fieldName in fields)
-            {
-                field.SelectionSet.Add(new Field(new NameNode(fieldName), new NameNode(fieldName)));
-            }
-
-            if (filter != default)
-            {
-                field.Arguments = new Arguments();
-                field.Arguments.Add(new Argument(new NameNode("filter"))
-                {
-                    Value = new VariableReference(new NameNode("filter")),
-                });
-            }
-
-            context.Operation = new Operation(new NameNode(context.FieldName));
-            context.Operation.SelectionSet = new SelectionSet();
-            context.Operation.SelectionSet.Add(field);
-
-            if (filter == default)
-            {
-                return context;
-            }
-
-            var fieldsInput = new Dictionary<string, object>();
-            fieldsInput.Add("value", filter);
-
-            var filterInput = new Dictionary<string, object>();
-            filterInput.Add("fields", new List<Dictionary<string, object>> { fieldsInput });
-
-            context.Variables = new Variables();
-            context.Variables.Add(new Variable
-            {
-                Name = "filter",
-                Value = filterInput,
-            });
-
-            return context;
         }
 
         public class Request : IConnectionInput<Human>

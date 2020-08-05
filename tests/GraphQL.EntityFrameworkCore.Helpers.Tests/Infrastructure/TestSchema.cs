@@ -27,7 +27,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .Name("Humans")
                 .Filterable()
                 .ResolveAsync(async context => await dbContext.Humans
-                    .Filter(context, dbContext.Model)
                     .Select(context, dbContext.Model)
                     .ToListAsync());
 
@@ -46,7 +45,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .Name("Planets")
                 .Filterable()
                 .ResolveAsync(async context => await dbContext.Planets
-                    .Filter(context, dbContext.Model)
                     .Select(context, dbContext.Model)
                     .ToListAsync());
         }
@@ -75,7 +73,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                         {
                             var humans = await dbContext.Humans
                                 .Where(x => planetIds.Contains(x.HomePlanetId))
-                                .Filter(context, dbContext.Model)
                                 .Select(context, dbContext.Model)
                                 .ToListAsync();
 
@@ -105,7 +102,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                         "GetHomePlanets",
                         async (planetIds) => await dbContext.Planets
                             .Where(x => planetIds.Contains(x.Id))
-                            .Filter(context, dbContext.Model)
                             .Select(context, dbContext.Model)
                             .ToDictionaryAsync(x => x.Id, x => x));
 

@@ -21,7 +21,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
         {
             var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
 
-            var result = await dbContext.Humans.Filter(GetContext("Leia", new[] { "name" }), dbContext.Model).ToListAsync();
+            var result = await dbContext.Humans.Filter(GetContext("humans", "Leia", new[] { "name" }), dbContext.Model).ToListAsync();
 
             result.Count.ShouldBe(1);
         }
@@ -31,7 +31,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
         {
             var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
 
-            var result = await dbContext.Humans.Filter(GetContext("L", new[] { "name" }), dbContext.Model).ToListAsync();
+            var result = await dbContext.Humans.Filter(GetContext("humans", "L", new[] { "name" }), dbContext.Model).ToListAsync();
 
             result.Count.ShouldBe(2);
         }
@@ -41,7 +41,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
         {
             var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
 
-            var result = await dbContext.Humans.Filter(GetContext("Jar Jar Binks", new[] { "name" }), dbContext.Model).ToListAsync();
+            var result = await dbContext.Humans.Filter(GetContext("humans", "Jar Jar Binks", new[] { "name" }), dbContext.Model).ToListAsync();
 
             result.ShouldBeEmpty();
         }
@@ -51,7 +51,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
         {
             var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
 
-            var result = await dbContext.Humans.Filter(GetContext("Blue", new[] { "name", "eyeColor" }), dbContext.Model).ToListAsync();
+            var result = await dbContext.Humans.Filter(GetContext("humans", "Blue", new[] { "name", "eyeColor" }), dbContext.Model).ToListAsync();
 
             result.Count.ShouldBe(2);
         }
@@ -61,7 +61,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
         {
             var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
 
-            var result = await dbContext.Humans.Filter(GetContext("Blue", new[] { "name" }), dbContext.Model).ToListAsync();
+            var result = await dbContext.Humans.Filter(GetContext("humans", "Blue", new[] { "name" }), dbContext.Model).ToListAsync();
 
             result.ShouldBeEmpty();
         }
@@ -1321,54 +1321,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
             };
 
             var result = AssertQuerySuccess(query, expected, inputs);
-        }
-
-        private static IResolveFieldContext<object> GetContext(string filter, string[] fields)
-        {
-            var context = new ResolveFieldContext<object>();
-
-            var fieldsInput = new Dictionary<string, object>();
-            fieldsInput.Add("value", filter);
-
-            var filterInput = new Dictionary<string, object>();
-            filterInput.Add("fields", new List<Dictionary<string, object>> { fieldsInput });
-
-            context.Variables = new Variables();
-            context.Variables.Add(new Variable
-            {
-                Name = "filter",
-                Value = filterInput,
-            });
-
-            context.SubFields = new Dictionary<string, Field>();
-
-            foreach(var fieldName in fields)
-            {
-                context.SubFields.Add(fieldName, new Field(new NameNode(fieldName), new NameNode(fieldName)));
-            }
-
-            context.FieldName = "humans";
-            context.Path = new List<string> { "humans" };
-
-            var field = new Field(new NameNode(context.FieldName), new NameNode(context.FieldName));
-            field.SelectionSet = new SelectionSet();
-
-            foreach(var fieldName in fields)
-            {
-                field.SelectionSet.Add(new Field(new NameNode(fieldName), new NameNode(fieldName)));
-            }
-
-            field.Arguments = new Arguments();
-            field.Arguments.Add(new Argument(new NameNode("filter"))
-            {
-                Value = new VariableReference(new NameNode("filter")),
-            });
-
-            context.Operation = new Operation(new NameNode(context.FieldName));
-            context.Operation.SelectionSet = new SelectionSet();
-            context.Operation.SelectionSet.Add(field);
-
-            return context;
         }
     }
 }

@@ -123,12 +123,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests
         public async Task Should_ReturnHumansWithOnlyRequestedFields_When_SelectingFromFieldContext()
         {
             var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
-            var selection = new Dictionary<string, Field>();
 
-            selection.Add("id", new Field(new NameNode("id"), new NameNode("Id")));
-
-            var resolveFieldContext = new ResolveFieldContext<object>();
-            resolveFieldContext.SubFields = selection;
+            var resolveFieldContext = GetContext(fields: new[] { "id" });
 
             var result = await dbContext.Humans.Select(resolveFieldContext, dbContext.Model).ToListAsync();
 
@@ -144,12 +140,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests
         public async Task Should_ReturnDroidsWithOnlyRequestedFieldsAndForeignKeys_When_SelectingFromFieldContext()
         {
             var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
-            var selection = new Dictionary<string, Field>();
 
-            selection.Add("id", new Field(new NameNode("id"), new NameNode("Id")));
-
-            var resolveFieldContext = new ResolveFieldContext<object>();
-            resolveFieldContext.SubFields = selection;
+            var resolveFieldContext = GetContext(fields: new[] { "id" });
 
             var result = await dbContext.Droids.Select(resolveFieldContext, dbContext.Model).ToListAsync();
 

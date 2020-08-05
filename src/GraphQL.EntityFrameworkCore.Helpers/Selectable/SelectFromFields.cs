@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Linq.Expressions;
+using GraphQL.EntityFrameworkCore.Helpers.Filterable;
 using GraphQL.Types;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -14,6 +15,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Selectable
             {
                 return query;
             }
+
+            query = query.Filter(context, model);
 
             var entityType = typeof(TQuery);
             
