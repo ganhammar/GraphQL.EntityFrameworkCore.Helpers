@@ -4,7 +4,7 @@ using Xunit;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
 {
-    public class FilterableInputExtensionsTest : TestBase
+    public class FilterableInputExtensionsTests : TestBase
     {
         [Fact]
         public void Should_BeValid_When_SimpleInputIsValid()

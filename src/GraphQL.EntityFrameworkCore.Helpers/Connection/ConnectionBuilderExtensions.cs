@@ -11,7 +11,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             builder.Bidirectional();
             builder.PageSize(pageSize);
             builder.Argument<BooleanGraphType>("isAsc", "Order items ascending if true");
-            builder.Argument<NonNullGraphType<ListGraphType<NonNullGraphType<StringGraphType>>>>("orderBy", "Fields to order by");
+            builder.Argument<ListGraphType<NonNullGraphType<StringGraphType>>>("orderBy", "Fields to order by");
 
             return builder.Filterable();
         }

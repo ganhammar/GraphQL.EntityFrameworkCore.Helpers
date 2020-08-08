@@ -9,14 +9,14 @@
     <ItemGroup>
         <PackageReference Include="GraphQL" Version="$(GraphQLVersion)" />
         <PackageReference Include="GraphQL.SystemTextJson" Version="$(GraphQLVersion)" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="$(MicrosoftEntityFrameworkCoreInMemoryVersion)" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="$(MicrosoftEntityFrameworkCoreVersion)" />
         <PackageReference Include="Shouldly" Version="$(ShouldlyVersion)" />
         <PackageReference Include="xunit" Version="$(XunitVersion)" />
         <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitVersion)" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\GraphQL.EntityFrameworkCore.Helpers\GraphQL.EntityFrameworkCore.Helpers.csproj" />
+        <ProjectReference Include="..\..\..\src\GraphQL.EntityFrameworkCore.Helpers\GraphQL.EntityFrameworkCore.Helpers.csproj" />
     </ItemGroup>
 
 </Project>

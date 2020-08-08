@@ -1,5 +1,5 @@
+using GraphQL;
 using GraphQL.EntityFrameworkCore.Helpers.Connection;
-using GraphQL.Types;
 
 namespace HeadlessCms.GraphQL
 {

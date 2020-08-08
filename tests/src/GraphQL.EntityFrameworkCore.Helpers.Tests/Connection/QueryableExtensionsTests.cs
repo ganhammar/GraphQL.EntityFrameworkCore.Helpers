@@ -1,11 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using GraphQL.EntityFrameworkCore.Helpers.Connection;
 using GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure;
-using GraphQL.Language.AST;
-using GraphQL.Types;
 using GraphQL.Types.Relay.DataObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

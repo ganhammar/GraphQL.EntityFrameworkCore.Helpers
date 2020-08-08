@@ -19,7 +19,7 @@ namespace HeadlessCms.GraphQL
                     return await dbContext.Pages.ToConnection(request, dbContext.Model);
                 });
 
-            Connection<PageGraphType>()
+            Connection<UserGraphType>()
                 .Name("Users")
                 .Paged()
                 .ResolveAsync(async context =>
@@ -30,7 +30,7 @@ namespace HeadlessCms.GraphQL
                     return await dbContext.Users.ToConnection(request, dbContext.Model);
                 });
 
-            Connection<PageGraphType>()
+            Connection<TagGraphType>()
                 .Name("Tags")
                 .Paged()
                 .ResolveAsync(async context =>

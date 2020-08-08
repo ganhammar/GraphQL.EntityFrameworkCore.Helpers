@@ -1,11 +1,19 @@
 <Project>
 
     <PropertyGroup>
-        <GraphQLVersion>3.0.0-preview-1490</GraphQLVersion>
-        <MicrosoftEntityFrameworkCoreVersion>3.1.2</MicrosoftEntityFrameworkCoreVersion>
-        <MicrosoftEntityFrameworkCoreInMemoryVersion>3.1.2</MicrosoftEntityFrameworkCoreInMemoryVersion>
+        <GraphQLVersion>3.0.0-preview-1675</GraphQLVersion>
+        <GraphQLServerVersion>3.5.0-alpha0071</GraphQLServerVersion>
+        <MicrosoftAspNetCoreMvcTestingVersion>3.1.6</MicrosoftAspNetCoreMvcTestingVersion>
+        <MicrosoftEntityFrameworkCoreVersion>3.1.6</MicrosoftEntityFrameworkCoreVersion>
+        <MicrosoftNetTestSdkVersion>16.5.0</MicrosoftNetTestSdkVersion>
         <ShouldlyVersion>3.0.2</ShouldlyVersion>
         <XunitVersion>2.4.1</XunitVersion>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <RestoreSources>
+            https://www.myget.org/F/graphql-dotnet/api/v3/index.json;
+        </RestoreSources>
     </PropertyGroup>
 
 </Project>

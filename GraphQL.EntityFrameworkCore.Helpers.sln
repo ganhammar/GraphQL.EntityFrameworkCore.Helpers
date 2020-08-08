@@ -9,11 +9,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraphQL.EntityFrameworkCore
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{6ADDEA9F-2704-40D1-A2F7-52B824CBB0B3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraphQL.EntityFrameworkCore.Helpers.Tests", "tests\GraphQL.EntityFrameworkCore.Helpers.Tests\GraphQL.EntityFrameworkCore.Helpers.Tests.csproj", "{D7EF6031-25FD-4643-8D39-C31DADE9B679}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraphQL.EntityFrameworkCore.Helpers.Tests", "tests\src\GraphQL.EntityFrameworkCore.Helpers.Tests\GraphQL.EntityFrameworkCore.Helpers.Tests.csproj", "{D7EF6031-25FD-4643-8D39-C31DADE9B679}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{66628A4F-A869-42FE-BF52-437BCA835A21}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeadlessCms", "samples\HeadlessCms\HeadlessCms.csproj", "{906C8AFE-EB9B-42C5-807A-F237AC345504}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{34B18A03-4BDB-4EC8-ABD6-5A3C3F6B3493}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeadlessCms.Tests", "tests\samples\HeadlessCms.Tests\HeadlessCms.Tests.csproj", "{26F7C180-1C33-45F7-8E6E-D9534EDA8D83}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -64,10 +68,24 @@ Global
 		{906C8AFE-EB9B-42C5-807A-F237AC345504}.Release|x64.Build.0 = Release|Any CPU
 		{906C8AFE-EB9B-42C5-807A-F237AC345504}.Release|x86.ActiveCfg = Release|Any CPU
 		{906C8AFE-EB9B-42C5-807A-F237AC345504}.Release|x86.Build.0 = Release|Any CPU
+		{26F7C180-1C33-45F7-8E6E-D9534EDA8D83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26F7C180-1C33-45F7-8E6E-D9534EDA8D83}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26F7C180-1C33-45F7-8E6E-D9534EDA8D83}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{26F7C180-1C33-45F7-8E6E-D9534EDA8D83}.Debug|x64.Build.0 = Debug|Any CPU
+		{26F7C180-1C33-45F7-8E6E-D9534EDA8D83}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{26F7C180-1C33-45F7-8E6E-D9534EDA8D83}.Debug|x86.Build.0 = Debug|Any CPU
+		{26F7C180-1C33-45F7-8E6E-D9534EDA8D83}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26F7C180-1C33-45F7-8E6E-D9534EDA8D83}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26F7C180-1C33-45F7-8E6E-D9534EDA8D83}.Release|x64.ActiveCfg = Release|Any CPU
+		{26F7C180-1C33-45F7-8E6E-D9534EDA8D83}.Release|x64.Build.0 = Release|Any CPU
+		{26F7C180-1C33-45F7-8E6E-D9534EDA8D83}.Release|x86.ActiveCfg = Release|Any CPU
+		{26F7C180-1C33-45F7-8E6E-D9534EDA8D83}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{BAEDF10C-3DE9-48A1-9815-85D4433CBF1F} = {320605BC-F2EF-4EF0-946C-7BBFDAED89D1}
 		{D7EF6031-25FD-4643-8D39-C31DADE9B679} = {6ADDEA9F-2704-40D1-A2F7-52B824CBB0B3}
 		{906C8AFE-EB9B-42C5-807A-F237AC345504} = {66628A4F-A869-42FE-BF52-437BCA835A21}
+		{34B18A03-4BDB-4EC8-ABD6-5A3C3F6B3493} = {6ADDEA9F-2704-40D1-A2F7-52B824CBB0B3}
+		{26F7C180-1C33-45F7-8E6E-D9534EDA8D83} = {34B18A03-4BDB-4EC8-ABD6-5A3C3F6B3493}
 	EndGlobalSection
 EndGlobal

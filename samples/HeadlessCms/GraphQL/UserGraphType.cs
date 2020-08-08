@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using GraphQL.DataLoader;
@@ -25,17 +24,16 @@ namespace HeadlessCms.GraphQL
                 .Name("Pages")
                 .ResolveAsync(context =>
                 {
-                    var loader = accessor.Context.GetOrAddCollectionBatchLoader<Guid, Page>(
+                    var loader = accessor.Context.GetOrAddCollectionBatchLoader<int, Page>(
                         "GetUserPages",
                         async (userIds) =>
                         {
                             var pages = await dbContext.Pages
-                                .Where(x => userIds.Contains(x.EditorId))
                                 .Select(context, dbContext.Model)
                                 .ToListAsync();
 
                             return pages
-                                .Select(x => new KeyValuePair<Guid, Page>(x.EditorId, x))
+                                .Select(x => new KeyValuePair<int, Page>(x.EditorId, x))
                                 .ToLookup(x => x.Key, x => x.Value);
                         });
 

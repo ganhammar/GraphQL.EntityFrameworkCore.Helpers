@@ -16,9 +16,9 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
             {
                 foreach(var path in context.Path.Skip(1))
                 {
-                    if (int.TryParse(path, out _) == false)
+                    if (int.TryParse(path.ToString(), out _) == false)
                     {
-                        filterFields = filterFields.FirstOrDefault(x => x.Target.Equals(path, StringComparison.InvariantCultureIgnoreCase))?.Fields;
+                        filterFields = filterFields.FirstOrDefault(x => x.Target.Equals(path.ToString(), StringComparison.InvariantCultureIgnoreCase))?.Fields;
 
                         if (filterFields == default)
                         {
@@ -47,7 +47,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
             }
 
             var selectedFields = ((Field)context.Operation.SelectionSet.Selections
-                .First(x => ((Field)x).Name == context.Path.First())).SelectionSet.Selections;
+                .First(x => ((Field)x).Name == context.Path.First().ToString())).SelectionSet.Selections;
 
             ValidateFields(ref result, input.Fields, selectedFields, context);
 

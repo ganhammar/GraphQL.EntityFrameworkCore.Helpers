@@ -1,5 +1,3 @@
-using GraphQL.Types;
-
 namespace GraphQL.EntityFrameworkCore.Helpers.Connection
 {
     public interface IConnectionInput<T>

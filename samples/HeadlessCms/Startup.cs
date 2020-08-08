@@ -1,4 +1,5 @@
 using GraphQL.Server;
+using GraphQL.Types;
 using HeadlessCms.Data;
 using HeadlessCms.GraphQL;
 using Microsoft.AspNetCore.Builder;
@@ -14,6 +15,7 @@ namespace HeadlessCms
         {
             services
                 .AddDbContext<CmsDbContext>(ServiceLifetime.Transient)
+                .AddSingleton<ISchema, CmsSchema>()
                 .AddGraphQLEntityFrameworkCoreHelpers()
                 .AddGraphQL()
                 .AddSystemTextJson()
@@ -28,7 +30,7 @@ namespace HeadlessCms
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseGraphQL<CmsSchema>("/graphql");
+            app.UseGraphQL<ISchema>("/graphql");
         }
     }
 }

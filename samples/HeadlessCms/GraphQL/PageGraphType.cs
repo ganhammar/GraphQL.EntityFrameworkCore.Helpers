@@ -25,7 +25,7 @@ namespace HeadlessCms.GraphQL
                 .Name("Editor")
                 .ResolveAsync(context =>
                 {
-                    var loader = accessor.Context.GetOrAddBatchLoader<Guid, User>(
+                    var loader = accessor.Context.GetOrAddBatchLoader<int, User>(
                         "GetPageEditors",
                         async (userIds) => await dbContext.Users
                             .Where(x => userIds.Contains(x.Id))
@@ -38,7 +38,7 @@ namespace HeadlessCms.GraphQL
                 .Name("Tags")
                 .ResolveAsync(context =>
                 {
-                    var loader = accessor.Context.GetOrAddCollectionBatchLoader<Guid, Tag>(
+                    var loader = accessor.Context.GetOrAddCollectionBatchLoader<int, Tag>(
                         "GetPageTags",
                         async (tagIds) =>
                         {
@@ -49,7 +49,7 @@ namespace HeadlessCms.GraphQL
                                 .ToListAsync();
 
                             return tags
-                                .SelectMany(x => x.PageTags.Select(y => new KeyValuePair<Guid, Tag>(y.PageId, x)))
+                                .SelectMany(x => x.PageTags.Select(y => new KeyValuePair<int, Tag>(y.PageId, x)))
                                 .ToLookup(x => x.Key, x => x.Value);
                         });
 

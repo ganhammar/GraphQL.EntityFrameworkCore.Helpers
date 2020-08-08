@@ -168,7 +168,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 x.UserContext = userContext;
                 x.CancellationToken = cancellationToken;
                 x.ValidationRules = rules;
-                x.FieldNameConverter = new CamelCaseFieldNameConverter();
+                x.NameConverter = new CamelCaseNameConverter();
                 foreach (var listener in ServiceProvider.GetService<IEnumerable<IDocumentExecutionListener>>())
                 {
                     x.Listeners.Add(listener);

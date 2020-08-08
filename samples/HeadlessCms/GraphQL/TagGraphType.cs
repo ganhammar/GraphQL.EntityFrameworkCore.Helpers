@@ -22,7 +22,7 @@ namespace HeadlessCms.GraphQL
                 .Name("Pages")
                 .ResolveAsync(context =>
                 {
-                    var loader = accessor.Context.GetOrAddCollectionBatchLoader<Guid, Page>(
+                    var loader = accessor.Context.GetOrAddCollectionBatchLoader<int, Page>(
                         "GetTagPages",
                         async (tagIds) =>
                         {
@@ -33,7 +33,7 @@ namespace HeadlessCms.GraphQL
                                 .ToListAsync();
 
                             return pages
-                                .SelectMany(x => x.PageTags.Select(y => new KeyValuePair<Guid, Page>(y.TagId, x)))
+                                .SelectMany(x => x.PageTags.Select(y => new KeyValuePair<int, Page>(y.TagId, x)))
                                 .ToLookup(x => x.Key, x => x.Value);
                         });
 

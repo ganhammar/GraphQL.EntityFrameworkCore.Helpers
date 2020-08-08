@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace HeadlessCms.Migrations
 {
@@ -11,7 +10,8 @@ namespace HeadlessCms.Migrations
                 name: "Tags",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(nullable: false),
+                    Id = table.Column<int>(nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
                     Value = table.Column<string>(nullable: true)
                 },
                 constraints: table =>
@@ -23,7 +23,8 @@ namespace HeadlessCms.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(nullable: false),
+                    Id = table.Column<int>(nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
                     Name = table.Column<string>(nullable: true),
                     Email = table.Column<string>(nullable: true)
                 },
@@ -36,10 +37,11 @@ namespace HeadlessCms.Migrations
                 name: "Pages",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(nullable: false),
+                    Id = table.Column<int>(nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
                     Title = table.Column<string>(nullable: true),
                     Content = table.Column<string>(nullable: true),
-                    EditorId = table.Column<Guid>(nullable: false)
+                    EditorId = table.Column<int>(nullable: false)
                 },
                 constraints: table =>
                 {
@@ -56,8 +58,8 @@ namespace HeadlessCms.Migrations
                 name: "PageTags",
                 columns: table => new
                 {
-                    PageId = table.Column<Guid>(nullable: false),
-                    TagId = table.Column<Guid>(nullable: false)
+                    PageId = table.Column<int>(nullable: false),
+                    TagId = table.Column<int>(nullable: false)
                 },
                 constraints: table =>
                 {

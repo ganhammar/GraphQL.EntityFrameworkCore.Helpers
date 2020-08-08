@@ -1,7 +1,6 @@
 using System;
 using GraphQL.EntityFrameworkCore.Helpers.Connection;
 using GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure;
-using GraphQL.Types;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
