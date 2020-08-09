@@ -17,9 +17,9 @@ namespace HeadlessCms.GraphQL
 
             Field(x => x.Id);
             Field(x => x.Name)
-                .Filterable();
+                .FilterableProperty();
             Field(x => x.Email)
-                .Filterable();
+                .FilterableProperty();
             Field<ListGraphType<PageGraphType>, IEnumerable<Page>>()
                 .Name("Pages")
                 .ResolveAsync(context =>

@@ -1,3 +1,5 @@
+using System.IO;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 
 namespace HeadlessCms.Data
@@ -21,6 +23,12 @@ namespace HeadlessCms.Data
         }
 
          protected override void OnConfiguring(DbContextOptionsBuilder options)
-            => options.UseSqlite("Data Source=HeadlessCms.db");
+            => options.UseSqlite(string.Concat(
+                "Data Source=",
+                Path.Combine(
+                    Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetName().CodeBase),
+                    "HeadlessCms.db"
+                )
+            ));
     }
 }

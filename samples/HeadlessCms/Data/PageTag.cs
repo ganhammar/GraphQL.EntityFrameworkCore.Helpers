@@ -1,5 +1,3 @@
-using System;
-
 namespace HeadlessCms.Data
 {
     public class PageTag

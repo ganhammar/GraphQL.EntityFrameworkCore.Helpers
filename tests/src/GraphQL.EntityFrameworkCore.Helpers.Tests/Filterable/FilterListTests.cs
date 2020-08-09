@@ -1,12 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using GraphQL.EntityFrameworkCore.Helpers.Filterable;
 using GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure;
-using GraphQL.Language.AST;
 using GraphQL.SystemTextJson;
-using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;

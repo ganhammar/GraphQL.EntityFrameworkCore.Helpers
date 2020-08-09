@@ -1,11 +1,12 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public class ValidationResult
     {
-        public bool IsValid { get; set; } = true;
         public List<ValidationFailure> Failures { get; set; } = new List<ValidationFailure>();
+        public bool IsValid { get => Failures.Any() == false; }
     }
 
     public class ValidationFailure

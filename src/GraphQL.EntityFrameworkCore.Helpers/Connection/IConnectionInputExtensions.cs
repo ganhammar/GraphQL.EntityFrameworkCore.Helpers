@@ -28,14 +28,12 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
 
             if (request.First == default)
             {
-                result.IsValid = false;
                 result.Failures.Add(new ValidationFailure("First", "First is required"));
             }
 
             var orderBy = ConnectionCursor.GetOrderBy<TSourceType, TReturnType>(request, model);
             if (orderBy.Any() == false || IsOrderByValid<TSourceType, TReturnType>(orderBy) == false)
             {
-                result.IsValid = false;
                 result.Failures.Add(new ValidationFailure("OrderBy", orderBy.Any() == false
                     ? "Order by is not defined"
                     : "Cannot order by one or more of the provided fields"));
@@ -47,13 +45,11 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
 
             if (isAfter && IsAfterValid<TSourceType, TReturnType>(request, model) == false)
             {
-                result.IsValid = false;
                 result.Failures.Add(new ValidationFailure("After", "The after cursor is not valid"));
             }
 
             if (isBefore && IsBeforeValid<TSourceType, TReturnType>(request, model) == false)
             {
-                result.IsValid = false;
                 result.Failures.Add(new ValidationFailure("Before", "The before cursor is not valid"));
             }
 

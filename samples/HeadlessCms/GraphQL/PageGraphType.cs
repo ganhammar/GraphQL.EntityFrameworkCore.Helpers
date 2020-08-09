@@ -34,22 +34,21 @@ namespace HeadlessCms.GraphQL
 
                     return loader.LoadAsync(context.Source.EditorId);
                 });
-            Field<ListGraphType<TagGraphType>, IEnumerable<Tag>>()
-                .Name("Tags")
+            Field<ListGraphType<PageTagGraphType>, IEnumerable<PageTag>>()
+                .Name("PageTags")
                 .ResolveAsync(context =>
                 {
-                    var loader = accessor.Context.GetOrAddCollectionBatchLoader<int, Tag>(
-                        "GetPageTags",
-                        async (tagIds) =>
+                    var loader = accessor.Context.GetOrAddCollectionBatchLoader<int, PageTag>(
+                        "GetPagePageTags",
+                        async (pageIds) =>
                         {
-                            var tags = await dbContext.Tags
-                                .Include(x => x.PageTags)
-                                .Where(x => x.PageTags.Any(y => tagIds.Contains(y.TagId)))
+                            var pageTags = await dbContext.PageTags
+                                .Where(x => pageIds.Contains(x.PageId))
                                 .Filter(context, dbContext.Model)
                                 .ToListAsync();
 
-                            return tags
-                                .SelectMany(x => x.PageTags.Select(y => new KeyValuePair<int, Tag>(y.PageId, x)))
+                            return pageTags
+                                .Select(x => new KeyValuePair<int, PageTag>(x.PageId, x))
                                 .ToLookup(x => x.Key, x => x.Value);
                         });
 

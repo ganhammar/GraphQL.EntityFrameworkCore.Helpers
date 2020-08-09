@@ -36,21 +36,34 @@ namespace HeadlessCms.Tests
             var client = await GetTestClient();
 
             var payload = JsonSerializer.Serialize(new {
-                query = @"query pages {\n  
-                    pages {\n    edges {\n      node {\n        id\n      }\n      cursor\n    }\n    
-                    pageInfo {\n      hasPreviousPage\n      hasNextPage\n      startCursor\n      endCursor\n    }\n  }\n    
-                    totalCount\n}",
+                query = "query pages {\n  pages {\n    edges {\n      node {\n        id\n      }\n    }\n    pageInfo {\n      hasPreviousPage\n      hasNextPage\n    }\n    totalCount\n  }}",
                 operationName = "pages",
             });
-            var operation = new StringContent(payload, Encoding.UTF8, "application/json");
 
-            var response = await client.PostAsync("/graphql", operation);
+            var expected = new
+            {
+                pages = new
+                {
+                    edges = new[]
+                    {
+                        new
+                        {
+                            node = new
+                            {
+                                id = 1,
+                            },
+                        },
+                    },
+                    pageInfo = new
+                    {
+                        hasPreviousPage = false,
+                        hasNextPage = false,
+                    },
+                    totalCount = 1,
+                },
+            };
 
-            response.StatusCode.ShouldBe(HttpStatusCode.OK);
-
-            var content = await response.Content.ReadAsStringAsync();
-
-            content.ShouldNotBeEmpty();
+            await AssertExpected(payload, expected);
         }
 
         [Fact]
@@ -59,21 +72,33 @@ namespace HeadlessCms.Tests
             var client = await GetTestClient();
 
             var payload = JsonSerializer.Serialize(new {
-                query = @"query users {\n  
-                    users {\n    edges {\n      node {\n        id\n      }\n      cursor\n    }\n    
-                    pageInfo {\n      hasPreviousPage\n      hasNextPage\n      startCursor\n      endCursor\n    }\n  }\n    
-                    totalCount\n}",
+                query = "query users {\n  users {\n    edges {\n      node {\n        id\n      }\n    }\n    pageInfo {\n      hasPreviousPage\n      hasNextPage\n    }\n    totalCount\n  }}",
                 operationName = "users",
             });
-            var operation = new StringContent(payload, Encoding.UTF8, "application/json");
 
-            var response = await client.PostAsync("/graphql", operation);
+            var expected = new
+            {
+                users = new
+                {
+                    edges = new[]
+                    {
+                        new {
+                            node = new
+                            {
+                                id = 1,
+                            },
+                        },
+                    },
+                    pageInfo = new
+                    {
+                        hasPreviousPage = false,
+                        hasNextPage = false,
+                    },
+                    totalCount = 1,
+                },
+            };
 
-            response.StatusCode.ShouldBe(HttpStatusCode.OK);
-
-            var content = await response.Content.ReadAsStringAsync();
-
-            content.ShouldNotBeEmpty();
+            await AssertExpected(payload, expected);
         }
 
         [Fact]
@@ -82,44 +107,199 @@ namespace HeadlessCms.Tests
             var client = await GetTestClient();
 
             var payload = JsonSerializer.Serialize(new {
-                query = @"query tags {\n  
-                    tags {\n    edges {\n      node {\n        id\n      }\n      cursor\n    }\n    
-                    pageInfo {\n      hasPreviousPage\n      hasNextPage\n      startCursor\n      endCursor\n    }\n  }\n    
-                    totalCount\n}",
+                query = "query tags {\n  tags {\n    edges {\n      node {\n        id\n      }\n    }\n    pageInfo {\n      hasPreviousPage\n      hasNextPage\n    }\n    totalCount\n  }}",
                 operationName = "tags",
             });
-            var operation = new StringContent(payload, Encoding.UTF8, "application/json");
 
-            var response = await client.PostAsync("/graphql", operation);
+            var expected = new
+            {
+                tags = new
+                {
+                    edges = new[]
+                    {
+                        new
+                        {
+                            node = new
+                            {
+                                id = 1,
+                            },
+                        },
+                        new
+                        {
+                            node = new
+                            {
+                                id = 2,
+                            },
+                        },
+                        new
+                        {
+                            node = new
+                            {
+                                id = 3,
+                            },
+                        },
+                    },
+                    pageInfo = new
+                    {
+                        hasPreviousPage = false,
+                        hasNextPage = false,
+                    },
+                    totalCount = 3,
+                },
+            };
 
-            response.StatusCode.ShouldBe(HttpStatusCode.OK);
-
-            var content = await response.Content.ReadAsStringAsync();
-
-            content.ShouldNotBeEmpty();
+            await AssertExpected(payload, expected);
         }
 
         [Fact]
         public async Task Should_ReturnUsersWithPagesAndTags_When_QueryingNestedProperties()
         {
-            var client = await GetTestClient();
-
             var payload = JsonSerializer.Serialize(new {
-                query = @"query users {\n  
-                    users {\n    edges {\n      node {\n        id\n        
-                        pages {\n          id\n          
-                            tags {\n            id\n          }\n        }\n      }\n    }\n  }\n}",
+                query = "query users {\n  users {\n    edges {\n      node {\n        id\n        pages {\n          id\n          pageTags {\n            tag {\n                id\n                }\n          }\n        }\n      }\n    }\n  }\n}",
                 operationName = "users",
             });
-            var operation = new StringContent(payload, Encoding.UTF8, "application/json");
 
+            var expected = new
+            {
+                users = new
+                {
+                    edges = new[]
+                    {
+                        new
+                        {
+                            node = new
+                            {
+                                id = 1,
+                                pages = new []
+                                {
+                                    new {
+                                        id = 1,
+                                        pageTags = new[]
+                                        {
+                                            new
+                                            {
+                                                tag = new
+                                                {
+                                                    id = 1,
+                                                },
+                                            },
+                                            new {
+                                                tag = new
+                                                {
+                                                    id = 2,
+                                                },
+                                            },
+                                            new {
+                                                tag = new
+                                                {
+                                                    id = 3,
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            };
+
+            await AssertExpected(payload, expected);
+        }
+
+        [Fact]
+        public async Task Should_ReturnPagesWithSpecificTags_When_FilteringDeep()
+        {
+            var payload = JsonSerializer.Serialize(new
+            {
+                query = "query pages($filter: FilterInput) {\n  pages(filter: $filter) {\n    edges {\n      node {\n        id\n        pageTags {\n          tag {\n            value\n          }\n        }\n      }\n    }\n  }}",
+                variables = new
+                {
+                    filter = new
+                    {
+                        mode = "deep",
+                        fields = new[]
+                        {
+                            new
+                            {
+                                target = "pageTags",
+                                fields = new []
+                                {
+                                    new
+                                    {
+                                        target = "tag",
+                                        fields = new []
+                                        {
+                                            new
+                                            {
+                                               target = "value",
+                                               value = "lorem"
+                                            },
+                                            new
+                                            {
+                                                target = "value",
+                                                value = "ipsum"
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                operationName = "pages"
+            });
+
+            var expected = new
+            {
+                pages = new {
+                    edges = new[]
+                    {
+                        new
+                        {
+                            node = new
+                            {
+                                id = 1,
+                                pageTags = new[]
+                                {
+                                    new
+                                    {
+                                        tag = new
+                                        {
+                                            value = "Lorem",
+                                        },
+                                    },
+                                    new
+                                    {
+                                        tag = new
+                                        {
+                                            value = "Ipsum",
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            };
+
+            await AssertExpected(payload, expected);
+        }
+
+        private async Task AssertExpected(string payload, object expected)
+        {
+            var client = await GetTestClient();
+            var operation = new StringContent(payload, Encoding.UTF8, "application/json");
             var response = await client.PostAsync("/graphql", operation);
 
             response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
-            var content = await response.Content.ReadAsStringAsync();
+            var content = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+            var data = content.RootElement.GetProperty("data");
 
-            content.ShouldNotBeEmpty();
+            data.ShouldNotBeNull();
+            data.ToString().Equals(
+                JsonDocument.Parse(JsonSerializer.Serialize(expected)).RootElement.ToString()).ShouldBeTrue();
         }
     }
 }

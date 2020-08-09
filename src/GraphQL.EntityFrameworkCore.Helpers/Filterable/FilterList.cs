@@ -6,7 +6,6 @@ using System.Linq.Expressions;
 using System.Reflection;
 using GraphQL.EntityFrameworkCore.Helpers.Connection;
 using GraphQL.Language.AST;
-using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -97,7 +96,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
         {
             var entityType = typeof(TQuery);
             var argument = Expression.Parameter(entityType);
-            var expressions = GetSelectionPaths(argument, filter.GetApplicableFilterFields(context), entityType, context.SubFields, model, query);
+            var expressions = GetSelectionPaths(argument, filter.GetApplicableFilterFields(context), entityType, GetSelections(context.SubFields), model, query);
 
             if (expressions == default)
             {
@@ -123,8 +122,19 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
                     query = query.AddWhere(argument, entityType, clause);
                 });
             }
-
+            
             return query;
+        }
+
+        private static IDictionary<string, Field> GetSelections(IDictionary<string, Field> fields)
+        {
+            if (fields.Any(x => x.Key.Equals("edges", StringComparison.InvariantCultureIgnoreCase)))
+            {
+                return ToDictionary(ToDictionary(fields.First(x => x.Key.Equals("edges", StringComparison.InvariantCultureIgnoreCase)))
+                    .First(x => x.Key.Equals("node", StringComparison.InvariantCultureIgnoreCase)));
+            }
+
+            return fields;
         }
 
         private static IQueryable<TQuery> AddWhere<TQuery>(this IQueryable<TQuery> query, ParameterExpression argument, Type entityType, Expression clause)
@@ -168,7 +178,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
                                     subArgument,
                                     GetFilterFields(field.Value.Name, fields),
                                     targetType,
-                                    ToDictionary(field),
+                                    GetSelections(ToDictionary(field)),
                                     model,
                                     query
                                 ),
@@ -185,7 +195,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
                                 Expression.Property(argument, property.Name),
                                 GetFilterFields(field.Value.Name, fields),
                                 targetType,
-                                ToDictionary(field),
+                                GetSelections(ToDictionary(field)),
                                 model,
                                 query
                             ));
