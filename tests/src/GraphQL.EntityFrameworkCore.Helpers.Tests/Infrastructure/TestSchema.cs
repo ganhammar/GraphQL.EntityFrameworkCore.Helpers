@@ -136,8 +136,10 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
         public DroidGraphType(IDataLoaderContextAccessor accessor, TestDbContext dbContext)
         {
             Field(x => x.Id, type: typeof(IdGraphType));
-            Field(x => x.Name);
-            Field(x => x.PrimaryFunction);
+            Field(x => x.Name)
+                .FilterableProperty();
+            Field(x => x.PrimaryFunction)
+                .FilterableProperty();
             Field<HumanGraphType, Human>()
                 .Name("Owner")
                 .ResolveAsync(context =>
@@ -147,12 +149,13 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                         async (droidIds) =>
                         {
                             var humans = await dbContext.Humans
+                                .Include(x => x.Droids)
                                 .Where(x => x.Droids.Any(y => droidIds.Contains(y.Id)))
-                                .Select(context, dbContext.Model)
+                                .Filter(context, dbContext.Model)
                                 .ToListAsync();
                             
                             return humans
-                                .SelectMany(x => x.Droids.Where(y => droidIds.Contains(y.Id)).ToDictionary(y => y.Id, y => x))
+                                .SelectMany(x => x.Droids.Where(y => droidIds.Contains(y.Id)).Select(y => new KeyValuePair<Guid, Human>(y.Id, x)))
                                 .ToDictionary(x => x.Key, x => x.Value);
                         });
 

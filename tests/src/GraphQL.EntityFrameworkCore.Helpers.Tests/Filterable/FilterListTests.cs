@@ -1319,5 +1319,121 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
 
             var result = AssertQuerySuccess(query, expected, inputs);
         }
+
+        [Fact]
+        public async Task Should_ApplyFilterToConnection_When_FilteringDroids()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var primaryFunction = "proto";
+            var droids = await dbContext.Droids
+                .Where(x => EF.Functions.Like(x.PrimaryFunction, $"%{primaryFunction}%"))
+                .ToListAsync();
+
+            droids.Count().ShouldBe(1);
+
+            var query = $@"
+                query droids($filterInput: FilterInput) {{
+                    droids(filter: $filterInput) {{
+                        edges {{
+                            node {{
+                                name
+                                primaryFunction
+                            }}
+                        }}
+                    }}
+                }}
+            ";
+
+            var inputs = $@"
+                {{
+                    ""filterInput"": {{
+                        ""fields"": [
+                            {{
+                                ""target"": ""primaryFunction"",
+                                ""value"": ""{primaryFunction}""
+                            }}
+                        ]
+                    }}
+                }}
+            ".ToInputs();
+
+            var expected = new
+            {
+                droids = new
+                {
+                    edges = droids.Select(x => new
+                    {
+                        node = new
+                        {
+                            name = x.Name,
+                            primaryFunction = x.PrimaryFunction,
+                        },
+                    }),
+                },
+            };
+
+            var result = AssertQuerySuccess(query, expected, inputs);
+        }
+
+        [Fact]
+        public async Task Should_ApplyFilterToDataLoadedPropertyOnConnection_When_FilteringDroids()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var humanName = "luke";
+            var droids = await dbContext.Droids
+                .Include(x => x.Owner)
+                .Where(x => EF.Functions.Like(x.Owner.Name, $"%{humanName}%"))
+                .OrderBy(x => x.Id)
+                .ToListAsync();
+
+            droids.Count().ShouldBe(2);
+
+            var query = $@"
+                query droids($filterInput: FilterInput) {{
+                    droids(filter: $filterInput) {{
+                        edges {{
+                            node {{
+                                name
+                                owner {{
+                                    name
+                                }}
+                            }}
+                        }}
+                    }}
+                }}
+            ";
+
+            var inputs = $@"
+                {{
+                    ""filterInput"": {{
+                        ""fields"": [
+                            {{
+                                ""value"": ""{humanName}""
+                            }}
+                        ]
+                    }}
+                }}
+            ".ToInputs();
+
+            var expected = new
+            {
+                droids = new
+                {
+                    edges = droids.Select(x => new
+                    {
+                        node = new
+                        {
+                            name = x.Name,
+                            owner = new
+                            {
+                                name = x.Owner.Name,
+                            },
+                        },
+                    }),
+                },
+            };
+
+            var result = AssertQuerySuccess(query, expected, inputs);
+        }
     }
 }
