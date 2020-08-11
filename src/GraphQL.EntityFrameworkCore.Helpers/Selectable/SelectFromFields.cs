@@ -2,14 +2,13 @@ using System;
 using System.Linq;
 using System.Linq.Expressions;
 using GraphQL.EntityFrameworkCore.Helpers.Filterable;
-using GraphQL.Types;
 using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Selectable
 {
     public static class SelectFromFields
     {
-        public static IQueryable<TQuery> Select<TQuery>(this IQueryable<TQuery> query, IResolveFieldContext<object> context, IModel model)
+        public static IQueryable<TQuery> SelectFromContext<TQuery>(this IQueryable<TQuery> query, IResolveFieldContext<object> context, IModel model)
         {
             if (context == default)
             {

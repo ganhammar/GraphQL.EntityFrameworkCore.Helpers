@@ -74,7 +74,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
                 query = query.Take(request.First);
             }
 
-            query.Select(request.Context, model);
+            query.SelectFromContext(request.Context, model);
 
             var items = await query.ToListAsync();
             var lambda = ConnectionCursor.GetLambdaForCursor<TSourceType, TReturnType>(request, model);

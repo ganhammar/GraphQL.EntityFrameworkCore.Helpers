@@ -2,7 +2,7 @@
 
 Helpers to add bidirectional cursor based paginaton to your endpoints with the `IQueryable` extension method `ToConnection(IConnectionInput<T> request, IModel model)`. The method expects a request that implements `IConnectionInput<T>` as input. Parameters is added to the `ConnectionBuilder` using the extension method `Paged(defaultPageSize)`.
 
-The `Select(IResolveFieldContext context, IModel model)` extension methods helps you to avoid overfetching data by only selecting the fields requested. Foreign key fields is included by default as the value might be used for data loaded fields.
+The `SelectFromContext(IResolveFieldContext context, IModel model)` extension methods helps you to avoid overfetching data by only selecting the fields requested. Foreign key fields is included by default as the value might be used for data loaded fields.
 
 With the `Filter(IResolveFieldContext context, IModel model)` extension method you can filter a list of items on specific properties, including any requested data loaded fields. What fields that should be filterable is determined by the `FilterableAttribute` or the `FieldBuilder` extension method `FilterableProperty`.
 
@@ -29,7 +29,7 @@ With the parameter `orderBy` (array of strings, i.e `[ "name", "id" ]`) you can 
 
 It is important that each resulting cursor points at a unique row in order to be able to determine what rows to include `before` or `after` a specific row. Therefore the primary key(s) of a certain entity is automaticaly included in the `orderBy` if the asked for order by columns isn't considered unique. Columns considered unique is either the primary key, has a unique constraint or is of type `GUID`, `DATETIME` or `DATETIMEOFFSET`. If you have column that you know are unique but doesn't meet those criterias you can use the `Unique` attribute.
 
-`ToConnection` applies both `Select` and `Filter` by default.
+`ToConnection` applies both `SelectFromContext` and `Filter` by default.
 
 ```c#
 Connection<DroidGraphType>()
@@ -41,7 +41,7 @@ Connection<DroidGraphType>()
         request.SetConnectionInput(context);
 
         return await dbContext.Droids
-            .ToConnection(request, dbContext.Model); // IModel is required for Select from Request
+            .ToConnection(request, dbContext.Model); // IModel is required for SelectFromContext from Request
     });
 ```
 
@@ -55,12 +55,12 @@ var validationResult = request.Validate<Human, Clone>(dbContext.Model);
 
 #### Select from Request
 
-`Select` applies both `Filter` by default (`Filterable` have to be applied to the Field first).
+`SelectFromContext` applies both `Filter` by default (`Filterable` have to be applied to the Field first).
 
 ```c#
 FieldAsync<ListGraphType<HumanGraphType>>(
     "Humans",
-    resolve: async context => await dbContext.Humans.Select(context, dbContext.Model).ToListAsync());
+    resolve: async context => await dbContext.Humans.SelectFromContext(context, dbContext.Model).ToListAsync());
 ```
 
 #### Filter
@@ -92,7 +92,7 @@ Field<ListGraphType<HumanGraphType>>()
     .Filterable()
     .ResolveAsync(async context => await dbContext.Humans
         .Filter(context, dbContext.Model)
-        .Select(context, dbContext.Model)
+        .SelectFromContext(context, dbContext.Model)
         .ToListAsync());
 ```
 

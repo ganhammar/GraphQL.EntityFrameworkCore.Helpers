@@ -126,7 +126,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests
 
             var resolveFieldContext = GetContext(fields: new[] { "id" });
 
-            var result = await dbContext.Humans.Select(resolveFieldContext, dbContext.Model).ToListAsync();
+            var result = await dbContext.Humans.SelectFromContext(resolveFieldContext, dbContext.Model).ToListAsync();
 
             result.ShouldNotBeNull();
 
@@ -143,7 +143,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests
 
             var resolveFieldContext = GetContext(fields: new[] { "id" });
 
-            var result = await dbContext.Droids.Select(resolveFieldContext, dbContext.Model).ToListAsync();
+            var result = await dbContext.Droids.SelectFromContext(resolveFieldContext, dbContext.Model).ToListAsync();
 
             result.ShouldNotBeNull();
 

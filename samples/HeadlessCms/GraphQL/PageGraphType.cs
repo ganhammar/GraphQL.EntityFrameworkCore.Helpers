@@ -29,7 +29,7 @@ namespace HeadlessCms.GraphQL
                         "GetPageEditors",
                         async (userIds) => await dbContext.Users
                             .Where(x => userIds.Contains(x.Id))
-                            .Select(context, dbContext.Model)
+                            .SelectFromContext(context, dbContext.Model)
                             .ToDictionaryAsync(x => x.Id, x => x));
 
                     return loader.LoadAsync(context.Source.EditorId);

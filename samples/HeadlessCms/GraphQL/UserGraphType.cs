@@ -29,7 +29,7 @@ namespace HeadlessCms.GraphQL
                         async (userIds) =>
                         {
                             var pages = await dbContext.Pages
-                                .Select(context, dbContext.Model)
+                                .SelectFromContext(context, dbContext.Model)
                                 .ToListAsync();
 
                             return pages

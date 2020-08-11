@@ -21,7 +21,7 @@ namespace HeadlessCms.GraphQL
                         "GetPageTagTag",
                         async (tagIds) => await dbContext.Tags
                             .Where(x => tagIds.Contains(x.Id))
-                            .Select(context, dbContext.Model)
+                            .SelectFromContext(context, dbContext.Model)
                             .ToDictionaryAsync(x => x.Id, x => x));
 
                     return loader.LoadAsync(context.Source.TagId);
@@ -34,7 +34,7 @@ namespace HeadlessCms.GraphQL
                         "GetPageTagPage",
                         async (pageIds) => await dbContext.Pages
                             .Where(x => pageIds.Contains(x.Id))
-                            .Select(context, dbContext.Model)
+                            .SelectFromContext(context, dbContext.Model)
                             .ToDictionaryAsync(x => x.Id, x => x));
 
                     return loader.LoadAsync(context.Source.PageId);
