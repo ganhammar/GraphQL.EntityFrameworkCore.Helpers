@@ -1,7 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using GraphQL.EntityFrameworkCore.Helpers.Connection;
+using GraphQL.EntityFrameworkCore.Helpers;
 using GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure;
 using GraphQL.Types.Relay.DataObjects;
 using Microsoft.EntityFrameworkCore;

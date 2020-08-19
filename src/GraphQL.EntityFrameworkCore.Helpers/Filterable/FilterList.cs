@@ -4,12 +4,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using GraphQL.EntityFrameworkCore.Helpers.Connection;
+using GraphQL.EntityFrameworkCore.Helpers;
 using GraphQL.Language.AST;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
-namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
+namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public static class FilterList
     {
@@ -157,48 +157,50 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
 
             foreach (var field in selection)
             {
-                // Ignore case, camelCase vs PascalCase
-                var property = entityType.GetProperty(FieldHelpers.GetPropertyName(entityType, field.Value.Name), BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-
-                if (property != null)
+                foreach (var propertyName in FieldHelpers.GetPropertyPath(entityType, field.Value.Name))
                 {
-                    var navigationProperty = navigationProperties.Where(x => x.Name == property.Name).FirstOrDefault();
+                    var property = entityType.GetProperty(propertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
-                    if (navigationProperty != default)
+                    if (property != default)
                     {
-                        var targetType = property.PropertyType;
+                        var navigationProperty = navigationProperties.Where(x => x.Name == property.Name).FirstOrDefault();
 
-                        if (typeof(IEnumerable).IsAssignableFrom(targetType))
+                        if (navigationProperty != default)
                         {
-                            targetType = targetType.GetGenericArguments().First();
-                            var subArgument = Expression.Parameter(targetType);
-                            var anyMethod = GetAnyMethod().MakeGenericMethod(targetType);
+                            var targetType = property.PropertyType;
 
-                            result.Merge(GetSelectionPaths(
-                                    subArgument,
+                            if (typeof(IEnumerable).IsAssignableFrom(targetType))
+                            {
+                                targetType = targetType.GetGenericArguments().First();
+                                var subArgument = Expression.Parameter(targetType);
+                                var anyMethod = GetAnyMethod().MakeGenericMethod(targetType);
+
+                                result.Merge(GetSelectionPaths(
+                                        subArgument,
+                                        GetFilterFields(field.Value.Name, fields),
+                                        targetType,
+                                        GetSelections(ToDictionary(field)),
+                                        model,
+                                        query
+                                    ),
+                                    x => Expression.Call(
+                                        anyMethod,
+                                        Expression.MakeMemberAccess(argument, property),
+                                        Expression.Lambda(x, subArgument)
+                                    )
+                                );
+                            }
+                            else
+                            {
+                                result.Merge(GetSelectionPaths(
+                                    Expression.Property(argument, property.Name),
                                     GetFilterFields(field.Value.Name, fields),
                                     targetType,
                                     GetSelections(ToDictionary(field)),
                                     model,
                                     query
-                                ),
-                                x => Expression.Call(
-                                    anyMethod,
-                                    Expression.MakeMemberAccess(argument, property),
-                                    Expression.Lambda(x, subArgument)
-                                )
-                            );
-                        }
-                        else
-                        {
-                            result.Merge(GetSelectionPaths(
-                                Expression.Property(argument, property.Name),
-                                GetFilterFields(field.Value.Name, fields),
-                                targetType,
-                                GetSelections(ToDictionary(field)),
-                                model,
-                                query
-                            ));
+                                ));
+                            }
                         }
                     }
                 }

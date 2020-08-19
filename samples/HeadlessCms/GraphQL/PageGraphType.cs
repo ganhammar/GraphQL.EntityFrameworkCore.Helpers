@@ -2,8 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GraphQL.DataLoader;
-using GraphQL.EntityFrameworkCore.Helpers.Filterable;
-using GraphQL.EntityFrameworkCore.Helpers.Selectable;
+using GraphQL.EntityFrameworkCore.Helpers;
 using GraphQL.Types;
 using HeadlessCms.Data;
 using Microsoft.EntityFrameworkCore;
@@ -18,9 +17,9 @@ namespace HeadlessCms.GraphQL
 
             Field(x => x.Id);
             Field(x => x.Title)
-                .FilterableProperty();
+                .IsFilterable();
             Field(x => x.Content)
-                .FilterableProperty();
+                .IsFilterable();
             Field<UserGraphType, User>()
                 .Name("Editor")
                 .ResolveAsync(context =>
@@ -34,21 +33,24 @@ namespace HeadlessCms.GraphQL
 
                     return loader.LoadAsync(context.Source.EditorId);
                 });
-            Field<ListGraphType<PageTagGraphType>, IEnumerable<PageTag>>()
-                .Name("PageTags")
+            Field<ListGraphType<TagGraphType>, IEnumerable<Tag>>()
+                .Name("Tags")
+                .MapsTo(x => x.PageTags)
+                    .ThenTo(x => x.Page)
                 .ResolveAsync(context =>
                 {
-                    var loader = accessor.Context.GetOrAddCollectionBatchLoader<int, PageTag>(
-                        "GetPagePageTags",
+                    var loader = accessor.Context.GetOrAddCollectionBatchLoader<int, Tag>(
+                        "GetPageTags",
                         async (pageIds) =>
                         {
-                            var pageTags = await dbContext.PageTags
-                                .Where(x => pageIds.Contains(x.PageId))
+                            var tags = await dbContext.Tags
+                                .Include(x => x.PageTags)
+                                .Where(x => x.PageTags.Any(y => pageIds.Contains(y.PageId)))
                                 .Filter(context, dbContext.Model)
                                 .ToListAsync();
 
-                            return pageTags
-                                .Select(x => new KeyValuePair<int, PageTag>(x.PageId, x))
+                            return tags
+                                .SelectMany(x => x.PageTags.Select(y => new KeyValuePair<int, Tag>(y.PageId, x)))
                                 .ToLookup(x => x.Key, x => x.Value);
                         });
 

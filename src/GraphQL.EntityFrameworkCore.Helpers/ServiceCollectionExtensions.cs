@@ -1,4 +1,4 @@
-﻿using GraphQL.EntityFrameworkCore.Helpers.Filterable;
+﻿using GraphQL.EntityFrameworkCore.Helpers;
 
 namespace Microsoft.Extensions.DependencyInjection
 {

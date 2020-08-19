@@ -155,7 +155,7 @@ namespace HeadlessCms.Tests
         public async Task Should_ReturnUsersWithPagesAndTags_When_QueryingNestedProperties()
         {
             var payload = JsonSerializer.Serialize(new {
-                query = "query users {\n  users {\n    edges {\n      node {\n        id\n        pages {\n          id\n          pageTags {\n            tag {\n                id\n                }\n          }\n        }\n      }\n    }\n  }\n}",
+                query = "query users {\n  users {\n    edges {\n      node {\n        id\n        pages {\n          id\n         tags {\n              id\n              }\n        }\n      }\n    }\n  }\n}",
                 operationName = "users",
             });
 
@@ -174,26 +174,19 @@ namespace HeadlessCms.Tests
                                 {
                                     new {
                                         id = 1,
-                                        pageTags = new[]
+                                        tags = new[]
                                         {
                                             new
                                             {
-                                                tag = new
-                                                {
-                                                    id = 1,
-                                                },
+                                                id = 1,
                                             },
-                                            new {
-                                                tag = new
-                                                {
-                                                    id = 2,
-                                                },
+                                            new
+                                            {
+                                                id = 2,
                                             },
-                                            new {
-                                                tag = new
-                                                {
-                                                    id = 3,
-                                                },
+                                            new
+                                            {
+                                                id = 3,
                                             },
                                         },
                                     },
@@ -212,7 +205,7 @@ namespace HeadlessCms.Tests
         {
             var payload = JsonSerializer.Serialize(new
             {
-                query = "query pages($filter: FilterInput) {\n  pages(filter: $filter) {\n    edges {\n      node {\n        id\n        pageTags {\n          tag {\n            value\n          }\n        }\n      }\n    }\n  }}",
+                query = "query pages($filter: FilterInput) {\n  pages(filter: $filter) {\n    edges {\n      node {\n        id\n        tags {\n          value\n        }\n      }\n    }\n  }}",
                 variables = new
                 {
                     filter = new
@@ -222,25 +215,18 @@ namespace HeadlessCms.Tests
                         {
                             new
                             {
-                                target = "pageTags",
+                                target = "tags",
                                 fields = new []
                                 {
                                     new
                                     {
-                                        target = "tag",
-                                        fields = new []
-                                        {
-                                            new
-                                            {
-                                               target = "value",
-                                               value = "lorem"
-                                            },
-                                            new
-                                            {
-                                                target = "value",
-                                                value = "ipsum"
-                                            },
-                                        },
+                                        target = "value",
+                                        value = "lorem"
+                                    },
+                                    new
+                                    {
+                                        target = "value",
+                                        value = "ipsum"
                                     },
                                 },
                             },
@@ -260,21 +246,15 @@ namespace HeadlessCms.Tests
                             node = new
                             {
                                 id = 1,
-                                pageTags = new[]
+                                tags = new[]
                                 {
                                     new
                                     {
-                                        tag = new
-                                        {
-                                            value = "Lorem",
-                                        },
+                                        value = "Lorem",
                                     },
                                     new
                                     {
-                                        tag = new
-                                        {
-                                            value = "Ipsum",
-                                        },
+                                        value = "Ipsum",
                                     },
                                 },
                             },

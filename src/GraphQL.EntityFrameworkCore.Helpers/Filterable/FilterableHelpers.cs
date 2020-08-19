@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
+namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public static class FilterableHelpers
     {
@@ -34,7 +34,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
         
         public static bool IsFilterable(PropertyInfo property)
         {
-            return Attribute.IsDefined(property, typeof(FilterableAttribute)) ||
+            return Attribute.IsDefined(property, typeof(IsFilterableAttribute)) ||
                 _properties.Any(x => x.Key == property.ReflectedType.FullName && x.Value.Any(y => y == property.Name));
         }
     }

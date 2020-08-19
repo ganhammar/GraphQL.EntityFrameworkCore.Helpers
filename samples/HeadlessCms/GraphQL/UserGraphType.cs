@@ -1,8 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using GraphQL.DataLoader;
-using GraphQL.EntityFrameworkCore.Helpers.Filterable;
-using GraphQL.EntityFrameworkCore.Helpers.Selectable;
+using GraphQL.EntityFrameworkCore.Helpers;
 using GraphQL.Types;
 using HeadlessCms.Data;
 using Microsoft.EntityFrameworkCore;
@@ -17,9 +16,9 @@ namespace HeadlessCms.GraphQL
 
             Field(x => x.Id);
             Field(x => x.Name)
-                .FilterableProperty();
+                .IsFilterable();
             Field(x => x.Email)
-                .FilterableProperty();
+                .IsFilterable();
             Field<ListGraphType<PageGraphType>, IEnumerable<Page>>()
                 .Name("Pages")
                 .ResolveAsync(context =>

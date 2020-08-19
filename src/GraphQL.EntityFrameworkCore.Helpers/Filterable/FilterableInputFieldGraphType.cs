@@ -1,6 +1,6 @@
 using GraphQL.Types;
 
-namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
+namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public class FilterableInputFieldGraphType : InputObjectGraphType<FilterableInputField>
     {

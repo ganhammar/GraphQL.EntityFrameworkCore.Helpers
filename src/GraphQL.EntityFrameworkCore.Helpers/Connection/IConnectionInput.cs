@@ -1,4 +1,4 @@
-namespace GraphQL.EntityFrameworkCore.Helpers.Connection
+namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public interface IConnectionInput<T>
     {

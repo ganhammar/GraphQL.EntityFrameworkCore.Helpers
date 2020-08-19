@@ -4,7 +4,7 @@ Helpers to add bidirectional cursor based paginaton to your endpoints with the `
 
 The `SelectFromContext(IResolveFieldContext context, IModel model)` extension methods helps you to avoid overfetching data by only selecting the fields requested. Foreign key fields is included by default as the value might be used for data loaded fields.
 
-With the `Filter(IResolveFieldContext context, IModel model)` extension method you can filter a list of items on specific properties, including any requested data loaded fields. What fields that should be filterable is determined by the `FilterableAttribute` or the `FieldBuilder` extension method `FilterableProperty`.
+With the `Filter(IResolveFieldContext context, IModel model)` extension method you can filter a list of items on specific properties, including any requested data loaded fields. What fields that should be filterable is determined by the `IsFilterableAttribute` or the `FieldBuilder` extension method `IsFilterable`.
 
 ## Getting Started
 
@@ -55,7 +55,7 @@ var validationResult = request.Validate<Human, Clone>(dbContext.Model);
 
 #### Select from Request
 
-`SelectFromContext` applies both `Filter` by default (`Filterable` have to be applied to the Field first).
+`SelectFromContext` applies `Filter` by default (`Filtered` have to be applied to the Field first).
 
 ```c#
 FieldAsync<ListGraphType<HumanGraphType>>(
@@ -65,31 +65,31 @@ FieldAsync<ListGraphType<HumanGraphType>>(
 
 #### Filter
 
-Add the `Filterable`-attribute to columns that should be filterable.
+Add the `IsFilterable`-attribute to columns that should be filterable.
 
 ```c#
 public class Human
 {
     public Guid Id { get; set; }
 
-    [Filterable]
+    [IsFilterable]
     public string Name { get; set; }
 }
 ```
-Or, mark fields as filterable with the extension method `FilterableProperty`. If the name of the field doesn't match the property name this method needs to be used with a `Func` targeting the matching property.
+Or, mark fields as filterable with the extension method `IsFilterable`. If the name of the field doesn't match the property name this method needs to be used with a `Func` targeting the matching property.
 
 ```c#
 Field(x => x.Sector)
-    .FilterableProperty(x => x.Sector)
+    .IsFilterable(x => x.Sector)
     .Name("StarSector");
 ```
 
-Add the argument to the `FieldBuilder` using the extension method `Filterable()` and filter the list with the `IQueryable` extension method `Filter(context)`.
+Add the argument to the `FieldBuilder` using the extension method `Filtered()` and filter the list with the `IQueryable` extension method `Filter(Context, IModel)`.
 
 ```c#
 Field<ListGraphType<HumanGraphType>>()
     .Name("Humans")
-    .Filterable()
+    .Filtered()
     .ResolveAsync(async context => await dbContext.Humans
         .Filter(context, dbContext.Model)
         .SelectFromContext(context, dbContext.Model)
@@ -170,17 +170,19 @@ var validationResult = filterInput.Validate(IResolveFieldContext);
 
 #### Working with data loaded fields (navigation properties)
 
-The helper methods can only follow data loaded properties that is loaded through navigation properties (Foreign Keys). If the data loaded field isn't named the same in the schema as the property in the model the `FieldBuilder` extension method `Property(Func)` has to be applied.
+The helper methods can only follow data loaded properties that is loaded through navigation properties (Foreign Keys). If the data loaded field isn't named the same in the schema as the property in the model the `FieldBuilder` extension method `MapsTo(Func)` has to be applied.
 
 ```c#
 Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
     .Name("Residents")
-    .Property(x => x.Habitants)
+    .MapsTo(x => x.Habitants)
     .ResolveAsync(context =>
     {
         ...
     });
 ```
+
+In some cases, especially with many-to-many relationships, you might want to skip one level in the hierarchy and use a childs child property, that can be done using the method `ThenTo(Func)`, which can be applied after `MapsTo(Func)`. See sample project for example of this.
 
 ### Known issues
 

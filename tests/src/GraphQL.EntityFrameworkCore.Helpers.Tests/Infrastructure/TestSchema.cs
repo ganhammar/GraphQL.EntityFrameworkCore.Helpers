@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GraphQL.DataLoader;
 using GraphQL.Types;
-using GraphQL.EntityFrameworkCore.Helpers.Connection;
-using GraphQL.EntityFrameworkCore.Helpers.Selectable;
-using GraphQL.EntityFrameworkCore.Helpers.Filterable;
+using GraphQL.EntityFrameworkCore.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
@@ -25,7 +23,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
         {
             Field<ListGraphType<HumanGraphType>>()
                 .Name("Humans")
-                .Filterable()
+                .Filtered()
                 .ResolveAsync(async context => await dbContext.Humans
                     .SelectFromContext(context, dbContext.Model)
                     .ToListAsync());
@@ -43,7 +41,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             
             Field<ListGraphType<PlanetGraphType>>()
                 .Name("Planets")
-                .Filterable()
+                .Filtered()
                 .ResolveAsync(async context => await dbContext.Planets
                     .SelectFromContext(context, dbContext.Model)
                     .ToListAsync());
@@ -58,13 +56,13 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             Field(x => x.Name);
             Field(x => x.Region);
             Field(x => x.Sector)
-                .FilterableProperty(x => x.Sector)
+                .IsFilterable(x => x.Sector)
                 .Name("StarSector");
             Field(x => x.System)
-                .FilterableProperty();
+                .IsFilterable();
             Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
                 .Name("Residents")
-                .Property(x => x.Habitants)
+                .MapsTo(x => x.Habitants)
                 .ResolveAsync(context =>
                 {
                     var loader = accessor.Context.GetOrAddCollectionBatchLoader<Guid, Human>(
@@ -137,9 +135,9 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
         {
             Field(x => x.Id, type: typeof(IdGraphType));
             Field(x => x.Name)
-                .FilterableProperty();
+                .IsFilterable();
             Field(x => x.PrimaryFunction)
-                .FilterableProperty();
+                .IsFilterable();
             Field<HumanGraphType, Human>()
                 .Name("Owner")
                 .ResolveAsync(context =>

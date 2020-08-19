@@ -1,22 +1,21 @@
 using System;
 using System.Collections.Generic;
-using GraphQL.EntityFrameworkCore.Helpers.Connection;
-using GraphQL.EntityFrameworkCore.Helpers.Filterable;
+using GraphQL.EntityFrameworkCore.Helpers;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
 {
     public abstract class StarWarsCharacter
     {
         public Guid Id { get; set; }
-        [Filterable]
+        [IsFilterable]
         public string Name { get; set; }
     }
 
     public class Human : StarWarsCharacter
     {
-        [Filterable]
+        [IsFilterable]
         public string Species { get; set; }
-        [Filterable]
+        [IsFilterable]
         public string EyeColor { get; set; }
         public Guid HomePlanetId { get; set; }
         [Unique]

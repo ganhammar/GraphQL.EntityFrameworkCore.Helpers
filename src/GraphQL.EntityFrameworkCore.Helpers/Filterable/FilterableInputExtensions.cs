@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GraphQL.Language.AST;
 
-namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
+namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public static class FilterableInputExtensions
     {

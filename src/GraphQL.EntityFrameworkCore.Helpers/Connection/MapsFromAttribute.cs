@@ -1,6 +1,6 @@
 using System;
 
-namespace GraphQL.EntityFrameworkCore.Helpers.Connection
+namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public class MapsFromAttribute : Attribute
     {

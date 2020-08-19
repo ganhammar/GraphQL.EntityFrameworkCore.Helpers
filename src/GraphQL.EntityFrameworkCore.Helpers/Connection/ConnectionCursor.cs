@@ -8,7 +8,7 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
-namespace GraphQL.EntityFrameworkCore.Helpers.Connection
+namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public static class ConnectionCursor
     {

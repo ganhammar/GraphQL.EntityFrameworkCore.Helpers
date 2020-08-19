@@ -5,7 +5,7 @@ using System.Reflection;
 using GraphQL.Builders;
 using Microsoft.EntityFrameworkCore.Metadata;
 
-namespace GraphQL.EntityFrameworkCore.Helpers.Connection
+namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public static class ConnectionInputExtensions
     {

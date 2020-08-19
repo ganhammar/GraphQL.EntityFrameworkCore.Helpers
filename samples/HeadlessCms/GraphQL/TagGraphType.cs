@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GraphQL.DataLoader;
-using GraphQL.EntityFrameworkCore.Helpers.Filterable;
+using GraphQL.EntityFrameworkCore.Helpers;
 using GraphQL.Types;
 using HeadlessCms.Data;
 using Microsoft.EntityFrameworkCore;
@@ -17,22 +17,25 @@ namespace HeadlessCms.GraphQL
 
             Field(x => x.Id);
             Field(x => x.Value)
-                .FilterableProperty();
-            Field<ListGraphType<PageTagGraphType>, IEnumerable<PageTag>>()
-                .Name("PageTags")
+                .IsFilterable();
+            Field<ListGraphType<PageGraphType>, IEnumerable<Page>>()
+                .Name("Pages")
+                .MapsTo(x => x.PageTags)
+                    .ThenTo(x => x.Page)
                 .ResolveAsync(context =>
                 {
-                    var loader = accessor.Context.GetOrAddCollectionBatchLoader<int, PageTag>(
-                        "GetTagPageTags",
+                    var loader = accessor.Context.GetOrAddCollectionBatchLoader<int, Page>(
+                        "GetTagPages",
                         async (tagIds) =>
                         {
-                            var pageTags = await dbContext.PageTags
-                                .Where(x => tagIds.Contains(x.TagId))
+                            var pages = await dbContext.Pages
+                                .Include(x => x.PageTags)
+                                .Where(x => x.PageTags.Any(y => tagIds.Contains(y.TagId)))
                                 .Filter(context, dbContext.Model)
                                 .ToListAsync();
 
-                            return pageTags
-                                .Select(x => new KeyValuePair<int, PageTag>(x.TagId, x))
+                            return pages
+                                .SelectMany(x => x.PageTags.Select(y => new KeyValuePair<int, Page>(y.TagId, x)))
                                 .ToLookup(x => x.Key, x => x.Value);
                         });
 

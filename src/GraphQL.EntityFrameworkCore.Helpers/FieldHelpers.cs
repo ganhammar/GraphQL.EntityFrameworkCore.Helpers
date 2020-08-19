@@ -10,38 +10,38 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public static class FieldHelpers
     {
-        private static ConcurrentDictionary<string, ConcurrentDictionary<EventStreamFieldType, string>> _properties = new ConcurrentDictionary<string, ConcurrentDictionary<EventStreamFieldType, string>>();
+        private static ConcurrentDictionary<string, ConcurrentDictionary<EventStreamFieldType, List<string>>> _properties = new ConcurrentDictionary<string, ConcurrentDictionary<EventStreamFieldType, List<string>>>();
 
         public static void Map(Type entityType, EventStreamFieldType field, PropertyInfo property)
         {
             if (_properties.ContainsKey(entityType.FullName) == false)
             {
-                _properties.TryAdd(entityType.FullName, new ConcurrentDictionary<EventStreamFieldType, string>());
+                _properties.TryAdd(entityType.FullName, new ConcurrentDictionary<EventStreamFieldType, List<string>>());
             }
 
             if (_properties[entityType.FullName].ContainsKey(field) == false)
             {
-                _properties[entityType.FullName].TryAdd(field, property.Name);
+                _properties[entityType.FullName].TryAdd(field, new List<string> { property.Name });
             }
-            else
+            else if (_properties[entityType.FullName][field].Any(x => x == property.Name) == false)
             {
-                _properties[entityType.FullName][field] = property.Name;
+                _properties[entityType.FullName][field].Add(property.Name);
             }
         }
         
-        public static string GetPropertyName(Type entityType, string schemaName)
+        public static List<string> GetPropertyPath(Type entityType, string schemaName)
         {
             if (_properties.ContainsKey(entityType.FullName) == false)
             {
-                return schemaName;
+                return new List<string> { schemaName };
             }
 
             var property = _properties[entityType.FullName]
                 .Where(x => x.Key.Name.Equals(schemaName, StringComparison.InvariantCultureIgnoreCase))
-                .Select(x => (KeyValuePair<EventStreamFieldType, string>?)x)
+                .Select(x => (KeyValuePair<EventStreamFieldType, List<string>>?)x)
                 .FirstOrDefault();
 
-            return property?.Value ?? schemaName;
+            return property?.Value ?? new List<string> { schemaName };
         }
 
         public static string GetSchemaName(Type entityType, string propertyName)
@@ -52,8 +52,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             }
 
             var property = _properties[entityType.FullName]
-                .Where(x => x.Value.Equals(propertyName, StringComparison.InvariantCultureIgnoreCase))
-                .Select(x => (KeyValuePair<EventStreamFieldType, string>?)x)
+                .Where(x => x.Value.First().Equals(propertyName, StringComparison.InvariantCultureIgnoreCase))
+                .Select(x => (KeyValuePair<EventStreamFieldType, List<string>>?)x)
                 .FirstOrDefault();
 
             return property?.Key.Name ?? propertyName;

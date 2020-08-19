@@ -1,6 +1,6 @@
 using System.ComponentModel;
 
-namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
+namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public enum FilterableModes
     {

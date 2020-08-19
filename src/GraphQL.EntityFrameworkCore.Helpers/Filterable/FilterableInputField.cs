@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace GraphQL.EntityFrameworkCore.Helpers.Filterable
+namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public class FilterableInputField
     {

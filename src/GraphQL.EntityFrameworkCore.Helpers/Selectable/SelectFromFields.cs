@@ -1,10 +1,10 @@
 using System;
 using System.Linq;
 using System.Linq.Expressions;
-using GraphQL.EntityFrameworkCore.Helpers.Filterable;
+using GraphQL.EntityFrameworkCore.Helpers;
 using Microsoft.EntityFrameworkCore.Metadata;
 
-namespace GraphQL.EntityFrameworkCore.Helpers.Selectable
+namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public static class SelectFromFields
     {

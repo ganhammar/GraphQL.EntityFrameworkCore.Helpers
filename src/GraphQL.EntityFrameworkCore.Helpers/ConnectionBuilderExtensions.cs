@@ -1,8 +1,8 @@
 using GraphQL.Builders;
-using GraphQL.EntityFrameworkCore.Helpers.Filterable;
+using GraphQL.EntityFrameworkCore.Helpers;
 using GraphQL.Types;
 
-namespace GraphQL.EntityFrameworkCore.Helpers.Connection
+namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public static class ConnectionBuilderExtensions
     {
@@ -14,6 +14,13 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Connection
             builder.Argument<ListGraphType<NonNullGraphType<StringGraphType>>>("orderBy", "Fields to order by");
 
             return builder.Filterable();
+        }
+
+        public static ConnectionBuilder<TSourceType> Filterable<TSourceType>(this ConnectionBuilder<TSourceType> builder)
+        {
+            builder.Argument<FilterableInputGraphType>("filter", string.Empty);
+
+            return builder;
         }
     }
 }

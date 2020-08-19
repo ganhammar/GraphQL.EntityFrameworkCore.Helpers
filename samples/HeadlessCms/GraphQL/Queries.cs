@@ -1,4 +1,4 @@
-using GraphQL.EntityFrameworkCore.Helpers.Connection;
+using GraphQL.EntityFrameworkCore.Helpers;
 using GraphQL.Types;
 using HeadlessCms.Data;
 
