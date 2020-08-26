@@ -21,30 +21,17 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
     {
         public Query(TestDbContext dbContext)
         {
-            Field<ListGraphType<HumanGraphType>>()
+            Field<ListGraphType<HumanGraphType>, List<Human>>()
                 .Name("Humans")
-                .Filtered()
-                .ResolveAsync(async context => await dbContext.Humans
-                    .SelectFromContext(context, dbContext.Model)
-                    .ToListAsync());
+                .ResolveListAsync(dbContext, x => x.Humans);
 
             Connection<DroidGraphType>()
                 .Name("Droids")
-                .Paged()
-                .ResolveAsync(async context =>
-                {
-                    var request = new ConnectionInput();
-                    request.SetConnectionInput(context);
-
-                    return await dbContext.Droids.ToConnection(request, dbContext.Model);
-                });
+                .ResolveConnectionAsync(dbContext, x => x.Droids, typeof(ConnectionInput));
             
             Field<ListGraphType<PlanetGraphType>>()
                 .Name("Planets")
-                .Filtered()
-                .ResolveAsync(async context => await dbContext.Planets
-                    .SelectFromContext(context, dbContext.Model)
-                    .ToListAsync());
+                .ResolveListAsync(dbContext, x => x.Planets);
         }
     }
 

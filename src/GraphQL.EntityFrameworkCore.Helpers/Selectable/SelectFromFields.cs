@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Linq.Expressions;
-using GraphQL.EntityFrameworkCore.Helpers;
 using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
