@@ -21,17 +21,21 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
     {
         public Query(TestDbContext dbContext)
         {
-            Field<ListGraphType<HumanGraphType>, List<Human>>()
+            Field<ListGraphType<HumanGraphType>>()
                 .Name("Humans")
-                .ResolveListAsync(dbContext, x => x.Humans);
+                .FromDbContext(dbContext, x => x.Humans)
+                .Apply((query, context) => query.Where(x => true))
+                .ResolveListAsync();
 
             Connection<DroidGraphType>()
                 .Name("Droids")
-                .ResolveConnectionAsync(dbContext, x => x.Droids, typeof(ConnectionInput));
+                .FromDbContext(dbContext, x => x.Droids)
+                .ResolveAsync(typeof(ConnectionInput));
             
             Field<ListGraphType<PlanetGraphType>>()
                 .Name("Planets")
-                .ResolveListAsync(dbContext, x => x.Planets);
+                .FromDbContext(dbContext, x => x.Planets)
+                .ResolveListAsync();
         }
     }
 
@@ -81,19 +85,11 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             Field(x => x.EyeColor);
             Field<PlanetGraphType, Planet>()
                 .Name("HomePlanet")
-                .ResolveAsync(context =>
-                {
-                    var loader = accessor.Context.GetOrAddBatchLoader<Guid, Planet>(
-                        "GetHomePlanets",
-                        async (planetIds) => await dbContext.Planets
-                            .Where(x => planetIds.Contains(x.Id))
-                            .SelectFromContext(context, dbContext.Model)
-                            .ToDictionaryAsync(x => x.Id, x => x));
-
-                    return loader.LoadAsync(context.Source.HomePlanetId);
-                });
+                .Include(accessor, dbContext, x => x.HomePlanet, x => x.HomePlanetId)
+                .ResolveAsync();
             Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
                 .Name("Friends")
+                // .Include(accessor, dbContext, x => x.Friends)
                 .ResolveAsync(context =>
                 {
                     var loader = accessor.Context.GetOrAddCollectionBatchLoader<Guid, Human>(
@@ -127,25 +123,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .IsFilterable();
             Field<HumanGraphType, Human>()
                 .Name("Owner")
-                .ResolveAsync(context =>
-                {
-                    var loader = accessor.Context.GetOrAddBatchLoader<Guid, Human>(
-                        "GetOwner",
-                        async (droidIds) =>
-                        {
-                            var humans = await dbContext.Humans
-                                .Include(x => x.Droids)
-                                .Where(x => x.Droids.Any(y => droidIds.Contains(y.Id)))
-                                .Filter(context, dbContext.Model)
-                                .ToListAsync();
-                            
-                            return humans
-                                .SelectMany(x => x.Droids.Where(y => droidIds.Contains(y.Id)).Select(y => new KeyValuePair<Guid, Human>(y.Id, x)))
-                                .ToDictionary(x => x.Key, x => x.Value);
-                        });
-
-                    return loader.LoadAsync(context.Source.Id);
-                });
+                .Include(accessor, dbContext, x => x.Owner, x => x.OwnerId);
         }
     }
 

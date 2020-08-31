@@ -140,7 +140,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         private static IQueryable<TQuery> AddWhere<TQuery>(this IQueryable<TQuery> query, ParameterExpression argument, Type entityType, Expression clause)
         {
             clause = Expression.Lambda(clause, argument);
-            var method = GetWhereMethod();
+            var method = QueryableExtensions.GetWhereMethod();
 
             MethodInfo genericMethod = method
                 .MakeGenericMethod(entityType);
@@ -149,7 +149,13 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 .Invoke(genericMethod, new object[] { query, clause });
         }
 
-        private static Dictionary<FilterableFieldOperators, List<Expression>> GetSelectionPaths<TQuery>(Expression argument, IEnumerable<FilterableInputField> fields, Type entityType, IDictionary<string, Field> selection, IModel model, IQueryable<TQuery> query)
+        private static Dictionary<FilterableFieldOperators, List<Expression>> GetSelectionPaths<TQuery>(
+            Expression argument,
+            IEnumerable<FilterableInputField> fields,
+            Type entityType,
+            IDictionary<string, Field> selection,
+            IModel model,
+            IQueryable<TQuery> query)
         {
             var result = new Dictionary<FilterableFieldOperators, List<Expression>>();
             var entity = model.FindEntityType(entityType);
@@ -173,7 +179,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                             {
                                 targetType = targetType.GetGenericArguments().First();
                                 var subArgument = Expression.Parameter(targetType);
-                                var anyMethod = GetAnyMethod().MakeGenericMethod(targetType);
+                                var anyMethod = QueryableExtensions.GetAnyMethod()
+                                    .MakeGenericMethod(targetType);
 
                                 result.Merge(GetSelectionPaths(
                                         subArgument,
@@ -211,7 +218,10 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return result;
         }
 
-        private static Dictionary<FilterableFieldOperators, List<Expression>> Merge(this Dictionary<FilterableFieldOperators, List<Expression>> main, Dictionary<FilterableFieldOperators, List<Expression>> second, Func<Expression, Expression> mergeAction = default)
+        private static Dictionary<FilterableFieldOperators, List<Expression>> Merge(
+            this Dictionary<FilterableFieldOperators, List<Expression>> main,
+            Dictionary<FilterableFieldOperators, List<Expression>> second,
+            Func<Expression, Expression> mergeAction = default)
         {
             if (second == default)
             {
@@ -263,7 +273,12 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         private static Dictionary<string, Field> ToDictionary(KeyValuePair<string, Field> field)
             => field.Value.SelectionSet.Selections.ToDictionary(x => (x as Field).Name, x => x as Field);
 
-        private static Dictionary<FilterableFieldOperators, List<Expression>> GetExpression(Expression argument, IEnumerable<FilterableInputField> fields, Type entityType, IDictionary<string, Field> selection, IModel model)
+        private static Dictionary<FilterableFieldOperators, List<Expression>> GetExpression(
+            Expression argument,
+            IEnumerable<FilterableInputField> fields,
+            Type entityType,
+            IDictionary<string, Field> selection,
+            IModel model)
         {
             var result = new Dictionary<FilterableFieldOperators, List<Expression>>();
             result.Add(FilterableFieldOperators.Or, new List<Expression>());
@@ -339,17 +354,5 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
             return result;
         }
-
-        private static MethodInfo GetWhereMethod() => typeof(Queryable)
-            .GetMethods()
-            .Where(m => m.Name == "Where" && m.IsGenericMethodDefinition)
-            .Where(m => m.GetParameters().ToList().Count == 2)
-            .First();
-
-        private static MethodInfo GetAnyMethod() => typeof(Enumerable)
-            .GetMethods()
-            .Where(m => m.Name == "Any" && m.IsGenericMethodDefinition)
-            .Where(m => m.GetParameters().ToList().Count == 2)
-            .First();
     }
 }

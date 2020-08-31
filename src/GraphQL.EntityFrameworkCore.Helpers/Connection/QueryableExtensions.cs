@@ -255,10 +255,22 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 .Invoke(genericMethod, new object[] { query, selector });
         }
 
-        private static MethodInfo GetWhereMethod() => typeof(System.Linq.Queryable)
+        public static MethodInfo GetWhereMethod() => typeof(Queryable)
             .GetMethods()
             .Where(m => m.Name == "Where" && m.IsGenericMethodDefinition)
             .Where(m => m.GetParameters().ToList().Count == 2)
+            .First();
+        
+        public static MethodInfo GetAnyMethod() => typeof(Enumerable)
+            .GetMethods()
+            .Where(m => m.Name == "Any" && m.IsGenericMethodDefinition)
+            .Where(m => m.GetParameters().ToList().Count == 2)
+            .First();
+        
+        public static MethodInfo GetToDictionaryAsyncMethod() => typeof(EntityFrameworkQueryableExtensions)
+            .GetMethods()
+            .Where(m => m.Name == "ToDictionaryAsync" && m.IsGenericMethodDefinition)
+            .Where(m => m.GetParameters().ToList().Count == 3)
             .First();
 
         public static TReturnType Create<TReturnType>(object source)
