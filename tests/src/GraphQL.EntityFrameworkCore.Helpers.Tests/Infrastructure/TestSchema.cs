@@ -53,25 +53,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .IsFilterable();
             Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
                 .Name("Residents")
-                .MapsTo(x => x.Habitants)
-                .ResolveAsync(context =>
-                {
-                    var loader = accessor.Context.GetOrAddCollectionBatchLoader<Guid, Human>(
-                        "GetHabitants",
-                        async (planetIds) =>
-                        {
-                            var humans = await dbContext.Humans
-                                .Where(x => planetIds.Contains(x.HomePlanetId))
-                                .SelectFromContext(context, dbContext.Model)
-                                .ToListAsync();
-
-                            return humans
-                                .Select(x => new KeyValuePair<Guid, Human>(x.HomePlanetId, x))
-                                .ToLookup(x => x.Key, x => x.Value);
-                        });
-
-                    return loader.LoadAsync(context.Source.Id);
-                });
+                .Include(accessor, dbContext, x => x.Habitants, x => x.Id)
+                .ResolveAsync();
         }
     }
 
@@ -89,7 +72,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .ResolveAsync();
             Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
                 .Name("Friends")
-                // .Include(accessor, dbContext, x => x.Friends)
+                // .Include(accessor, dbContext, x => x.Friends, x => x.Id)
+                // .ResolveAsync();
                 .ResolveAsync(context =>
                 {
                     var loader = accessor.Context.GetOrAddCollectionBatchLoader<Guid, Human>(
