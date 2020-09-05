@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Shouldly;
 using Xunit;
 
-namespace GraphQL.EntityFrameworkCore.Helpers.Tests
+namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Builders
 {
     public class BuilderTests : TestBase
     {
@@ -71,6 +71,56 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests
                         id
                         friends {{
                             id
+                        }}
+                    }}
+                }}
+            ";
+
+            var expected = new
+            {
+                humans,
+            };
+
+            var result = AssertQuerySuccess(query, expected);
+        }
+
+        [Fact]
+        public async Task Should_ReturnFriendsWithHomePlanet_When_IncludingThemInQuery()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var humans = await dbContext.Humans
+                .Include(x => x.Friends)
+                    .ThenInclude(x => x.HomePlanet)
+                .Select(x => new
+                {
+                    id = x.Id,
+                    name = x.Name,
+                    friends = x.Friends.Select(y => new
+                    {
+                        id = y.Id,
+                        name = y.Name,
+                        homePlanet = new {
+                            id = y.HomePlanet.Id,
+                            name = y.HomePlanet.Name,
+                        },
+                    }),
+                })
+                .ToListAsync();
+
+            humans.ShouldNotBeEmpty();
+
+            var query = $@"
+                query humans {{
+                    humans {{
+                        id
+                        name
+                        friends {{
+                            id
+                            name
+                            homePlanet {{
+                                id
+                                name
+                            }}
                         }}
                     }}
                 }}

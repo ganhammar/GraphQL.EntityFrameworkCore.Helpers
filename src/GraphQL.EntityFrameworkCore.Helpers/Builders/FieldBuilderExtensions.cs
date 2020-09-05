@@ -98,7 +98,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 IDataLoaderContextAccessor dataLoaderContextAccessor,
                 TDbContext dbContext,
                 Expression<Func<TSourceType, TProperty>> propertyToInclude,
-                Expression<Func<TSourceType, TKey>> keyProperty)
+                Expression<Func<TReturnType, TKey>> targetKeyProperty)
             where TDbContext : DbContext
             where TProperty : class
         {
@@ -108,7 +108,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             FieldHelpers.Map(type, field.FieldType, property);
 
             return new BatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty, TKey>(
-                field, dbContext, dataLoaderContextAccessor, propertyToInclude, keyProperty);
+                field, dbContext, dataLoaderContextAccessor, propertyToInclude, targetKeyProperty);
         }
 
         public static CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty, TKey> Include<TSourceType, TReturnType, TDbContext, TProperty, TKey>(
@@ -116,7 +116,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 IDataLoaderContextAccessor dataLoaderContextAccessor,
                 TDbContext dbContext,
                 Expression<Func<TSourceType, IEnumerable<TProperty>>> collectionToInclude,
-                Expression<Func<TReturnType, TKey>> keyProperty)
+                Expression<Func<TReturnType, TKey>> targetKeyProperty)
             where TDbContext : DbContext
         {
             var type = typeof(TSourceType);
@@ -125,7 +125,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             FieldHelpers.Map(type, field.FieldType, property);
 
             return new CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty, TKey>(
-                field, dbContext, dataLoaderContextAccessor, collectionToInclude, keyProperty);
+                field, dbContext, dataLoaderContextAccessor, collectionToInclude, targetKeyProperty);
         }
     }
 }

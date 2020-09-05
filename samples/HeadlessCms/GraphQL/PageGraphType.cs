@@ -22,17 +22,8 @@ namespace HeadlessCms.GraphQL
                 .IsFilterable();
             Field<UserGraphType, User>()
                 .Name("Editor")
-                .ResolveAsync(context =>
-                {
-                    var loader = accessor.Context.GetOrAddBatchLoader<int, User>(
-                        "GetPageEditors",
-                        async (userIds) => await dbContext.Users
-                            .Where(x => userIds.Contains(x.Id))
-                            .SelectFromContext(context, dbContext.Model)
-                            .ToDictionaryAsync(x => x.Id, x => x));
-
-                    return loader.LoadAsync(context.Source.EditorId);
-                });
+                .Include(accessor, dbContext, x => x.Editor, x => x.Id)
+                .ResolveAsync();
             Field<ListGraphType<TagGraphType>, IEnumerable<Tag>>()
                 .Name("Tags")
                 .MapsTo(x => x.PageTags)

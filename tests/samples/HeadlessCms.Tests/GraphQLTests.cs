@@ -266,6 +266,38 @@ namespace HeadlessCms.Tests
             await AssertExpected(payload, expected);
         }
 
+        [Fact]
+        public async Task Should_ReturnPagesWithEditor_When_Requesting()
+        {
+            var payload = JsonSerializer.Serialize(new
+            {
+                query = "query pages {\n  pages {\n    edges {\n      node {\n        id\n        editor {\n          id\n        }\n      }\n    }\n  }}",
+                operationName = "pages"
+            });
+
+            var expected = new
+            {
+                pages = new {
+                    edges = new[]
+                    {
+                        new
+                        {
+                            node = new
+                            {
+                                id = 1,
+                                editor = new
+                                {
+                                    id = 1,
+                                },
+                            },
+                        },
+                    },
+                },
+            };
+
+            await AssertExpected(payload, expected);
+        }
+
         private async Task AssertExpected(string payload, object expected)
         {
             var client = await GetTestClient();

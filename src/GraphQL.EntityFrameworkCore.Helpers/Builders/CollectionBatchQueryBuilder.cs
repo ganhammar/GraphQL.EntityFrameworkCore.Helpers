@@ -38,7 +38,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         {
             var sourceType = typeof(TSourceType);
             var targetType = typeof(TReturnType);
-            var loaderName = $"DataLoader_GET_{sourceType.Name}_{_propertyToInclude.Name}";
+            var loaderName = $"DataLoader_Get_{sourceType.Name}_{_propertyToInclude.Name}";
             var sourceProperty = GetSourceProperty(sourceType);
 
             if (sourceType != targetType)
@@ -51,7 +51,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             }
         }
 
-        public void ResolveOneToMany(Type sourceType, Type targetType, IProperty sourceProperty, string loaderName)
+        private void ResolveOneToMany(Type sourceType, Type targetType, IProperty sourceProperty, string loaderName)
         {
             _field.ResolveAsync(context =>
             {
@@ -83,7 +83,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             });
         }
 
-        public void ResolveManyToMany(Type sourceType, Type targetType, IProperty sourceProperty, string loaderName)
+        private void ResolveManyToMany(Type sourceType, Type targetType, IProperty sourceProperty, string loaderName)
         {
             _field.ResolveAsync(context =>
             {
@@ -131,10 +131,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         {
             var argument = Expression.Parameter(targetType);
             var property = Expression.MakeMemberAccess(argument, _targetProperty);
-            var collectionType = typeof(ICollection<>).MakeGenericType(typeof(TKey));
-            var method = collectionType.GetMethod("Contains");
-            var properties = Expression.Constant(sourceProperties, collectionType);
-            var check = Expression.Call(properties, method, property);
+            var properties = Expression.Constant(sourceProperties);
+            var check = Expression.Call(typeof(Enumerable), "Contains", new[] { typeof(TKey) }, properties, property);
             return Expression.Lambda(check, argument);
         }
 

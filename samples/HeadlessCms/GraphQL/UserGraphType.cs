@@ -21,23 +21,8 @@ namespace HeadlessCms.GraphQL
                 .IsFilterable();
             Field<ListGraphType<PageGraphType>, IEnumerable<Page>>()
                 .Name("Pages")
-                .ResolveAsync(context =>
-                {
-                    var loader = accessor.Context.GetOrAddCollectionBatchLoader<int, Page>(
-                        "GetUserPages",
-                        async (userIds) =>
-                        {
-                            var pages = await dbContext.Pages
-                                .SelectFromContext(context, dbContext.Model)
-                                .ToListAsync();
-
-                            return pages
-                                .Select(x => new KeyValuePair<int, Page>(x.EditorId, x))
-                                .ToLookup(x => x.Key, x => x.Value);
-                        });
-
-                    return loader.LoadAsync(context.Source.Id);
-                });
+                .Include(accessor, dbContext, x => x.Pages, x => x.EditorId)
+                .ResolveAsync();
         }
     }
 }
