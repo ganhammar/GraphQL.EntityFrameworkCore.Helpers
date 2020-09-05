@@ -116,7 +116,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 IDataLoaderContextAccessor dataLoaderContextAccessor,
                 TDbContext dbContext,
                 Expression<Func<TSourceType, IEnumerable<TProperty>>> collectionToInclude,
-                Expression<Func<TSourceType, TKey>> keyProperty)
+                Expression<Func<TReturnType, TKey>> keyProperty)
             where TDbContext : DbContext
         {
             var type = typeof(TSourceType);
@@ -125,7 +125,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             FieldHelpers.Map(type, field.FieldType, property);
 
             return new CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty, TKey>(
-                field, dbContext, dataLoaderContextAccessor, keyProperty, collectionToInclude);
+                field, dbContext, dataLoaderContextAccessor, collectionToInclude, keyProperty);
         }
     }
 }

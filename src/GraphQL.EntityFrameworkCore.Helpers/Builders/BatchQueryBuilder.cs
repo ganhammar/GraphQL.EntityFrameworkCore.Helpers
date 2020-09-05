@@ -72,7 +72,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                                 x => x);
                     });
 
-                return loader.LoadAsync((TKey)sourceType
+                return loader.LoadAsync((dynamic)sourceType
                     .GetProperty(relationship.Source.Name)
                     .GetValue(context.Source));
             });

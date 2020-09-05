@@ -4,7 +4,6 @@ using System.Linq;
 using GraphQL.DataLoader;
 using GraphQL.Types;
 using GraphQL.EntityFrameworkCore.Helpers;
-using Microsoft.EntityFrameworkCore;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
 {
@@ -53,7 +52,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .IsFilterable();
             Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
                 .Name("Residents")
-                .Include(accessor, dbContext, x => x.Habitants, x => x.Id)
+                .Include(accessor, dbContext, x => x.Habitants, x => x.HomePlanetId)
                 .ResolveAsync();
         }
     }
@@ -72,27 +71,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .ResolveAsync();
             Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
                 .Name("Friends")
-                // .Include(accessor, dbContext, x => x.Friends, x => x.Id)
-                // .ResolveAsync();
-                .ResolveAsync(context =>
-                {
-                    var loader = accessor.Context.GetOrAddCollectionBatchLoader<Guid, Human>(
-                        "GetFriends",
-                        async (humanIds) =>
-                        {
-                            var humans = await dbContext.Humans
-                                .Include(x => x.Friends)
-                                .Where(x => x.Friends.Any(y => humanIds.Contains(y.Id)))
-                                .Filter(context, dbContext.Model)
-                                .ToListAsync();
-
-                            return humans
-                                .SelectMany(x => x.Friends.Select(y => new KeyValuePair<Guid, Human>(y.Id, x)))
-                                .ToLookup(x => x.Key, x => x.Value);
-                        });
-
-                    return loader.LoadAsync(context.Source.Id);
-                });
+                .Include(accessor, dbContext, x => x.Friends, x => x.Id)
+                .ResolveAsync();
         }
     }
 
