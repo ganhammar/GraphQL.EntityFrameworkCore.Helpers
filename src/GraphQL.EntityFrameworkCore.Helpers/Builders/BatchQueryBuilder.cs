@@ -41,7 +41,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
             _field.ResolveAsync(context =>
             {
-                var loader = _dataLoaderContextAccessor.Context.GetOrAddBatchLoader<TKey, TReturnType>(
+                var loader = _dataLoaderContextAccessor.Context.GetOrAddBatchLoader<object, TReturnType>(
                     loaderName,
                     async (sourceProperties) =>
                     {
@@ -49,10 +49,12 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                             .MakeGenericMethod(returnType)
                             .Invoke(_dbContext, null);
                         
+                        var castMethod = QueryableExtensions.GetCastMethod().MakeGenericMethod(_targetProperty.PropertyType);
+                        var castedSourceProperties = castMethod.Invoke(castMethod, new object[] { sourceProperties });
                         var argument = Expression.Parameter(returnType);
                         var property = Expression.MakeMemberAccess(argument, _targetProperty);
-                        var properties = Expression.Constant(sourceProperties);
-                        var check = Expression.Call(typeof(Enumerable), "Contains", new[] { typeof(TKey) }, properties, property);
+                        var properties = Expression.Constant(castedSourceProperties);
+                        var check = Expression.Call(typeof(Enumerable), "Contains", new[] { _targetProperty.PropertyType }, properties, property);
                         var lambda = Expression.Lambda(check, argument);
 
                         var whereMethod = QueryableExtensions.GetWhereMethod();
@@ -67,11 +69,11 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
                         return await query
                             .ToDictionaryAsync(
-                                x => (TKey)returnType.GetProperty(_targetProperty.Name).GetValue(x),
+                                x => returnType.GetProperty(_targetProperty.Name).GetValue(x),
                                 x => x);
                     });
 
-                return loader.LoadAsync((TKey)sourceType
+                return loader.LoadAsync(sourceType
                     .GetProperty(sourceProperty.Name)
                     .GetValue(context.Source));
             });

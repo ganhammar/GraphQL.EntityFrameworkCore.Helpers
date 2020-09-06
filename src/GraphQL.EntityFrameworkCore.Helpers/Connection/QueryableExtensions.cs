@@ -9,7 +9,6 @@ using GraphQL.EntityFrameworkCore.Helpers;
 using GraphQL.Types.Relay.DataObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Query;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
 {
@@ -290,6 +289,12 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             .GetMethods()
             .Where(m => m.Name == "SelectMany" && m.IsGenericMethodDefinition)
             .Where(m => m.GetParameters().ToList().Count == 2)
+            .First();
+        
+        public static MethodInfo GetCastMethod() => typeof(Enumerable)
+            .GetMethods()
+            .Where(m => m.Name == "Cast" && m.IsGenericMethodDefinition)
+            .Where(m => m.GetParameters().ToList().Count == 1)
             .First();
 
         public static TReturnType Create<TReturnType>(object source)

@@ -76,7 +76,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         {
             _field.ResolveAsync(context =>
             {
-                var loader = _dataLoaderContextAccessor.Context.GetOrAddCollectionBatchLoader<TKey, TReturnType>(
+                var loader = _dataLoaderContextAccessor.Context.GetOrAddCollectionBatchLoader<object, TReturnType>(
                     loaderName,
                     async (sourceProperties) =>
                     {
@@ -92,13 +92,13 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                         var result = await query.ToListAsync();
 
                         return result
-                            .Select(x => new KeyValuePair<TKey, TReturnType>(
-                                (TKey)targetType.GetProperty(_targetProperty.Name).GetValue(x),
+                            .Select(x => new KeyValuePair<object, TReturnType>(
+                                targetType.GetProperty(_targetProperty.Name).GetValue(x),
                                 x))
                             .ToLookup(x => x.Key, x => x.Value);
                     });
 
-                return loader.LoadAsync((TKey)sourceType
+                return loader.LoadAsync(sourceType
                     .GetProperty(sourceProperty.Name)
                     .GetValue(context.Source));
             });
@@ -108,7 +108,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         {
             Func<IResolveFieldContext<TSourceType>, Task<IEnumerable<TReturnType>>> action = context =>
             {
-                var loader = _dataLoaderContextAccessor.Context.GetOrAddCollectionBatchLoader<TKey, TReturnType>(
+                var loader = _dataLoaderContextAccessor.Context.GetOrAddCollectionBatchLoader<object, TReturnType>(
                     loaderName,
                     async (sourceProperties) =>
                     {
@@ -138,7 +138,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                         return SelectManyToMany(result, returnType);
                     });
 
-                return loader.LoadAsync((TKey)sourceType
+                return loader.LoadAsync(sourceType
                     .GetProperty(sourceProperty.Name)
                     .GetValue(context.Source));
             };
@@ -153,17 +153,17 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             }
         }
         
-        private ILookup<TKey, TReturnType> SelectManyToMany(List<TReturnType> result, Type returnType)
+        private ILookup<object, TReturnType> SelectManyToMany(List<TReturnType> result, Type returnType)
         {
             var mainArgument = Expression.Parameter(returnType);
             var property = Expression.MakeMemberAccess(mainArgument, _propertyToInclude);
 
             var innerArgument = Expression.Parameter(_targetProperty.DeclaringType);
-            var keyValuePairType = typeof(KeyValuePair<,>).MakeGenericType(_targetProperty.PropertyType, returnType);
-            var constructor = keyValuePairType.GetConstructor(new Type[] { _targetProperty.PropertyType, returnType });
+            var keyValuePairType = typeof(KeyValuePair<,>).MakeGenericType(typeof(object), returnType);
+            var constructor = keyValuePairType.GetConstructor(new Type[] { typeof(object), returnType });
             var lambda = Expression.Lambda(Expression.New(constructor, new Expression[]
             {
-                Expression.Property(innerArgument, _targetProperty),
+                Expression.Convert(Expression.Property(innerArgument, _targetProperty), typeof(object)),
                 mainArgument,
             }), innerArgument);
 
@@ -179,7 +179,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                     returnType,
                     keyValuePairType
                 );
-            var selectMany = (IEnumerable<KeyValuePair<TKey, TReturnType>>)selectManyMethod
+            var selectMany = (IEnumerable<KeyValuePair<object, TReturnType>>)selectManyMethod
                 .Invoke(selectManyMethod, new object[]
                 {
                     result,
@@ -189,12 +189,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return selectMany.ToLookup(x => x.Key, x => x.Value);
         }
 
-        private LambdaExpression GetContainsLambda(IEnumerable<TKey> sourceProperties, Type targetType)
+        private LambdaExpression GetContainsLambda(IEnumerable<object> sourceProperties, Type targetType)
         {
+            var castMethod = QueryableExtensions.GetCastMethod().MakeGenericMethod(_targetProperty.PropertyType);
+            var castedSourceProperties = castMethod.Invoke(castMethod, new object[] { sourceProperties });
             var argument = Expression.Parameter(targetType);
             var property = Expression.MakeMemberAccess(argument, _targetProperty);
-            var properties = Expression.Constant(sourceProperties);
-            var check = Expression.Call(typeof(Enumerable), "Contains", new[] { typeof(TKey) }, properties, property);
+            var properties = Expression.Constant(castedSourceProperties);
+            var check = Expression.Call(typeof(Enumerable), "Contains", new[] { _targetProperty.PropertyType }, properties, property);
             return Expression.Lambda(check, argument);
         }
 
