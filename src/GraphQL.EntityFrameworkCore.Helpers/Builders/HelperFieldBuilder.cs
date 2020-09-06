@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using GraphQL.DataLoader;
 using GraphQL.Resolvers;
 using GraphQL.Subscription;
 using GraphQL.Types;
 using GraphQL.Utilities;
+using Microsoft.EntityFrameworkCore;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
 {
@@ -136,6 +138,20 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         {
             FieldType.AsyncSubscriber = new AsyncEventStreamResolver<TSourceType, TReturnType>(subscribeAsync);
             return this;
+        }
+    }
+
+    public static class HelperFieldBuilderExtensions
+    {
+        public static CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty, TKey> Include<TSourceType, TReturnType, TDbContext, TProperty, TKey>(
+                this HelperFieldBuilder<TSourceType, IEnumerable<TReturnType>, TProperty> field,
+                IDataLoaderContextAccessor dataLoaderContextAccessor,
+                TDbContext dbContext,
+                Expression<Func<TReturnType, TKey>> targetKeyProperty)
+            where TDbContext : DbContext
+        {
+            return new CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty, TKey>(
+                field, dbContext, dataLoaderContextAccessor, FieldHelpers.GetPropertyPath(typeof(TSourceType), field.FieldType), targetKeyProperty);
         }
     }
 }

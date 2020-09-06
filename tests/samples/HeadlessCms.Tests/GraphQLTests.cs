@@ -298,6 +298,77 @@ namespace HeadlessCms.Tests
             await AssertExpected(payload, expected);
         }
 
+        [Fact]
+        public async Task Should_ReturnTagsWithPages_When_Requesting()
+        {
+            var client = await GetTestClient();
+
+            var payload = JsonSerializer.Serialize(new {
+                query = "query tags {\n  tags {\n    edges {\n      node {\n        id\n      pages {          id\n          }\n      }\n    }\n    pageInfo {\n      hasPreviousPage\n      hasNextPage\n    }\n    totalCount\n  }}",
+                operationName = "tags",
+            });
+
+            var expected = new
+            {
+                tags = new
+                {
+                    edges = new[]
+                    {
+                        new
+                        {
+                            node = new
+                            {
+                                id = 1,
+                                pages = new []
+                                {
+                                    new
+                                    {
+                                        id = 1,
+                                    },
+                                },
+                            },
+                        },
+                        new
+                        {
+                            node = new
+                            {
+                                id = 2,
+                                pages = new []
+                                {
+                                    new
+                                    {
+                                        id = 1,
+                                    },
+                                },
+                            },
+                        },
+                        new
+                        {
+                            node = new
+                            {
+                                id = 3,
+                                pages = new []
+                                {
+                                    new
+                                    {
+                                        id = 1,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    pageInfo = new
+                    {
+                        hasPreviousPage = false,
+                        hasNextPage = false,
+                    },
+                    totalCount = 3,
+                },
+            };
+
+            await AssertExpected(payload, expected);
+        }
+
         private async Task AssertExpected(string payload, object expected)
         {
             var client = await GetTestClient();

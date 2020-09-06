@@ -44,6 +44,9 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return property?.Value ?? new List<string> { schemaName };
         }
 
+        public static List<string> GetPropertyPath(Type entityType, EventStreamFieldType field)
+            => _properties[entityType.FullName][field];
+
         public static string GetSchemaName(Type entityType, string propertyName)
         {
             if (_properties.ContainsKey(entityType.FullName) == false)

@@ -279,6 +279,18 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             .Where(m => m.Name == "Include" && m.IsGenericMethodDefinition)
             .Where(m => m.GetParameters().ToList().Count == 2)
             .First();
+        
+        public static MethodInfo GetSelectMethod() => typeof(Enumerable)
+            .GetMethods()
+            .Where(m => m.Name == "Select" && m.IsGenericMethodDefinition)
+            .Where(m => m.GetParameters().ToList().Count == 2)
+            .First();
+
+        public static MethodInfo GetSelectManyMethod() => typeof(Enumerable)
+            .GetMethods()
+            .Where(m => m.Name == "SelectMany" && m.IsGenericMethodDefinition)
+            .Where(m => m.GetParameters().ToList().Count == 2)
+            .First();
 
         public static TReturnType Create<TReturnType>(object source)
         {

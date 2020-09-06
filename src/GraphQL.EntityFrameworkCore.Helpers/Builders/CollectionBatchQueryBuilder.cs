@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading.Tasks;
 using GraphQL.Builders;
 using GraphQL.DataLoader;
 using Microsoft.EntityFrameworkCore;
@@ -15,10 +16,12 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         where TDbContext : DbContext
     {
         private readonly FieldBuilder<TSourceType, IEnumerable<TReturnType>> _field;
+        private readonly HelperFieldBuilder<TSourceType, IEnumerable<TReturnType>, TProperty> _helperField;
         private readonly TDbContext _dbContext;
         private readonly IDataLoaderContextAccessor _dataLoaderContextAccessor;
         private readonly PropertyInfo _propertyToInclude;
         private readonly PropertyInfo _targetProperty;
+        private readonly bool _isManyToMany;
 
         public CollectionBatchQueryBuilder(
             FieldBuilder<TSourceType, IEnumerable<TReturnType>> field,
@@ -34,6 +37,24 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             _targetProperty = FieldHelpers.GetPropertyInfo<TReturnType, TKey>(keyProperty);
         }
 
+        public CollectionBatchQueryBuilder(
+            HelperFieldBuilder<TSourceType, IEnumerable<TReturnType>, TProperty> helperField,
+            TDbContext dbContext,
+            IDataLoaderContextAccessor dataLoaderContextAccessor,
+            List<string> propertyPath,
+            Expression<Func<TReturnType, TKey>> keyProperty)
+        {
+            var sourceType = typeof(TSourceType);
+            var returnType = typeof(TReturnType);
+
+            _helperField = helperField;
+            _dbContext = dbContext;
+            _dataLoaderContextAccessor = dataLoaderContextAccessor;
+            _propertyToInclude = returnType.GetProperty(propertyPath.First());
+            _targetProperty = GetTargetProperty(sourceType, _propertyToInclude).PropertyInfo;
+            _isManyToMany = true;
+        }
+
         public void ResolveAsync()
         {
             var sourceType = typeof(TSourceType);
@@ -41,7 +62,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             var loaderName = $"DataLoader_Get_{sourceType.Name}_{_propertyToInclude.Name}";
             var sourceProperty = GetSourceProperty(sourceType);
 
-            if (sourceType != targetType)
+            if (_isManyToMany == false && sourceType != targetType)
             {
                 ResolveOneToMany(sourceType, targetType, sourceProperty, loaderName);
             }
@@ -83,48 +104,89 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             });
         }
 
-        private void ResolveManyToMany(Type sourceType, Type targetType, IProperty sourceProperty, string loaderName)
+        private void ResolveManyToMany(Type sourceType, Type returnType, IProperty sourceProperty, string loaderName)
         {
-            _field.ResolveAsync(context =>
+            Func<IResolveFieldContext<TSourceType>, Task<IEnumerable<TReturnType>>> action = context =>
             {
                 var loader = _dataLoaderContextAccessor.Context.GetOrAddCollectionBatchLoader<TKey, TReturnType>(
                     loaderName,
                     async (sourceProperties) =>
                     {
                         var query = (IQueryable<TReturnType>)typeof(DbContext).GetMethod(nameof(DbContext.Set))
-                            .MakeGenericMethod(targetType)
+                            .MakeGenericMethod(returnType)
                             .Invoke(_dbContext, null);
                         
-                        query = Include(query, targetType);
+                        query = Include(query, returnType);
 
-                        var argument = Expression.Parameter(targetType);
+                        var argument = Expression.Parameter(returnType);
                         var property = Expression.MakeMemberAccess(argument, _propertyToInclude);
+
+                        var targetType = returnType == sourceType ? returnType : _targetProperty.DeclaringType;
 
                         MethodInfo anyMethod = QueryableExtensions.GetAnyMethod()
                             .MakeGenericMethod(targetType);
                         
                         var check = Expression.Call(anyMethod, property, GetContainsLambda(sourceProperties, targetType));
                         
-                        query = Where(query, targetType, Expression.Lambda(check, argument));
+                        query = Where(query, returnType, Expression.Lambda(check, argument));
 
                         query = query
                             .Filter((IResolveFieldContext<object>)context, _dbContext.Model);
 
                         var result = await query.ToListAsync();
 
-                        return result.SelectMany(x => ((IEnumerable<TReturnType>)targetType
-                            .GetProperty(_propertyToInclude.Name)
-                            .GetValue(x))
-                            .Select(y => new KeyValuePair<TKey, TReturnType>(
-                                (TKey)targetType.GetProperty(_targetProperty.Name).GetValue(y),
-                                x)))
-                            .ToLookup(x => x.Key, x => x.Value);
+                        return SelectManyToMany(result, returnType);
                     });
 
                 return loader.LoadAsync((TKey)sourceType
                     .GetProperty(sourceProperty.Name)
                     .GetValue(context.Source));
-            });
+            };
+
+            if (_field != default)
+            {
+                _field.ResolveAsync(action);
+            }
+            else if (_helperField != default)
+            {
+                _helperField.ResolveAsync(action);
+            }
+        }
+        
+        private ILookup<TKey, TReturnType> SelectManyToMany(List<TReturnType> result, Type returnType)
+        {
+            var mainArgument = Expression.Parameter(returnType);
+            var property = Expression.MakeMemberAccess(mainArgument, _propertyToInclude);
+
+            var innerArgument = Expression.Parameter(_targetProperty.DeclaringType);
+            var keyValuePairType = typeof(KeyValuePair<,>).MakeGenericType(_targetProperty.PropertyType, returnType);
+            var constructor = keyValuePairType.GetConstructor(new Type[] { _targetProperty.PropertyType, returnType });
+            var lambda = Expression.Lambda(Expression.New(constructor, new Expression[]
+            {
+                Expression.Property(innerArgument, _targetProperty),
+                mainArgument,
+            }), innerArgument);
+
+            var selectMethod = QueryableExtensions.GetSelectMethod()
+                .MakeGenericMethod(
+                    _targetProperty.DeclaringType,
+                    keyValuePairType
+                );
+            var select = Expression.Call(selectMethod, property, lambda);
+
+            var selectManyMethod = QueryableExtensions.GetSelectManyMethod()
+                .MakeGenericMethod(
+                    returnType,
+                    keyValuePairType
+                );
+            var selectMany = (IEnumerable<KeyValuePair<TKey, TReturnType>>)selectManyMethod
+                .Invoke(selectManyMethod, new object[]
+                {
+                    result,
+                    Expression.Lambda(select, mainArgument).Compile()
+                });
+            
+            return selectMany.ToLookup(x => x.Key, x => x.Value);
         }
 
         private LambdaExpression GetContainsLambda(IEnumerable<TKey> sourceProperties, Type targetType)
@@ -141,9 +203,12 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             var argument = Expression.Parameter(targetType);
             var property = Expression.MakeMemberAccess(argument, _propertyToInclude);
             var lambda = Expression.Lambda(property, argument);
+
             var method = QueryableExtensions.GetIncludeMethod();
+            var enumerableType = typeof(IEnumerable<>)
+                .MakeGenericType(_propertyToInclude.PropertyType.GenericTypeArguments[0]);
             MethodInfo genericMethod = method
-                .MakeGenericMethod(targetType, typeof(IEnumerable<TReturnType>));
+                .MakeGenericMethod(targetType, enumerableType);
 
             return (IQueryable<TReturnType>)genericMethod
                 .Invoke(genericMethod, new object[] { query, lambda });
@@ -177,6 +242,36 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 {
                     return foreignKey;
                 }
+            }
+
+            return property.ForeignKey
+                .PrincipalKey
+                .Properties
+                .Where(x => x.PropertyInfo != null)
+                .First();
+        }
+
+        private IProperty GetTargetProperty(Type sourceType, PropertyInfo propertyToInclude)
+        {
+            var model = _dbContext.Model;
+            var entity = model.FindEntityType(sourceType);
+            var navigationProperties = entity.GetNavigations();
+
+            var property = navigationProperties
+                .Where(x => x.Name == propertyToInclude.Name)
+                .First();
+            
+            if (property.DeclaringType.Name == sourceType.FullName)
+            {
+                var foreignKey = property.ForeignKey.Properties.First();
+
+                if (foreignKey.PropertyInfo == default)
+                {
+                    throw new Exception($@"All key fields must be mapped in data entity, missing key
+                        field for {propertyToInclude.Name} in {foreignKey.DeclaringType.Name}");
+                }
+
+                return foreignKey;
             }
 
             return property.ForeignKey
