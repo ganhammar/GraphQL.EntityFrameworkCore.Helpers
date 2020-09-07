@@ -22,18 +22,18 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
         {
             Field<ListGraphType<HumanGraphType>>()
                 .Name("Humans")
-                .FromDbContext(dbContext, x => x.Humans)
+                .From(dbContext, x => x.Humans)
                 .Apply((query, context) => query.Where(x => true))
                 .ResolveListAsync();
 
             Connection<DroidGraphType>()
                 .Name("Droids")
-                .FromDbContext(dbContext, x => x.Droids)
+                .From(dbContext, x => x.Droids)
                 .ResolveAsync(typeof(ConnectionInput));
             
             Field<ListGraphType<PlanetGraphType>>()
                 .Name("Planets")
-                .FromDbContext(dbContext, x => x.Planets)
+                .From(dbContext, x => x.Planets)
                 .ResolveListAsync();
         }
     }

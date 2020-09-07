@@ -64,7 +64,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return field;
         }
 
-        public static FieldQueryBuilder<TSourceType, object, TDbContext, TProperty> FromDbContext<TSourceType, TDbContext, TProperty>(
+        public static FieldQueryBuilder<TSourceType, object, TDbContext, TProperty> From<TSourceType, TDbContext, TProperty>(
                 this FieldBuilder<TSourceType, object> builder,
                 TDbContext dbContext,
                 Expression<Func<TDbContext, DbSet<TProperty>>> accessor)
@@ -78,7 +78,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return queryBuilder;
         }
 
-        public static FieldQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty> FromDbContext<TSourceType, TReturnType, TDbContext, TProperty>(
+        public static FieldQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty> From<TSourceType, TReturnType, TDbContext, TProperty>(
                 this FieldBuilder<TSourceType, TReturnType> builder,
                 TDbContext dbContext,
                 Expression<Func<TDbContext, DbSet<TProperty>>> accessor)

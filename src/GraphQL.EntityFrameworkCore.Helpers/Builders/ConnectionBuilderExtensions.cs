@@ -25,7 +25,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return builder;
         }
 
-        public static ConnectionQueryBuilder<TSourceType, TReturnType, TDbContext> FromDbContext<TSourceType, TReturnType, TDbContext>(
+        public static ConnectionQueryBuilder<TSourceType, TReturnType, TDbContext> From<TSourceType, TReturnType, TDbContext>(
                 this ConnectionBuilder<TSourceType> builder,
                 TDbContext dbContext,
                 Expression<Func<TDbContext, DbSet<TReturnType>>> accessor)
