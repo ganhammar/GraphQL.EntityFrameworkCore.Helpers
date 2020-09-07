@@ -143,15 +143,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
     public static class HelperFieldBuilderExtensions
     {
-        public static CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty, TKey> Include<TSourceType, TReturnType, TDbContext, TProperty, TKey>(
+        public static CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty> Include<TSourceType, TReturnType, TDbContext, TProperty>(
                 this HelperFieldBuilder<TSourceType, IEnumerable<TReturnType>, TProperty> field,
                 IDataLoaderContextAccessor dataLoaderContextAccessor,
-                TDbContext dbContext,
-                Expression<Func<TReturnType, TKey>> targetKeyProperty)
+                TDbContext dbContext)
             where TDbContext : DbContext
         {
-            return new CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty, TKey>(
-                field, dbContext, dataLoaderContextAccessor, FieldHelpers.GetPropertyPath(typeof(TSourceType), field.FieldType), targetKeyProperty);
+            return new CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty>(
+                field, dbContext, dataLoaderContextAccessor, FieldHelpers.GetPropertyPath(typeof(TSourceType), field.FieldType));
         }
     }
 }

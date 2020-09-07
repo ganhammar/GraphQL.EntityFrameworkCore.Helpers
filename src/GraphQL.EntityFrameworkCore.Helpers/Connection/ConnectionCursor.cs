@@ -42,8 +42,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
                     property = Expression.Convert(
                         Expression.Coalesce(property, Expression.Default(underlyingType)),
-                        underlyingType
-                    );
+                        underlyingType);
                 }
 
                 if (propertyInfo.PropertyType == typeof(DateTime) || propertyInfo.PropertyType == typeof(DateTime?))
@@ -64,8 +63,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                     selector = Expression.Add(
                         selector,
                         property,
-                        concatMethod
-                    );
+                        concatMethod);
                 }
                 else
                 {

@@ -52,7 +52,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .IsFilterable();
             Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
                 .Name("Residents")
-                .Include(accessor, dbContext, x => x.Habitants, x => x.HomePlanetId)
+                .Include(accessor, dbContext, x => x.Habitants)
                 .ResolveAsync();
         }
     }
@@ -67,11 +67,11 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             Field(x => x.EyeColor);
             Field<PlanetGraphType, Planet>()
                 .Name("HomePlanet")
-                .Include(accessor, dbContext, x => x.HomePlanet, x => x.Id)
+                .Include(accessor, dbContext, x => x.HomePlanet)
                 .ResolveAsync();
             Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
                 .Name("Friends")
-                .Include(accessor, dbContext, x => x.Friends, x => x.Id)
+                .Include(accessor, dbContext, x => x.Friends)
                 .ResolveAsync();
         }
     }
@@ -87,7 +87,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .IsFilterable();
             Field<HumanGraphType, Human>()
                 .Name("Owner")
-                .Include(accessor, dbContext, x => x.Owner, x => x.Id);
+                .Include(accessor, dbContext, x => x.Owner);
         }
     }
 

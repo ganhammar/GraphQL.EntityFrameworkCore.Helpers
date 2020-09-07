@@ -188,14 +188,11 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                                         targetType,
                                         GetSelections(ToDictionary(field)),
                                         model,
-                                        query
-                                    ),
+                                        query),
                                     x => Expression.Call(
                                         anyMethod,
                                         Expression.MakeMemberAccess(argument, property),
-                                        Expression.Lambda(x, subArgument)
-                                    )
-                                );
+                                        Expression.Lambda(x, subArgument)));
                             }
                             else
                             {
@@ -205,8 +202,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                                     targetType,
                                     GetSelections(ToDictionary(field)),
                                     model,
-                                    query
-                                ));
+                                    query));
                             }
                         }
                     }

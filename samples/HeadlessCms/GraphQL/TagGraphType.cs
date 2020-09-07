@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using GraphQL.DataLoader;
 using GraphQL.EntityFrameworkCore.Helpers;
 using GraphQL.Types;
@@ -22,7 +20,7 @@ namespace HeadlessCms.GraphQL
                 .Name("Pages")
                 .MapsTo(x => x.PageTags)
                     .ThenTo(x => x.Page)
-                .Include(accessor, dbContext, x => x.Id)
+                .Include(accessor, dbContext)
                 .ResolveAsync();
         }
     }

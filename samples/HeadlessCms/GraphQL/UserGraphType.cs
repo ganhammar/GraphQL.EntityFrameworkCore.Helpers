@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using GraphQL.DataLoader;
 using GraphQL.EntityFrameworkCore.Helpers;
 using GraphQL.Types;
@@ -21,7 +20,7 @@ namespace HeadlessCms.GraphQL
                 .IsFilterable();
             Field<ListGraphType<PageGraphType>, IEnumerable<Page>>()
                 .Name("Pages")
-                .Include(accessor, dbContext, x => x.Pages, x => x.EditorId)
+                .Include(accessor, dbContext, x => x.Pages)
                 .ResolveAsync();
         }
     }

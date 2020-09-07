@@ -27,8 +27,6 @@ namespace HeadlessCms.Data
                 "Data Source=",
                 Path.Combine(
                     Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetName().CodeBase),
-                    "HeadlessCms.db"
-                )
-            ));
+                    "HeadlessCms.db")));
     }
 }

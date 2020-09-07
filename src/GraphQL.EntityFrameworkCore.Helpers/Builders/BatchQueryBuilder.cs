@@ -9,27 +9,24 @@ using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
 {
-    public class BatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty, TKey>
+    public class BatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty>
         where TDbContext : DbContext
     {
         private readonly FieldBuilder<TSourceType, TReturnType> _field;
         private readonly TDbContext _dbContext;
         private readonly IDataLoaderContextAccessor _dataLoaderContextAccessor;
         private readonly PropertyInfo _propertyToInclude;
-        private readonly PropertyInfo _targetProperty;
 
         public BatchQueryBuilder(
             FieldBuilder<TSourceType, TReturnType> field,
             TDbContext dbContext,
             IDataLoaderContextAccessor dataLoaderContextAccessor,
-            Expression<Func<TSourceType, TProperty>> propertyToInclude,
-            Expression<Func<TReturnType, TKey>> targetProperty)
+            Expression<Func<TSourceType, TProperty>> propertyToInclude)
         {
             _field = field;
             _dbContext = dbContext;
             _dataLoaderContextAccessor = dataLoaderContextAccessor;
             _propertyToInclude = FieldHelpers.GetPropertyInfo<TSourceType, TProperty>(propertyToInclude);
-            _targetProperty = FieldHelpers.GetPropertyInfo<TReturnType, TKey>(targetProperty);
         }
 
         public void ResolveAsync()
@@ -37,7 +34,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             var sourceType = typeof(TSourceType);
             var returnType = typeof(TReturnType);
             var loaderName = $"DataLoader_Get_{sourceType.Name}_{_propertyToInclude.Name}";
-            var sourceProperty = GetSourceProperty(sourceType);
+            var (sourceProperty, targetProperty) = GetRelationship(sourceType);
 
             _field.ResolveAsync(context =>
             {
@@ -49,12 +46,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                             .MakeGenericMethod(returnType)
                             .Invoke(_dbContext, null);
                         
-                        var castMethod = QueryableExtensions.GetCastMethod().MakeGenericMethod(_targetProperty.PropertyType);
+                        var castMethod = QueryableExtensions.GetCastMethod()
+                            .MakeGenericMethod(targetProperty.PropertyInfo.PropertyType);
                         var castedSourceProperties = castMethod.Invoke(castMethod, new object[] { sourceProperties });
                         var argument = Expression.Parameter(returnType);
-                        var property = Expression.MakeMemberAccess(argument, _targetProperty);
+                        var property = Expression.MakeMemberAccess(argument, targetProperty.PropertyInfo);
                         var properties = Expression.Constant(castedSourceProperties);
-                        var check = Expression.Call(typeof(Enumerable), "Contains", new[] { _targetProperty.PropertyType }, properties, property);
+                        var check = Expression.Call(typeof(Enumerable), "Contains",
+                            new[] { targetProperty.PropertyInfo.PropertyType }, properties, property);
                         var lambda = Expression.Lambda(check, argument);
 
                         var whereMethod = QueryableExtensions.GetWhereMethod();
@@ -69,7 +68,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
                         return await query
                             .ToDictionaryAsync(
-                                x => returnType.GetProperty(_targetProperty.Name).GetValue(x),
+                                x => returnType.GetProperty(targetProperty.Name).GetValue(x),
                                 x => x);
                     });
 
@@ -79,7 +78,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             });
         }
 
-        private IProperty GetSourceProperty(Type sourceType)
+        private (IProperty source, IProperty target) GetRelationship(Type sourceType)
         {
             var model = _dbContext.Model;
             var entity = model.FindEntityType(sourceType);
@@ -88,22 +87,37 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             var property = navigationProperties
                 .Where(x => x.Name == _propertyToInclude.Name)
                 .First();
-            
-            if (property.DeclaringType.Name == sourceType.FullName)
-            {
-                var foreignKey = property.ForeignKey.Properties.First();
 
-                if (foreignKey.PropertyInfo != default)
-                {
-                    return foreignKey;
-                }
+            if (property.ForeignKey.Properties.Count > 1)
+            {
+                throw new Exception("Composite keys is not supported");
             }
 
-            return property.ForeignKey
+            var foreignKey = property.ForeignKey.Properties.First();
+
+            if (foreignKey.PropertyInfo == default)
+            {
+                throw new Exception($@"All key fields must be mapped in data entity, missing key
+                    field for {_propertyToInclude.Name} in {foreignKey.DeclaringType.Name}");
+            }
+
+            var principal = property.ForeignKey
                 .PrincipalKey
                 .Properties
-                .Where(x => x.PropertyInfo != null)
                 .First();
+
+            if (principal.PropertyInfo == default)
+            {
+                throw new Exception($@"All key fields must be mapped in data entity, missing key
+                    field for {_propertyToInclude.Name} in {principal.DeclaringType.Name}");
+            }
+
+            if (property.DeclaringType.Name == sourceType.FullName)
+            {
+                return (foreignKey, principal);
+            }
+
+            return (principal, foreignKey);
         }
     }
 }
