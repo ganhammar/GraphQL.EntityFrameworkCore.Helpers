@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading.Tasks;
 using GraphQL.Builders;
 using GraphQL.DataLoader;
 using Microsoft.EntityFrameworkCore;
@@ -32,7 +33,23 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         public BatchQueryBuilder<TSourceType, TReturnType, TDbContext> Apply(
             Func<IQueryable<TReturnType>, IResolveFieldContext<object>, IQueryable<TReturnType>> businessLogic)
         {
-            SetBusinessLogic(businessLogic);
+            BusinessLogic = businessLogic;
+
+            return this;
+        }
+
+        public BatchQueryBuilder<TSourceType, TReturnType, TDbContext> Validate(
+            Func<IResolveFieldContext<object>, ValidationResult> action)
+        {
+            ValidationAction = action;
+
+            return this;
+        }
+
+        public BatchQueryBuilder<TSourceType, TReturnType, TDbContext> ValidateAsync(
+            Func<IResolveFieldContext<object>, Task<ValidationResult>> action)
+        {
+            AsyncValidationAction = action;
 
             return this;
         }
@@ -44,17 +61,25 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             var loaderName = $"DataLoader_Get_{sourceType.Name}_{_propertyToInclude.Name}";
             var (sourceProperty, targetProperty) = GetRelationship(sourceType);
 
-            _field.ResolveAsync(context =>
+            _field.ResolveAsync(typedContext =>
             {
+                var context = (IResolveFieldContext<object>)typedContext;
                 var loader = _dataLoaderContextAccessor.Context.GetOrAddBatchLoader<object, TReturnType>(
                     loaderName,
                     async (sourceProperties) =>
                     {
+                        var isValid = await ValidateBusiness(context, _dbContext.Model);
+
+                        if (!isValid && ValidateFilterInput(context))
+                        {
+                            return default;
+                        }
+
                         var query = (IQueryable<TReturnType>)typeof(DbContext).GetMethod(nameof(DbContext.Set))
                             .MakeGenericMethod(returnType)
                             .Invoke(_dbContext, null);
                         
-                        query = ApplyBusinessLogic(query, (IResolveFieldContext<object>)context);
+                        query = ApplyBusinessLogic(query, context);
                         
                         var castMethod = QueryableExtensions.GetCastMethod()
                             .MakeGenericMethod(targetProperty.PropertyInfo.PropertyType);
@@ -76,7 +101,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                             .Invoke(genericMethod, new object[] { query, lambda });
                         
                         query = query
-                            .SelectFromContext((IResolveFieldContext<object>)context, _dbContext.Model);
+                            .SelectFromContext(context, _dbContext.Model);
 
                         return await query
                             .ToDictionaryAsync(

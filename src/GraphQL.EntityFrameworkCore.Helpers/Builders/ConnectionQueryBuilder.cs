@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 using GraphQL.Builders;
 using Microsoft.EntityFrameworkCore;
 
@@ -36,7 +37,23 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         public ConnectionQueryBuilder<TSourceType, TReturnType, TDbContext> Apply(
             Func<IQueryable<TReturnType>, IResolveConnectionContext<object>, IQueryable<TReturnType>> businessLogic)
         {
-            SetBusinessLogic(businessLogic);
+            BusinessLogic = businessLogic;
+
+            return this;
+        }
+
+        public ConnectionQueryBuilder<TSourceType, TReturnType, TDbContext> Validate(
+            Func<IResolveFieldContext<object>, ValidationResult> action)
+        {
+            ValidationAction = action;
+
+            return this;
+        }
+
+        public ConnectionQueryBuilder<TSourceType, TReturnType, TDbContext> ValidateAsync(
+            Func<IResolveFieldContext<object>, Task<ValidationResult>> action)
+        {
+            AsyncValidationAction = action;
 
             return this;
         }
@@ -48,11 +65,22 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             _field.ResolveAsync(async typedContext =>
             {
                 var context = (IResolveConnectionContext<object>)typedContext;
+                var isValid = await ValidateBusiness(context, _dbContext.Model);
+
+                if (!isValid && ValidateFilterInput(context))
+                {
+                    return default;
+                }
 
                 _query = ApplyBusinessLogic(_query, context);
 
                 var input = (IConnectionInput<TReturnType>)Activator.CreateInstance(connectionInputType);
                 input.SetConnectionInput(context);
+
+                if (!ValidateConnectionInput(context, input, _dbContext.Model))
+                {
+                    return default;
+                }
 
                 return await _query
                     .ToConnection(input, _dbContext.Model);

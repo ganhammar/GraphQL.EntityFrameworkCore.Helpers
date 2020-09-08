@@ -31,6 +31,18 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return AddWheres(query, filter, context, model);
         }
 
+        public static ValidationResult ValidateFilterInput(this IResolveFieldContext<object> context)
+        {
+            var filter = GetFilter(context);
+
+            if (filter == default)
+            {
+                return new ValidationResult();
+            }
+
+            return filter.Validate(context);
+        }
+
         private static FilterableInput GetFilter(IResolveFieldContext<object> context)
         {
             if (context == default)

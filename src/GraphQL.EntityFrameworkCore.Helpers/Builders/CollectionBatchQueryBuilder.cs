@@ -64,7 +64,23 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         public CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty> Apply(
             Func<IQueryable<TReturnType>, IResolveFieldContext<object>, IQueryable<TReturnType>> businessLogic)
         {
-            SetBusinessLogic(businessLogic);
+            BusinessLogic = businessLogic;
+
+            return this;
+        }
+
+        public CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty> Validate(
+            Func<IResolveFieldContext<object>, ValidationResult> action)
+        {
+            ValidationAction = action;
+
+            return this;
+        }
+
+        public CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty> ValidateAsync(
+            Func<IResolveFieldContext<object>, Task<ValidationResult>> action)
+        {
+            AsyncValidationAction = action;
 
             return this;
         }
@@ -103,22 +119,30 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             IProperty targetProperty,
             string loaderName)
         {
-            return context =>
+            return typedContext =>
             {
+                var context = (IResolveFieldContext<object>)typedContext;
                 var loader = _dataLoaderContextAccessor.Context.GetOrAddCollectionBatchLoader<object, TReturnType>(
                     loaderName,
                     async (sourceProperties) =>
                     {
+                        var isValid = await ValidateBusiness(context, _dbContext.Model);
+
+                        if (!isValid && ValidateFilterInput(context))
+                        {
+                            return default;
+                        }
+
                         var query = (IQueryable<TReturnType>)typeof(DbContext).GetMethod(nameof(DbContext.Set))
                             .MakeGenericMethod(targetType)
                             .Invoke(_dbContext, null);
 
-                        query = ApplyBusinessLogic(query, (IResolveFieldContext<object>)context);
+                        query = ApplyBusinessLogic(query, context);
 
                         query = Where(query, targetType, GetContainsLambda(sourceProperties, targetType, targetProperty));
 
                         query = query
-                            .SelectFromContext((IResolveFieldContext<object>)context, _dbContext.Model);
+                            .SelectFromContext(context, _dbContext.Model);
                         
                         var result = await query.ToListAsync();
 
