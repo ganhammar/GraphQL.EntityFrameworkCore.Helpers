@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
 {
-    public class BatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty>
+    public class BatchQueryBuilder<TSourceType, TReturnType, TDbContext>
         where TDbContext : DbContext
     {
         private readonly FieldBuilder<TSourceType, TReturnType> _field;
@@ -21,12 +21,12 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             FieldBuilder<TSourceType, TReturnType> field,
             TDbContext dbContext,
             IDataLoaderContextAccessor dataLoaderContextAccessor,
-            Expression<Func<TSourceType, TProperty>> propertyToInclude)
+            Expression<Func<TSourceType, TReturnType>> propertyToInclude)
         {
             _field = field;
             _dbContext = dbContext;
             _dataLoaderContextAccessor = dataLoaderContextAccessor;
-            _propertyToInclude = FieldHelpers.GetPropertyInfo<TSourceType, TProperty>(propertyToInclude);
+            _propertyToInclude = FieldHelpers.GetPropertyInfo<TSourceType, TReturnType>(propertyToInclude);
         }
 
         public void ResolveAsync()

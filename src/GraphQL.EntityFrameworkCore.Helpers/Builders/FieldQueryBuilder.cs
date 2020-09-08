@@ -6,22 +6,22 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
 {
-    public class FieldQueryBuilder<TSourceType, TReturnType, T_dbContext, TProperty>
-        where T_dbContext : DbContext
+    public class FieldQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty>
+        where TDbContext : DbContext
         where TProperty : class
     {
         private readonly FieldBuilder<TSourceType, TReturnType> _field;
-        private readonly T_dbContext _dbContext;
+        private readonly TDbContext _dbContext;
         private Func<IQueryable<TProperty>, IResolveFieldContext<object>, IQueryable<TProperty>> _businessLogic;
         private IQueryable<TProperty> _query { get; set; }
 
-        public FieldQueryBuilder(FieldBuilder<TSourceType, TReturnType> field, T_dbContext dbContext)
+        public FieldQueryBuilder(FieldBuilder<TSourceType, TReturnType> field, TDbContext dbContext)
         {
             _field = field;
             _dbContext = dbContext;
         }
 
-        public FieldQueryBuilder<TSourceType, TReturnType, T_dbContext, TProperty> Set(Expression<Func<T_dbContext, DbSet<TProperty>>> accessor)
+        public FieldQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty> Set(Expression<Func<TDbContext, DbSet<TProperty>>> accessor)
         {
             var type = FieldHelpers.GetPropertyInfo(accessor).PropertyType
                 .GetGenericArguments().First();
@@ -33,7 +33,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return this;
         }
 
-        public FieldQueryBuilder<TSourceType, TReturnType, T_dbContext, TProperty> Apply(
+        public FieldQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty> Apply(
             Func<IQueryable<TProperty>, IResolveFieldContext<object>, IQueryable<TProperty>> businessLogic)
         {
             _businessLogic = businessLogic;

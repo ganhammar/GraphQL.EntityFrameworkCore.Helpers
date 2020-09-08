@@ -93,20 +93,20 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return queryBuilder;
         }
 
-        public static BatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty> Include<TSourceType, TReturnType, TDbContext, TProperty>(
+        public static BatchQueryBuilder<TSourceType, TReturnType, TDbContext> Include<TSourceType, TReturnType, TDbContext>(
                 this FieldBuilder<TSourceType, TReturnType> field,
                 IDataLoaderContextAccessor dataLoaderContextAccessor,
                 TDbContext dbContext,
-                Expression<Func<TSourceType, TProperty>> propertyToInclude)
+                Expression<Func<TSourceType, TReturnType>> propertyToInclude)
             where TDbContext : DbContext
-            where TProperty : class
+            where TReturnType : class
         {
             var type = typeof(TSourceType);
             var property = FieldHelpers.GetPropertyInfo(propertyToInclude);
 
             FieldHelpers.Map(type, field.FieldType, property);
 
-            return new BatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty>(
+            return new BatchQueryBuilder<TSourceType, TReturnType, TDbContext>(
                 field, dbContext, dataLoaderContextAccessor, propertyToInclude);
         }
 

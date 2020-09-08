@@ -31,7 +31,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             _field = field;
             _dbContext = dbContext;
             _dataLoaderContextAccessor = dataLoaderContextAccessor;
-            _propertyToInclude = FieldHelpers.GetPropertyInfo<TSourceType, IEnumerable<TProperty>>(collectionToInclude);
+            _propertyToInclude = FieldHelpers
+                .GetPropertyInfo<TSourceType, IEnumerable<TProperty>>(collectionToInclude);
         }
 
         public CollectionBatchQueryBuilder(
@@ -46,8 +47,18 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             _helperField = helperField;
             _dbContext = dbContext;
             _dataLoaderContextAccessor = dataLoaderContextAccessor;
-            _propertyToInclude = returnType.GetProperty(propertyPath.First());
-            _isManyToMany = true;
+            _propertyToInclude = (propertyPath.Count == 1 ? sourceType : returnType)
+                .GetProperty(propertyPath.First());
+
+            if (propertyPath.Count > 2)
+            {
+                throw new Exception(@"Can't resolve relationships further than 
+                    two steps apart (.MapsTo().ThenTo())");
+            }
+            else if (propertyPath.Count == 2)
+            {
+                _isManyToMany = true;
+            }
         }
 
         public void ResolveAsync()
@@ -56,25 +67,35 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             var targetType = typeof(TReturnType);
             var loaderName = $"DataLoader_Get_{sourceType.Name}_{_propertyToInclude.Name}";
             var (sourceProperty, targetProperty) = GetRelationship(sourceType);
+            Func<IResolveFieldContext<TSourceType>, Task<IEnumerable<TReturnType>>> action;
 
             if (_isManyToMany == false && sourceType != targetType)
             {
-                ResolveOneToMany(sourceType, targetType, sourceProperty, targetProperty, loaderName);
+                action = ResolveOneToMany(sourceType, targetType, sourceProperty, targetProperty, loaderName);
             }
             else
             {
-                ResolveManyToMany(sourceType, targetType, sourceProperty, targetProperty, loaderName);
+                action = ResolveManyToMany(sourceType, targetType, sourceProperty, targetProperty, loaderName);
+            }
+
+            if (_field != default)
+            {
+                _field.ResolveAsync(action);
+            }
+            else if (_helperField != default)
+            {
+                _helperField.ResolveAsync(action);
             }
         }
 
-        private void ResolveOneToMany(
+        private Func<IResolveFieldContext<TSourceType>, Task<IEnumerable<TReturnType>>> ResolveOneToMany(
             Type sourceType,
             Type targetType,
             IProperty sourceProperty,
             IProperty targetProperty,
             string loaderName)
         {
-            _field.ResolveAsync(context =>
+            return context =>
             {
                 var loader = _dataLoaderContextAccessor.Context.GetOrAddCollectionBatchLoader<object, TReturnType>(
                     loaderName,
@@ -101,17 +122,17 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 return loader.LoadAsync(sourceType
                     .GetProperty(sourceProperty.Name)
                     .GetValue(context.Source));
-            });
+            };
         }
 
-        private void ResolveManyToMany(
+        private Func<IResolveFieldContext<TSourceType>, Task<IEnumerable<TReturnType>>> ResolveManyToMany(
             Type sourceType,
             Type returnType,
             IProperty sourceProperty,
             IProperty targetProperty,
             string loaderName)
         {
-            Func<IResolveFieldContext<TSourceType>, Task<IEnumerable<TReturnType>>> action = context =>
+            return context =>
             {
                 var loader = _dataLoaderContextAccessor.Context.GetOrAddCollectionBatchLoader<object, TReturnType>(
                     loaderName,
@@ -149,15 +170,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                     .GetProperty(sourceProperty.Name)
                     .GetValue(context.Source));
             };
-
-            if (_field != default)
-            {
-                _field.ResolveAsync(action);
-            }
-            else if (_helperField != default)
-            {
-                _helperField.ResolveAsync(action);
-            }
         }
         
         private ILookup<object, TReturnType> SelectManyToMany(
@@ -259,7 +271,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
             if (foreignKey.PropertyInfo == default && sourceType != typeof(TReturnType))
             {
-                throw new Exception($@"All key fields must be mapped in data entity, missing key
+                throw new Exception($@"All key fields must be mapped in data entity, missing key 
                     field for {_propertyToInclude.Name} in {foreignKey.DeclaringType.Name}");
             }
 
@@ -275,7 +287,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
             if (principal.PropertyInfo == default)
             {
-                throw new Exception($@"All key fields must be mapped in data entity, missing key
+                throw new Exception($@"All key fields must be mapped in data entity, missing key 
                     field for {_propertyToInclude.Name} in {principal.DeclaringType.Name}");
             }
             
