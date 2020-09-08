@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
 {
-    public class BatchQueryBuilder<TSourceType, TReturnType, TDbContext>
+    public class BatchQueryBuilder<TSourceType, TReturnType, TDbContext> : QueryBuilderBase<TReturnType, IResolveFieldContext<object>>
         where TDbContext : DbContext
     {
         private readonly FieldBuilder<TSourceType, TReturnType> _field;
@@ -29,6 +29,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             _propertyToInclude = FieldHelpers.GetPropertyInfo<TSourceType, TReturnType>(propertyToInclude);
         }
 
+        public BatchQueryBuilder<TSourceType, TReturnType, TDbContext> Apply(
+            Func<IQueryable<TReturnType>, IResolveFieldContext<object>, IQueryable<TReturnType>> businessLogic)
+        {
+            SetBusinessLogic(businessLogic);
+
+            return this;
+        }
+
         public void ResolveAsync()
         {
             var sourceType = typeof(TSourceType);
@@ -46,12 +54,16 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                             .MakeGenericMethod(returnType)
                             .Invoke(_dbContext, null);
                         
+                        query = ApplyBusinessLogic(query, (IResolveFieldContext<object>)context);
+                        
                         var castMethod = QueryableExtensions.GetCastMethod()
                             .MakeGenericMethod(targetProperty.PropertyInfo.PropertyType);
                         var castedSourceProperties = castMethod.Invoke(castMethod, new object[] { sourceProperties });
+                        var properties = Expression.Constant(castedSourceProperties);
+
                         var argument = Expression.Parameter(returnType);
                         var property = Expression.MakeMemberAccess(argument, targetProperty.PropertyInfo);
-                        var properties = Expression.Constant(castedSourceProperties);
+
                         var check = Expression.Call(typeof(Enumerable), "Contains",
                             new[] { targetProperty.PropertyInfo.PropertyType }, properties, property);
                         var lambda = Expression.Lambda(check, argument);

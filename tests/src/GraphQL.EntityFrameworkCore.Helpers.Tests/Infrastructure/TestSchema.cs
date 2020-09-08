@@ -29,6 +29,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             Connection<DroidGraphType>()
                 .Name("Droids")
                 .From(dbContext, x => x.Droids)
+                .Apply((query, context) => query.Where(x => true))
                 .ResolveAsync(typeof(ConnectionInput));
             
             Field<ListGraphType<PlanetGraphType>>()
@@ -54,6 +55,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .Name("Residents")
                 .MapsTo(x => x.Habitants)
                 .Include(accessor, dbContext)
+                .Apply((query, context) => query.Where(x => true))
                 .ResolveAsync();
         }
     }
@@ -69,6 +71,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             Field<PlanetGraphType, Planet>()
                 .Name("HomePlanet")
                 .Include(accessor, dbContext, x => x.HomePlanet)
+                .Apply((query, context) => query.Where(x => true))
                 .ResolveAsync();
             Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
                 .Name("Friends")

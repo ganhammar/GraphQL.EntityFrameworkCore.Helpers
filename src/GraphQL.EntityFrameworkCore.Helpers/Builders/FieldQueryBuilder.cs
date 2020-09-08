@@ -6,13 +6,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
 {
-    public class FieldQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty>
+    public class FieldQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty> : QueryBuilderBase<TProperty, IResolveFieldContext<object>>
         where TDbContext : DbContext
         where TProperty : class
     {
         private readonly FieldBuilder<TSourceType, TReturnType> _field;
         private readonly TDbContext _dbContext;
-        private Func<IQueryable<TProperty>, IResolveFieldContext<object>, IQueryable<TProperty>> _businessLogic;
         private IQueryable<TProperty> _query { get; set; }
 
         public FieldQueryBuilder(FieldBuilder<TSourceType, TReturnType> field, TDbContext dbContext)
@@ -36,7 +35,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         public FieldQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty> Apply(
             Func<IQueryable<TProperty>, IResolveFieldContext<object>, IQueryable<TProperty>> businessLogic)
         {
-            _businessLogic = businessLogic;
+            SetBusinessLogic(businessLogic);
 
             return this;
         }
@@ -49,7 +48,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             {
                 var context = (IResolveFieldContext<object>)typedContext;
 
-                ApplyWhereClauses(context);
+                _query = ApplyBusinessLogic(_query, context);
 
                 return (dynamic)await _query
                     .SelectFromContext(context, _dbContext.Model)
@@ -65,22 +64,12 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             {
                 var context = (IResolveFieldContext<object>)typedContext;
 
-                ApplyWhereClauses(context);
+                _query = ApplyBusinessLogic(_query, context);
 
                 return (dynamic)await _query
                     .SelectFromContext(context, _dbContext.Model)
                     .FirstAsync();
             });
-        }
-
-        private void ApplyWhereClauses(IResolveFieldContext<object> context)
-        {
-            if (_businessLogic == default)
-            {
-                return;
-            }
-
-            _query = _businessLogic(_query, context);
         }
     }
 }

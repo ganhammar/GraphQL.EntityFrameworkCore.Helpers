@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
 {
-    public class CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty>
+    public class CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty> : QueryBuilderBase<TReturnType, IResolveFieldContext<object>>
         where TDbContext : DbContext
     {
         private readonly FieldBuilder<TSourceType, IEnumerable<TReturnType>> _field;
@@ -61,6 +61,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             }
         }
 
+        public CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty> Apply(
+            Func<IQueryable<TReturnType>, IResolveFieldContext<object>, IQueryable<TReturnType>> businessLogic)
+        {
+            SetBusinessLogic(businessLogic);
+
+            return this;
+        }
+
         public void ResolveAsync()
         {
             var sourceType = typeof(TSourceType);
@@ -105,6 +113,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                             .MakeGenericMethod(targetType)
                             .Invoke(_dbContext, null);
 
+                        query = ApplyBusinessLogic(query, (IResolveFieldContext<object>)context);
+
                         query = Where(query, targetType, GetContainsLambda(sourceProperties, targetType, targetProperty));
 
                         query = query
@@ -143,6 +153,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                             .Invoke(_dbContext, null);
                         
                         query = Include(query, returnType);
+
+                        query = ApplyBusinessLogic(query, (IResolveFieldContext<object>)context);
 
                         var argument = Expression.Parameter(returnType);
                         var property = Expression.MakeMemberAccess(argument, _propertyToInclude);

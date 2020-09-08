@@ -6,13 +6,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
 {
-    public class ConnectionQueryBuilder<TSourceType, TReturnType, TDbContext>
+    public class ConnectionQueryBuilder<TSourceType, TReturnType, TDbContext> : QueryBuilderBase<TReturnType, IResolveConnectionContext<object>>
         where TDbContext : DbContext
         where TReturnType : class
     {
         private readonly ConnectionBuilder<TSourceType> _field;
         private readonly TDbContext _dbContext;
-        private Func<IQueryable<TReturnType>, IResolveConnectionContext<object>, IQueryable<TReturnType>> _businessLogic;
         private IQueryable<TReturnType> _query { get; set; }
 
         public ConnectionQueryBuilder(ConnectionBuilder<TSourceType> field, TDbContext dbContext)
@@ -21,7 +20,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             _dbContext = dbContext;
         }
 
-        public ConnectionQueryBuilder<TSourceType, TReturnType, TDbContext> Set(Expression<Func<TDbContext, DbSet<TReturnType>>> accessor)
+        public ConnectionQueryBuilder<TSourceType, TReturnType, TDbContext> Set(
+            Expression<Func<TDbContext, DbSet<TReturnType>>> accessor)
         {
             var type = FieldHelpers.GetPropertyInfo(accessor).PropertyType
                 .GetGenericArguments().First();
@@ -33,9 +33,10 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return this;
         }
 
-        public ConnectionQueryBuilder<TSourceType, TReturnType, TDbContext> Where(Func<IQueryable<TReturnType>, IResolveConnectionContext<object>, IQueryable<TReturnType>> businessLogic)
+        public ConnectionQueryBuilder<TSourceType, TReturnType, TDbContext> Apply(
+            Func<IQueryable<TReturnType>, IResolveConnectionContext<object>, IQueryable<TReturnType>> businessLogic)
         {
-            _businessLogic = businessLogic;
+            SetBusinessLogic(businessLogic);
 
             return this;
         }
@@ -48,7 +49,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             {
                 var context = (IResolveConnectionContext<object>)typedContext;
 
-                ApplyWhereClauses(context);
+                _query = ApplyBusinessLogic(_query, context);
 
                 var input = (IConnectionInput<TReturnType>)Activator.CreateInstance(connectionInputType);
                 input.SetConnectionInput(context);
@@ -56,16 +57,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 return await _query
                     .ToConnection(input, _dbContext.Model);
             });
-        }
-
-        private void ApplyWhereClauses(IResolveConnectionContext<object> context)
-        {
-            if (_businessLogic == default)
-            {
-                return;
-            }
-
-            _query = _businessLogic(_query, context);
         }
     }
 }
