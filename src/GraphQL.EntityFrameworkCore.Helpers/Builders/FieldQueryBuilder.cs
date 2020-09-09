@@ -57,7 +57,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return this;
         }
 
-        public void ResolveListAsync()
+        public void ResolveConnectionAsync()
         {
             _field.Filtered();
 
