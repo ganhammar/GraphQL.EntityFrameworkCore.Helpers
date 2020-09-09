@@ -1,11 +1,15 @@
 <Project>
 
     <PropertyGroup>
-        <GraphQLVersion>3.0.0-preview-1675</GraphQLVersion>
-        <GraphQLServerVersion>3.5.0-alpha0071</GraphQLServerVersion>
-        <MicrosoftAspNetCoreMvcTestingVersion>3.1.6</MicrosoftAspNetCoreMvcTestingVersion>
-        <MicrosoftEntityFrameworkCoreVersion>3.1.6</MicrosoftEntityFrameworkCoreVersion>
-        <MicrosoftNetTestSdkVersion>16.5.0</MicrosoftNetTestSdkVersion>
+        <IsNetCore3OnwardsTarget>$(TargetFramework.StartsWith('netcoreapp3.'))</IsNetCore3OnwardsTarget>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <GraphQLVersion>3.0.0.2005</GraphQLVersion>
+        <GraphQLServerVersion>3.5.0-alpha0074</GraphQLServerVersion>
+        <MicrosoftAspNetCoreMvcTestingVersion>3.1.8</MicrosoftAspNetCoreMvcTestingVersion>
+        <MicrosoftEntityFrameworkCoreVersion>3.1.8</MicrosoftEntityFrameworkCoreVersion>
+        <MicrosoftNetTestSdkVersion>16.7.1</MicrosoftNetTestSdkVersion>
         <ShouldlyVersion>3.0.2</ShouldlyVersion>
         <XunitVersion>2.4.1</XunitVersion>
     </PropertyGroup>

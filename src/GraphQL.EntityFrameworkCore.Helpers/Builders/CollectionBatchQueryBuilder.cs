@@ -91,7 +91,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             var targetType = typeof(TReturnType);
             var loaderName = $"DataLoader_Get_{sourceType.Name}_{_propertyToInclude.Name}";
             var (sourceProperty, targetProperty) = GetRelationship(sourceType);
-            Func<IResolveFieldContext<TSourceType>, Task<IEnumerable<TReturnType>>> action;
+            Func<IResolveFieldContext<TSourceType>, IDataLoaderResult<IEnumerable<TReturnType>>> action;
 
             if (_isManyToMany == false && sourceType != targetType)
             {
@@ -112,7 +112,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             }
         }
 
-        private Func<IResolveFieldContext<TSourceType>, Task<IEnumerable<TReturnType>>> ResolveOneToMany(
+        private Func<IResolveFieldContext<TSourceType>, IDataLoaderResult<IEnumerable<TReturnType>>> ResolveOneToMany(
             Type sourceType,
             Type targetType,
             IProperty sourceProperty,
@@ -159,7 +159,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             };
         }
 
-        private Func<IResolveFieldContext<TSourceType>, Task<IEnumerable<TReturnType>>> ResolveManyToMany(
+        private Func<IResolveFieldContext<TSourceType>, IDataLoaderResult<IEnumerable<TReturnType>>> ResolveManyToMany(
             Type sourceType,
             Type returnType,
             IProperty sourceProperty,

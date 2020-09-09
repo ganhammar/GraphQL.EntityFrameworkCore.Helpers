@@ -152,5 +152,25 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return new CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty>(
                 field, dbContext, dataLoaderContextAccessor, FieldHelpers.GetPropertyPath(typeof(TSourceType), field.FieldType));
         }
+
+        public static HelperFieldBuilder<TSourceType, TReturnType, TProperty> ResolveAsync<TSourceType, TReturnType, TProperty>(this HelperFieldBuilder<TSourceType, TReturnType, TProperty> builder, Func<IResolveFieldContext<TSourceType>, IDataLoaderResult<TReturnType>> resolve)
+            => builder.Resolve(new FuncFieldResolver<TSourceType, IDataLoaderResult<TReturnType>>(resolve));
+
+        public static HelperFieldBuilder<TSourceType, TReturnType, TProperty> ResolveAsync<TSourceType, TReturnType, TProperty>(this HelperFieldBuilder<TSourceType, TReturnType, TProperty> builder, Func<IResolveFieldContext<TSourceType>, Task<IDataLoaderResult<TReturnType>>> resolve)
+            => builder.Resolve(new AsyncFieldResolver<TSourceType, IDataLoaderResult<TReturnType>>(resolve));
+
+        // chained data loaders
+        public static HelperFieldBuilder<TSourceType, TReturnType, TProperty> ResolveAsync<TSourceType, TReturnType, TProperty>(this HelperFieldBuilder<TSourceType, TReturnType, TProperty> builder, Func<IResolveFieldContext<TSourceType>, IDataLoaderResult<IDataLoaderResult<TReturnType>>> resolve)
+            => builder.Resolve(new FuncFieldResolver<TSourceType, IDataLoaderResult<IDataLoaderResult<TReturnType>>>(resolve));
+
+        public static HelperFieldBuilder<TSourceType, TReturnType, TProperty> ResolveAsync<TSourceType, TReturnType, TProperty>(this HelperFieldBuilder<TSourceType, TReturnType, TProperty> builder, Func<IResolveFieldContext<TSourceType>, Task<IDataLoaderResult<IDataLoaderResult<TReturnType>>>> resolve)
+            => builder.Resolve(new AsyncFieldResolver<TSourceType, IDataLoaderResult<IDataLoaderResult<TReturnType>>>(resolve));
+
+        // chain of 3 data loaders
+        public static HelperFieldBuilder<TSourceType, TReturnType, TProperty> ResolveAsync<TSourceType, TReturnType, TProperty>(this HelperFieldBuilder<TSourceType, TReturnType, TProperty> builder, Func<IResolveFieldContext<TSourceType>, IDataLoaderResult<IDataLoaderResult<IDataLoaderResult<TReturnType>>>> resolve)
+            => builder.Resolve(new FuncFieldResolver<TSourceType, IDataLoaderResult<IDataLoaderResult<IDataLoaderResult<TReturnType>>>>(resolve));
+
+        public static HelperFieldBuilder<TSourceType, TReturnType, TProperty> ResolveAsync<TSourceType, TReturnType, TProperty>(this HelperFieldBuilder<TSourceType, TReturnType, TProperty> builder, Func<IResolveFieldContext<TSourceType>, Task<IDataLoaderResult<IDataLoaderResult<IDataLoaderResult<TReturnType>>>>> resolve)
+            => builder.Resolve(new AsyncFieldResolver<TSourceType, IDataLoaderResult<IDataLoaderResult<IDataLoaderResult<TReturnType>>>>(resolve));
     }
 }
