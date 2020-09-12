@@ -24,7 +24,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .Name("Humans")
                 .From(dbContext, x => x.Humans)
                 .Apply((query, context) => query.Where(x => true))
-                .ResolveListAsync();
+                .ResolveCollectionAsync();
 
             Connection<DroidGraphType>()
                 .Name("Droids")
@@ -35,7 +35,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             Field<ListGraphType<PlanetGraphType>>()
                 .Name("Planets")
                 .From(dbContext, x => x.Planets)
-                .ResolveListAsync();
+                .ResolveCollectionAsync();
         }
     }
 
