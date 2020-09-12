@@ -52,7 +52,11 @@ With all builders you can apply your own business logic to for instance support 
 Field<PlanetGraphType, Planet>()
     .Name("HomePlanet")
     .Include(dataLoaderAccessor, dbContext, x => x.HomePlanet)
-    .Apply((query, context) => query.Where(x => x.Id == context.GetArgument<int>("id")))
+    .Apply((query, context) =>
+    {
+        var id = context.GetArgument<int>("id");
+        return query.Where(x => x.Id == id);
+    })
     .ResolveAsync();
 ```
 
@@ -64,7 +68,7 @@ Similarly you can validate the arguments passed to a context using either the `V
 Field<PlanetGraphType, Planet>()
     .Name("HomePlanet")
     .Include(dataLoaderAccessor, dbContext, x => x.HomePlanet)
-    .ValidateAsync(context =>
+    .ValidateAsync(async context =>
     {
         var result = new ValidationResult();
         var hasAccess = await UserValidator.HasAccessTo(context.GetArgument<int>("id"));

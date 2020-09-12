@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure;
@@ -132,6 +133,85 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Builders
             };
 
             var result = AssertQuerySuccess(query, expected);
+        }
+
+        [Fact]
+        public async Task Should_ReturnMyDroids_When_RequestingThem()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var humanId = StarWarsData.LukeId;
+            var myDroids = await dbContext.Droids
+                .Where(x => x.OwnerId == humanId)
+                .Select(x => new
+                {
+                    id = x.Id,
+                    name = x.Name,
+                })
+                .ToListAsync();
+
+            myDroids.ShouldNotBeEmpty();
+
+            var query = $@"
+                query myDroids {{
+                    myDroids(humanId: ""{humanId}"") {{
+                        id
+                        name
+                    }}
+                }}
+            ";
+
+            var expected = new
+            {
+                myDroids,
+            };
+
+            var result = AssertQuerySuccess(query, expected);
+        }
+
+        [Fact]
+        public async Task Should_ReturnMyDroid_When_Requesting()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var droid = await dbContext.Droids
+                .Select(x => new
+                {
+                    id = x.Id,
+                    name = x.Name,
+                })
+                .FirstAsync();
+
+            var query = $@"
+                query droid {{
+                    droid(id: ""{droid.id}"") {{
+                        id
+                        name
+                    }}
+                }}
+            ";
+
+            var expected = new
+            {
+                droid,
+            };
+
+            var result = AssertQuerySuccess(query, expected);
+        }
+
+        [Fact]
+        public void Should_ReturnErrors_When_RequestingDroidThatDoesntExist()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+
+            var query = $@"
+                query droid {{
+                    droid(id: ""{Guid.NewGuid()}"") {{
+                        id
+                        name
+                    }}
+                }}
+            ";
+
+            AssertQueryWithErrors(query, expectedErrorCount: 1);
         }
     }
 }
