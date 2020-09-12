@@ -1,5 +1,8 @@
 # Filters
 
+Filters can be used by the client to limit the amount data returned for a collection or a connection. The clients can filter a specific column by a specific value or have a value that applies to all filterable columns.
+
+## Setup
 Add the `IsFilterable`-attribute to columns that should be filterable.
 
 ```c#
@@ -98,6 +101,8 @@ query humans($filterInput: FilterInput) {
 ```
 
 ### Validating the filter input
+
+The filter input is validated automactically when using the helper methods. In the cases where you want to build the query yourself the filter can be validated with the `IFilterInput` extension method `Validate`.
 
 ```c#
 var validationResult = filterInput.Validate(IResolveFieldContext);
