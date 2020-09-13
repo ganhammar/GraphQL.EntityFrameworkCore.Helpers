@@ -1,7 +1,4 @@
-using GraphQL;
-using GraphQL.EntityFrameworkCore.Helpers;
-
-namespace HeadlessCms.GraphQL
+namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public class ConnectionInput<T> : IConnectionInput<T>
     {

@@ -14,7 +14,7 @@ It is important that each resulting cursor points at a unique row in order to be
 Connection<DroidGraphType>()
     .Name("Droids")
     .From(dbContext, x => x.Droids)
-    .ResolveAsync(typeof(ConnectionInput));
+    .ResolveAsync();
 ```
 
 ## Manually Resolving The Field

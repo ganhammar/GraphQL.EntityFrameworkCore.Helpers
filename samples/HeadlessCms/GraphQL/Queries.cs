@@ -11,17 +11,17 @@ namespace HeadlessCms.GraphQL
             Connection<PageGraphType>()
                 .Name("Pages")
                 .From(dbContext, x => x.Pages)
-                .ResolveAsync(typeof(ConnectionInput<Page>));
+                .ResolveAsync();
 
             Connection<UserGraphType>()
                 .Name("Users")
                 .From(dbContext, x => x.Users)
-                .ResolveAsync(typeof(ConnectionInput<User>));
+                .ResolveAsync();
 
             Connection<TagGraphType>()
                 .Name("Tags")
                 .From(dbContext, x => x.Tags)
-                .ResolveAsync(typeof(ConnectionInput<Tag>));
+                .ResolveAsync();
         }
     }
 }

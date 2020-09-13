@@ -32,7 +32,7 @@ You can also add connections in a similar way. With the connections the client h
 Connection<DroidGraphType>()
     .Name("Droids")
     .From(dbContext, x => x.Droids)
-    .ResolveAsync(typeof(ConnectionInput));
+    .ResolveAsync();
 ```
 
 The helper methods can also be used to resolve data loaded properties. Read more about data loaded fields [here](documentation/DataLoadedFields.md).

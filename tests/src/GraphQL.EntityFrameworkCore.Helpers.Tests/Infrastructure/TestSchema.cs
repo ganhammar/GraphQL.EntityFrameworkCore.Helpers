@@ -31,7 +31,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .Name("Droids")
                 .From(dbContext, x => x.Droids)
                 .Apply((query, context) => query.Where(x => true))
-                .ResolveAsync(typeof(ConnectionInput));
+                .ResolveAsync();
 
             Field<ListGraphType<DroidGraphType>>()
                 .Name("MyDroids")

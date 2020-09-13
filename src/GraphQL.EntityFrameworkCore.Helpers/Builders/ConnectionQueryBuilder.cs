@@ -58,8 +58,13 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return this;
         }
 
-        public void ResolveAsync(Type connectionInputType)
+        public void ResolveAsync(Type connectionInputType = default)
         {
+            if (connectionInputType == default)
+            {
+                connectionInputType = typeof(ConnectionInput<>).MakeGenericType(typeof(TReturnType));
+            }
+
             _field.Paged();
 
             _field.ResolveAsync(async typedContext =>
