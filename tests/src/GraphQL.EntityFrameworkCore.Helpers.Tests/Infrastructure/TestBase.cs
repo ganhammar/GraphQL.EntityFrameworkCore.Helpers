@@ -127,6 +127,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 x.Inputs = inputs;
                 x.UserContext = userContext;
                 x.CancellationToken = cancellationToken;
+                x.RequestServices = ServiceProvider;
                 foreach (var listener in ServiceProvider.GetService<IEnumerable<IDocumentExecutionListener>>())
                 {
                     x.Listeners.Add(listener);
@@ -169,6 +170,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 x.CancellationToken = cancellationToken;
                 x.ValidationRules = rules;
                 x.NameConverter = new CamelCaseNameConverter();
+                x.RequestServices = ServiceProvider;
                 foreach (var listener in ServiceProvider.GetService<IEnumerable<IDocumentExecutionListener>>())
                 {
                     x.Listeners.Add(listener);

@@ -9,7 +9,7 @@ To inform the helper methods what field you want to resolve you'll have to use t
 ```c#
 Field<PlanetGraphType, Planet>()
     .Name("HomePlanet")
-    .Include(accessor, dbContext, x => x.HomePlanet)
+    .Include(dbContext, x => x.HomePlanet)
     .Apply((query, context) => query.Where(x => true))
     .ResolveAsync();
 ```
@@ -20,7 +20,7 @@ Or:
 Field<PlanetGraphType, Planet>()
     .Name("HomePlanet")
     .MapsTo(x => x.HomePlanet)
-    .Include(accessor, dbContext)
+    .Include(dbContext)
     .Apply((query, context) => query.Where(x => true))
     .ResolveAsync();
 ```
@@ -34,7 +34,7 @@ Field<ListGraphType<TagGraphType>, IEnumerable<Tag>>()
     .Name("Tags")
     .MapsTo(x => x.PageTags)
         .ThenTo(x => x.Page)
-    .Include(accessor, dbContext)
+    .Include(dbContext)
     .ResolveAsync();
 ```
 

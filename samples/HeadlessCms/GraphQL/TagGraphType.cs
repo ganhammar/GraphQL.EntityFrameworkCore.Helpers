@@ -20,7 +20,7 @@ namespace HeadlessCms.GraphQL
                 .Name("Pages")
                 .MapsTo(x => x.PageTags)
                     .ThenTo(x => x.Page)
-                .Include(accessor, dbContext)
+                .Include(dbContext)
                 .ResolveAsync();
         }
     }

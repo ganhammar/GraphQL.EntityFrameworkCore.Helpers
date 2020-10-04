@@ -20,13 +20,13 @@ namespace HeadlessCms.GraphQL
                 .IsFilterable();
             Field<UserGraphType, User>()
                 .Name("Editor")
-                .Include(accessor, dbContext, x => x.Editor)
+                .Include(dbContext, x => x.Editor)
                 .ResolveAsync();
             Field<ListGraphType<TagGraphType>, IEnumerable<Tag>>()
                 .Name("Tags")
                 .MapsTo(x => x.PageTags)
                     .ThenTo(x => x.Page)
-                .Include(accessor, dbContext)
+                .Include(dbContext)
                 .ResolveAsync();
         }
     }

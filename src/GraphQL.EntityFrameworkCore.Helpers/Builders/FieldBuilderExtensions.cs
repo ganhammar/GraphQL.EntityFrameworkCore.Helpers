@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using GraphQL.Builders;
-using GraphQL.DataLoader;
 using Microsoft.EntityFrameworkCore;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
@@ -95,7 +94,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
         public static BatchQueryBuilder<TSourceType, TReturnType, TDbContext> Include<TSourceType, TReturnType, TDbContext>(
                 this FieldBuilder<TSourceType, TReturnType> field,
-                IDataLoaderContextAccessor dataLoaderContextAccessor,
                 TDbContext dbContext,
                 Expression<Func<TSourceType, TReturnType>> propertyToInclude)
             where TDbContext : DbContext
@@ -107,12 +105,11 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             FieldHelpers.Map(type, field.FieldType, property);
 
             return new BatchQueryBuilder<TSourceType, TReturnType, TDbContext>(
-                field, dbContext, dataLoaderContextAccessor, propertyToInclude);
+                field, dbContext, propertyToInclude);
         }
 
         public static CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty> Include<TSourceType, TReturnType, TDbContext, TProperty>(
                 this FieldBuilder<TSourceType, IEnumerable<TReturnType>> field,
-                IDataLoaderContextAccessor dataLoaderContextAccessor,
                 TDbContext dbContext,
                 Expression<Func<TSourceType, IEnumerable<TProperty>>> collectionToInclude)
             where TDbContext : DbContext
@@ -123,7 +120,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             FieldHelpers.Map(type, field.FieldType, property);
 
             return new CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty>(
-                field, dbContext, dataLoaderContextAccessor, collectionToInclude);
+                field, dbContext, collectionToInclude);
         }
     }
 }

@@ -7,6 +7,7 @@ using GraphQL.Builders;
 using GraphQL.DataLoader;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
 {
@@ -15,18 +16,15 @@ namespace GraphQL.EntityFrameworkCore.Helpers
     {
         private readonly FieldBuilder<TSourceType, TReturnType> _field;
         private readonly TDbContext _dbContext;
-        private readonly IDataLoaderContextAccessor _dataLoaderContextAccessor;
         private readonly PropertyInfo _propertyToInclude;
 
         public BatchQueryBuilder(
             FieldBuilder<TSourceType, TReturnType> field,
             TDbContext dbContext,
-            IDataLoaderContextAccessor dataLoaderContextAccessor,
             Expression<Func<TSourceType, TReturnType>> propertyToInclude)
         {
             _field = field;
             _dbContext = dbContext;
-            _dataLoaderContextAccessor = dataLoaderContextAccessor;
             _propertyToInclude = FieldHelpers.GetPropertyInfo<TSourceType, TReturnType>(propertyToInclude);
         }
 
@@ -64,7 +62,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             _field.ResolveAsync(typedContext =>
             {
                 var context = (IResolveFieldContext<object>)typedContext;
-                var loader = _dataLoaderContextAccessor.Context.GetOrAddBatchLoader<object, TReturnType>(
+
+                if (context.RequestServices == default)
+                {
+                    throw new Exception("ExecutionOptions.RequestServices is not defined (passed to ExecuteAsync), use GraphQL Server 4.0 and on");
+                }
+
+                var dataLoaderContextAccessor = context.RequestServices.GetRequiredService<IDataLoaderContextAccessor>();
+                var loader = dataLoaderContextAccessor.Context.GetOrAddBatchLoader<object, TReturnType>(
                     loaderName,
                     async (sourceProperties) =>
                     {

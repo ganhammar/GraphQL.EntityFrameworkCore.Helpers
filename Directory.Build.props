@@ -5,20 +5,13 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <GraphQLVersion>3.0.0.2005</GraphQLVersion>
-        <GraphQLServerVersion>3.5.0-alpha0074</GraphQLServerVersion>
+        <GraphQLVersion>3.0.0.2026</GraphQLVersion>
+        <GraphQLServerVersion>4.0.1</GraphQLServerVersion>
         <MicrosoftAspNetCoreMvcTestingVersion>3.1.8</MicrosoftAspNetCoreMvcTestingVersion>
         <MicrosoftEntityFrameworkCoreVersion>3.1.8</MicrosoftEntityFrameworkCoreVersion>
         <MicrosoftNetTestSdkVersion>16.7.1</MicrosoftNetTestSdkVersion>
         <ShouldlyVersion>3.0.2</ShouldlyVersion>
         <XunitVersion>2.4.1</XunitVersion>
-    </PropertyGroup>
-
-    <PropertyGroup>
-        <RestoreSources>
-            https://www.myget.org/F/graphql-dotnet/api/v3/index.json;
-            https://api.nuget.org/v3/index.json;
-        </RestoreSources>
     </PropertyGroup>
 
 </Project>

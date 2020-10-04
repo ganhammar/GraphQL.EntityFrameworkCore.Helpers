@@ -103,7 +103,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
                 .Name("Residents")
                 .MapsTo(x => x.Habitants)
-                .Include(accessor, dbContext)
+                .Include(dbContext)
                 .Apply((query, context) => query.Where(x => true))
                 .ResolveAsync();
         }
@@ -111,7 +111,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
 
     public class HumanGraphType : ObjectGraphType<Human>
     {
-        public HumanGraphType(IDataLoaderContextAccessor accessor, TestDbContext dbContext)
+        public HumanGraphType(TestDbContext dbContext)
         {
             Field(x => x.Id, type: typeof(IdGraphType));
             Field(x => x.Name);
@@ -119,19 +119,19 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             Field(x => x.EyeColor);
             Field<PlanetGraphType, Planet>()
                 .Name("HomePlanet")
-                .Include(accessor, dbContext, x => x.HomePlanet)
+                .Include(dbContext, x => x.HomePlanet)
                 .Apply((query, context) => query.Where(x => true))
                 .ResolveAsync();
             Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
                 .Name("Friends")
-                .Include(accessor, dbContext, x => x.Friends)
+                .Include(dbContext, x => x.Friends)
                 .ResolveAsync();
         }
     }
 
     public class DroidGraphType : ObjectGraphType<Droid>
     {
-        public DroidGraphType(IDataLoaderContextAccessor accessor, TestDbContext dbContext)
+        public DroidGraphType(TestDbContext dbContext)
         {
             Field(x => x.Id, type: typeof(IdGraphType));
             Field(x => x.Name)
@@ -140,7 +140,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .IsFilterable();
             Field<HumanGraphType, Human>()
                 .Name("Owner")
-                .Include(accessor, dbContext, x => x.Owner);
+                .Include(dbContext, x => x.Owner);
         }
     }
 

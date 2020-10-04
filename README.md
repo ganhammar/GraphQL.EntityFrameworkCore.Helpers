@@ -8,7 +8,7 @@ Adds methods to resolve schema fields directly from a DbContext.
 dotnet add package GraphQL.EntityFrameworkCore.Helpers
 ```
 
-And register GraphTypes to DI:
+And edit `Startup.cs` to register dependencies by calling method below in `ConfigureServices(IServiceCollection services)`:
 
 ```c#
 services
@@ -40,7 +40,7 @@ The helper methods can also be used to resolve data loaded properties. Read more
 ```c#
 Field<PlanetGraphType, Planet>()
     .Name("HomePlanet")
-    .Include(dataLoaderAccessor, dbContext, x => x.HomePlanet)
+    .Include(dbContext, x => x.HomePlanet)
     .ResolveAsync();
 ```
 
@@ -51,7 +51,7 @@ With all builders you can apply your own business logic to for instance support 
 ```c#
 Field<PlanetGraphType, Planet>()
     .Name("HomePlanet")
-    .Include(dataLoaderAccessor, dbContext, x => x.HomePlanet)
+    .Include(dbContext, x => x.HomePlanet)
     .Apply((query, context) =>
     {
         var id = context.GetArgument<int>("id");
@@ -67,7 +67,7 @@ Similarly you can validate the arguments passed to a context using either the `V
 ```c#
 Field<PlanetGraphType, Planet>()
     .Name("HomePlanet")
-    .Include(dataLoaderAccessor, dbContext, x => x.HomePlanet)
+    .Include(dbContext, x => x.HomePlanet)
     .ValidateAsync(async context =>
     {
         var result = new ValidationResult();
@@ -91,3 +91,7 @@ All collection fields can be filtered by either applying a string to all filtera
 ## Avoiding Over-Fetching
 
 All helper methods tries to limit the amount data fetched from data store by looking at what was requested, read more about this [here](documentation/SelectFromRequest.md).
+
+## Requirements
+
+Requires [GraphQL for .NET Server](https://github.com/graphql-dotnet/server) minimum version 4.0 or that ExecutionOptions.RequestServices is defined when calling ExecuteAsync.
