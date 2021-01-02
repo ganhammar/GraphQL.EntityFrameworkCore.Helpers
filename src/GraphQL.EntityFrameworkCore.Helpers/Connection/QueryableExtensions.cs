@@ -297,6 +297,11 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             .Where(m => m.GetParameters().ToList().Count == 1)
             .First();
 
+        public static MethodInfo GetSetMethod<T>() => typeof(DbContext).GetMethods()
+                .Where(x => x.Name == nameof(DbContext.Set))
+                .Where(x => x.GetParameters().Count() == 0)
+                .First();
+
         public static TReturnType Create<TReturnType>(object source)
         {
             var target = (TReturnType)Activator.CreateInstance(typeof(TReturnType));

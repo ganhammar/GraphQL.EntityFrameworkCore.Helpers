@@ -1,17 +1,26 @@
 <Project>
 
     <PropertyGroup>
-        <IsNetCore3OnwardsTarget>$(TargetFramework.StartsWith('netcoreapp3.'))</IsNetCore3OnwardsTarget>
+        <IsNetCore5OnwardsTarget>$(TargetFramework.StartsWith('net5.'))</IsNetCore5OnwardsTarget>
     </PropertyGroup>
 
     <PropertyGroup>
-        <GraphQLVersion>3.0.0.2026</GraphQLVersion>
-        <GraphQLServerVersion>4.0.1</GraphQLServerVersion>
-        <MicrosoftAspNetCoreMvcTestingVersion>3.1.8</MicrosoftAspNetCoreMvcTestingVersion>
-        <MicrosoftEntityFrameworkCoreVersion>3.1.8</MicrosoftEntityFrameworkCoreVersion>
-        <MicrosoftNetTestSdkVersion>16.7.1</MicrosoftNetTestSdkVersion>
-        <ShouldlyVersion>3.0.2</ShouldlyVersion>
+        <GraphQLVersion>3.2.0</GraphQLVersion>
+        <GraphQLServerVersion>4.4.0</GraphQLServerVersion>
+        <MicrosoftNetTestSdkVersion>16.8.3</MicrosoftNetTestSdkVersion>
+        <ShouldlyVersion>4.0.3</ShouldlyVersion>
         <XunitVersion>2.4.1</XunitVersion>
+        <XunitRunnerVisualstudioVersion>2.4.3</XunitRunnerVisualstudioVersion>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(IsNetCore5OnwardsTarget)' == 'False'">
+        <MicrosoftAspNetCoreMvcTestingVersion>3.1.10</MicrosoftAspNetCoreMvcTestingVersion>
+        <MicrosoftEntityFrameworkCoreVersion>3.1.10</MicrosoftEntityFrameworkCoreVersion>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(IsNetCore5OnwardsTarget)' == 'True'">
+        <MicrosoftAspNetCoreMvcTestingVersion>5.0.1</MicrosoftAspNetCoreMvcTestingVersion>
+        <MicrosoftEntityFrameworkCoreVersion>5.0.1</MicrosoftEntityFrameworkCoreVersion>
     </PropertyGroup>
 
 </Project>

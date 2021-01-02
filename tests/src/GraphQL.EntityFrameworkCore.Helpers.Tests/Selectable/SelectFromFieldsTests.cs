@@ -1,10 +1,7 @@
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using GraphQL.EntityFrameworkCore.Helpers;
 using GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure;
-using GraphQL.Language.AST;
-using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
@@ -132,7 +129,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests
 
             var human = result.First();
 
-            human.Id.ShouldNotBeNull();
+            human.Id.ShouldNotBe(default);
             human.Name.ShouldBeNullOrEmpty();
         }
 
@@ -149,9 +146,9 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests
 
             var droid = result.First();
 
-            droid.Id.ShouldNotBeNull();
+            droid.Id.ShouldNotBe(default);
             droid.Name.ShouldBeNullOrEmpty();
-            droid.OwnerId.ShouldNotBeNull();
+            droid.OwnerId.ShouldNotBe(default);
         }
     }
 }

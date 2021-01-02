@@ -136,7 +136,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                             return default;
                         }
 
-                        var query = (IQueryable<TReturnType>)typeof(DbContext).GetMethod(nameof(DbContext.Set))
+                        var query = (IQueryable<TReturnType>)QueryableExtensions.GetSetMethod<TReturnType>()
                             .MakeGenericMethod(targetType)
                             .Invoke(_dbContext, null);
 
@@ -183,7 +183,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                     loaderName,
                     async (sourceProperties) =>
                     {
-                        var query = (IQueryable<TReturnType>)typeof(DbContext).GetMethod(nameof(DbContext.Set))
+                        var query = (IQueryable<TReturnType>)QueryableExtensions.GetSetMethod<TReturnType>()
                             .MakeGenericMethod(returnType)
                             .Invoke(_dbContext, null);
                         

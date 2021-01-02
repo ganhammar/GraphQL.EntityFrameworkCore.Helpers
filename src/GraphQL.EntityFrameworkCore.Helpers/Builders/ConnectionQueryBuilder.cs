@@ -27,7 +27,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             var type = FieldHelpers.GetPropertyInfo(accessor).PropertyType
                 .GetGenericArguments().First();
 
-            _query = (IQueryable<TReturnType>)typeof(DbContext).GetMethod(nameof(DbContext.Set))
+            _query = (IQueryable<TReturnType>)QueryableExtensions.GetSetMethod<TReturnType>()
                 .MakeGenericMethod(type)
                 .Invoke(_dbContext, null);
 

@@ -380,7 +380,7 @@ namespace HeadlessCms.Tests
             var content = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
             var data = content.RootElement.GetProperty("data");
 
-            data.ShouldNotBeNull();
+            data.ShouldNotBe(default);
             data.ToString().Equals(
                 JsonDocument.Parse(JsonSerializer.Serialize(expected)).RootElement.ToString()).ShouldBeTrue();
         }

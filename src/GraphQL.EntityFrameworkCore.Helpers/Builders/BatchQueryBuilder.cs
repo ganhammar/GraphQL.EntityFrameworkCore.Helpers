@@ -80,7 +80,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                             return default;
                         }
 
-                        var query = (IQueryable<TReturnType>)typeof(DbContext).GetMethod(nameof(DbContext.Set))
+                        var query = (IQueryable<TReturnType>)QueryableExtensions.GetSetMethod<TReturnType>()
                             .MakeGenericMethod(returnType)
                             .Invoke(_dbContext, null);
                         
