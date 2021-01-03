@@ -88,7 +88,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
 
             Field<ListGraphType<GalaxyGraphType>>()
                 .Name("Galaxies")
-                .From(differentTestDbContext, x => x.Galaxies)
+                .From(differentTestDbContext.Galaxies)
                 .ResolveCollectionAsync();
         }
     }

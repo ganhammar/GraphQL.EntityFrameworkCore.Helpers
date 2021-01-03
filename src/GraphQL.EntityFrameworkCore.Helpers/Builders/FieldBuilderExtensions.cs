@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using GraphQL.Builders;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
 {
@@ -98,7 +99,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             where TProperty : class
         {
             var targetType = property.GetType().GetGenericArguments().First();
-            var queryBuilder = new FieldQueryBuilder<TSourceType, object, TProperty>(builder, targetType);
+            var dbContext = property.GetService<ICurrentDbContext>().Context;
+            var queryBuilder = new FieldQueryBuilder<TSourceType, object, TProperty>(builder, targetType, dbContext.GetType());
 
             return queryBuilder;
         }
@@ -109,7 +111,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             where TProperty : class
         {
             var targetType = property.GetType().GetGenericArguments().First();
-            var queryBuilder = new FieldQueryBuilder<TSourceType, TReturnType, TProperty>(builder, targetType);
+            var dbContext = property.GetService<ICurrentDbContext>().Context;
+            var queryBuilder = new FieldQueryBuilder<TSourceType, TReturnType, TProperty>(builder, targetType, dbContext.GetType());
 
             return queryBuilder;
         }
