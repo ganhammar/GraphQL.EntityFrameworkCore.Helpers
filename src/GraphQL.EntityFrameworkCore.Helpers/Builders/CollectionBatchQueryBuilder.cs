@@ -13,36 +13,34 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
 {
-    public class CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty> : QueryBuilderBase<TReturnType, IResolveFieldContext<object>>
-        where TDbContext : DbContext
+    public class CollectionBatchQueryBuilder<TSourceType, TReturnType, TProperty> : QueryBuilderBase<TReturnType, IResolveFieldContext<object>>
     {
         private readonly FieldBuilder<TSourceType, IEnumerable<TReturnType>> _field;
         private readonly HelperFieldBuilder<TSourceType, IEnumerable<TReturnType>, TProperty> _helperField;
-        private readonly TDbContext _dbContext;
         private readonly PropertyInfo _propertyToInclude;
         private readonly bool _isManyToMany;
+        private readonly Type _dbContextType;
 
         public CollectionBatchQueryBuilder(
             FieldBuilder<TSourceType, IEnumerable<TReturnType>> field,
-            TDbContext dbContext,
-            Expression<Func<TSourceType, IEnumerable<TProperty>>> collectionToInclude)
+            Expression<Func<TSourceType, IEnumerable<TProperty>>> collectionToInclude,
+            Type dbContextType = null)
         {
             _field = field;
-            _dbContext = dbContext;
             _propertyToInclude = FieldHelpers
                 .GetPropertyInfo<TSourceType, IEnumerable<TProperty>>(collectionToInclude);
+            _dbContextType = dbContextType != null ? dbContextType : DbContextTypeAccessor.DbContextType;
         }
 
         public CollectionBatchQueryBuilder(
             HelperFieldBuilder<TSourceType, IEnumerable<TReturnType>, TProperty> helperField,
-            TDbContext dbContext,
-            List<string> propertyPath)
+            List<string> propertyPath,
+            Type dbContextType = null)
         {
             var sourceType = typeof(TSourceType);
             var returnType = typeof(TReturnType);
 
             _helperField = helperField;
-            _dbContext = dbContext;
             _propertyToInclude = (propertyPath.Count == 1 ? sourceType : returnType)
                 .GetProperty(propertyPath.First());
 
@@ -55,9 +53,11 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             {
                 _isManyToMany = true;
             }
+
+            _dbContextType = dbContextType != null ? dbContextType : DbContextTypeAccessor.DbContextType;
         }
 
-        public CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty> Apply(
+        public CollectionBatchQueryBuilder<TSourceType, TReturnType, TProperty> Apply(
             Func<IQueryable<TReturnType>, IResolveFieldContext<object>, IQueryable<TReturnType>> businessLogic)
         {
             BusinessLogic = businessLogic;
@@ -65,7 +65,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return this;
         }
 
-        public CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty> Validate(
+        public CollectionBatchQueryBuilder<TSourceType, TReturnType, TProperty> Validate(
             Func<IResolveFieldContext<object>, ValidationResult> action)
         {
             ValidationAction = action;
@@ -73,7 +73,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return this;
         }
 
-        public CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty> ValidateAsync(
+        public CollectionBatchQueryBuilder<TSourceType, TReturnType, TProperty> ValidateAsync(
             Func<IResolveFieldContext<object>, Task<ValidationResult>> action)
         {
             AsyncValidationAction = action;
@@ -86,16 +86,15 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             var sourceType = typeof(TSourceType);
             var targetType = typeof(TReturnType);
             var loaderName = $"DataLoader_Get_{sourceType.Name}_{_propertyToInclude.Name}";
-            var (sourceProperty, targetProperty) = GetRelationship(sourceType);
             Func<IResolveFieldContext<TSourceType>, IDataLoaderResult<IEnumerable<TReturnType>>> action;
 
             if (_isManyToMany == false && sourceType != targetType)
             {
-                action = ResolveOneToMany(sourceType, targetType, sourceProperty, targetProperty, loaderName);
+                action = ResolveOneToMany(sourceType, targetType, loaderName);
             }
             else
             {
-                action = ResolveManyToMany(sourceType, targetType, sourceProperty, targetProperty, loaderName);
+                action = ResolveManyToMany(sourceType, targetType, loaderName);
             }
 
             if (_field != default)
@@ -111,8 +110,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         private Func<IResolveFieldContext<TSourceType>, IDataLoaderResult<IEnumerable<TReturnType>>> ResolveOneToMany(
             Type sourceType,
             Type targetType,
-            IProperty sourceProperty,
-            IProperty targetProperty,
             string loaderName)
         {
             return typedContext =>
@@ -124,12 +121,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                     throw new Exception("ExecutionOptions.RequestServices is not defined (passed to ExecuteAsync), use GraphQL Server 4.0 and on");
                 }
 
+                var dbContext = (DbContext)context.RequestServices.GetRequiredService(_dbContextType);
+                var (sourceProperty, targetProperty) = GetRelationship(sourceType, dbContext.Model);
                 var dataLoaderContextAccessor = context.RequestServices.GetRequiredService<IDataLoaderContextAccessor>();
                 var loader = dataLoaderContextAccessor.Context.GetOrAddCollectionBatchLoader<object, TReturnType>(
                     loaderName,
                     async (sourceProperties) =>
                     {
-                        var isValid = await ValidateBusiness(context, _dbContext.Model);
+                        var isValid = await ValidateBusiness(context, dbContext.Model);
 
                         if (!isValid && ValidateFilterInput(context))
                         {
@@ -138,14 +137,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
                         var query = (IQueryable<TReturnType>)QueryableExtensions.GetSetMethod<TReturnType>()
                             .MakeGenericMethod(targetType)
-                            .Invoke(_dbContext, null);
+                            .Invoke(dbContext, null);
 
                         query = ApplyBusinessLogic(query, context);
 
                         query = Where(query, targetType, GetContainsLambda(sourceProperties, targetType, targetProperty));
 
                         query = query
-                            .SelectFromContext(context, _dbContext.Model);
+                            .SelectFromContext(context, dbContext.Model);
                         
                         var result = await query.ToListAsync();
 
@@ -165,8 +164,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         private Func<IResolveFieldContext<TSourceType>, IDataLoaderResult<IEnumerable<TReturnType>>> ResolveManyToMany(
             Type sourceType,
             Type returnType,
-            IProperty sourceProperty,
-            IProperty targetProperty,
             string loaderName)
         {
             return typedContext =>
@@ -178,6 +175,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                     throw new Exception("ExecutionOptions.RequestServices is not defined (passed to ExecuteAsync), use GraphQL Server 4.0 and on");
                 }
 
+                var dbContext = (DbContext)context.RequestServices.GetRequiredService(_dbContextType);
+                var (sourceProperty, targetProperty) = GetRelationship(sourceType, dbContext.Model);
                 var dataLoaderContextAccessor = context.RequestServices.GetRequiredService<IDataLoaderContextAccessor>();
                 var loader = dataLoaderContextAccessor.Context.GetOrAddCollectionBatchLoader<object, TReturnType>(
                     loaderName,
@@ -185,7 +184,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                     {
                         var query = (IQueryable<TReturnType>)QueryableExtensions.GetSetMethod<TReturnType>()
                             .MakeGenericMethod(returnType)
-                            .Invoke(_dbContext, null);
+                            .Invoke(dbContext, null);
                         
                         query = Include(query, returnType);
 
@@ -206,7 +205,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                         query = Where(query, returnType, Expression.Lambda(check, argument));
 
                         query = query
-                            .Filter(context, _dbContext.Model);
+                            .Filter(context, dbContext.Model);
 
                         var result = await query.ToListAsync();
 
@@ -299,9 +298,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 .Invoke(genericMethod, new object[] { query, lambda });
         }
 
-        private (IProperty source, IProperty target) GetRelationship(Type sourceType)
+        private (IProperty source, IProperty target) GetRelationship(Type sourceType, IModel model)
         {
-            var model = _dbContext.Model;
             var entity = model.FindEntityType(sourceType);
             var navigationProperties = entity.GetNavigations();
 

@@ -16,7 +16,7 @@ namespace HeadlessCms
             services
                 .AddDbContext<CmsDbContext>(ServiceLifetime.Transient)
                 .AddSingleton<ISchema, CmsSchema>()
-                .AddGraphQLEntityFrameworkCoreHelpers()
+                .AddGraphQLEntityFrameworkCoreHelpers<CmsDbContext>()
                 .AddGraphQL()
                 .AddSystemTextJson()
                 .AddDataLoader()

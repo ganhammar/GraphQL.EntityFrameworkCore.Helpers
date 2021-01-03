@@ -49,7 +49,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             }
 
             services
-                .AddGraphQLEntityFrameworkCoreHelpers()
+                .AddGraphQLEntityFrameworkCoreHelpers<TestDbContext>()
                 .AddSingleton<IDataLoaderContextAccessor, DataLoaderContextAccessor>()
                 .AddSingleton<IDocumentExecutionListener, DataLoaderDocumentListener>()
                 .AddSingleton<ISchema, TestSchema>()

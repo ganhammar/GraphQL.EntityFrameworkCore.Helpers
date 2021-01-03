@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Linq.Expressions;
 using GraphQL.Builders;
 using GraphQL.Types;
@@ -25,17 +26,27 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return builder;
         }
 
-        public static ConnectionQueryBuilder<TSourceType, TReturnType, TDbContext> From<TSourceType, TReturnType, TDbContext>(
+        public static ConnectionQueryBuilder<TSourceType, TReturnType> From<TSourceType, TReturnType, TDbContext>(
                 this ConnectionBuilder<TSourceType> builder,
-                TDbContext dbContext,
+                TDbContext _,
                 Expression<Func<TDbContext, DbSet<TReturnType>>> accessor)
             where TDbContext : DbContext
             where TReturnType : class
         {
+            var targetType = FieldHelpers.GetPropertyInfo(accessor).PropertyType
+                .GetGenericArguments().First();
+            var queryBuilder = new ConnectionQueryBuilder<TSourceType, TReturnType>(builder, targetType, typeof(TDbContext));
 
-            var queryBuilder = new ConnectionQueryBuilder<TSourceType, TReturnType, TDbContext>(builder, dbContext);
+            return queryBuilder;
+        }
 
-            queryBuilder.Set(accessor);
+        public static ConnectionQueryBuilder<TSourceType, TReturnType> From<TSourceType, TReturnType>(
+                this ConnectionBuilder<TSourceType> builder,
+                DbSet<TReturnType> property)
+            where TReturnType : class
+        {
+            var targetType = property.GetType().GetGenericArguments().First();
+            var queryBuilder = new ConnectionQueryBuilder<TSourceType, TReturnType>(builder, targetType);
 
             return queryBuilder;
         }

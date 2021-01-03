@@ -143,13 +143,20 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
     public static class HelperFieldBuilderExtensions
     {
-        public static CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty> Include<TSourceType, TReturnType, TDbContext, TProperty>(
+        public static CollectionBatchQueryBuilder<TSourceType, TReturnType, TProperty> Include<TSourceType, TReturnType, TDbContext, TProperty>(
                 this HelperFieldBuilder<TSourceType, IEnumerable<TReturnType>, TProperty> field,
-                TDbContext dbContext)
+                TDbContext _)
             where TDbContext : DbContext
         {
-            return new CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty>(
-                field, dbContext, FieldHelpers.GetPropertyPath(typeof(TSourceType), field.FieldType));
+            return new CollectionBatchQueryBuilder<TSourceType, TReturnType, TProperty>(
+                field, FieldHelpers.GetPropertyPath(typeof(TSourceType), field.FieldType), typeof(TDbContext));
+        }
+
+        public static CollectionBatchQueryBuilder<TSourceType, TReturnType, TProperty> Include<TSourceType, TReturnType, TProperty>(
+                this HelperFieldBuilder<TSourceType, IEnumerable<TReturnType>, TProperty> field)
+        {
+            return new CollectionBatchQueryBuilder<TSourceType, TReturnType, TProperty>(
+                field, FieldHelpers.GetPropertyPath(typeof(TSourceType), field.FieldType));
         }
 
         public static HelperFieldBuilder<TSourceType, TReturnType, TProperty> ResolveAsync<TSourceType, TReturnType, TProperty>(this HelperFieldBuilder<TSourceType, TReturnType, TProperty> builder, Func<IResolveFieldContext<TSourceType>, IDataLoaderResult<TReturnType>> resolve)

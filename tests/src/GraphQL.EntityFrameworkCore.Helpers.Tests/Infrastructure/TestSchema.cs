@@ -23,20 +23,20 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
         {
             Field<ListGraphType<HumanGraphType>>()
                 .Name("Humans")
-                .From(dbContext, x => x.Humans)
+                .From(dbContext.Humans)
                 .Apply((query, context) => query.Where(x => true))
                 .ResolveCollectionAsync();
 
             Connection<DroidGraphType>()
                 .Name("Droids")
-                .From(dbContext, x => x.Droids)
+                .From(dbContext.Droids)
                 .Apply((query, context) => query.Where(x => true))
                 .ResolveAsync();
 
             Field<ListGraphType<DroidGraphType>>()
                 .Name("MyDroids")
                 .Argument<NonNullGraphType<IdGraphType>>("HumanId")
-                .From(dbContext, x => x.Droids)
+                .From(dbContext.Droids)
                 .Apply((query, context) =>
                 {
                     var humanId = context.GetArgument<Guid>("HumanId");
@@ -60,7 +60,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             Field<DroidGraphType>()
                 .Name("Droid")
                 .Argument<NonNullGraphType<IdGraphType>>("Id")
-                .From(dbContext, x => x.Droids)
+                .From(dbContext.Droids)
                 .Apply((query, context) =>
                 {
                     var id = context.GetArgument<Guid>("Id");
@@ -103,7 +103,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
                 .Name("Residents")
                 .MapsTo(x => x.Habitants)
-                .Include(dbContext)
+                .Include()
                 .Apply((query, context) => query.Where(x => true))
                 .ResolveAsync();
         }
@@ -124,14 +124,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .ResolveAsync();
             Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
                 .Name("Friends")
-                .Include(dbContext, x => x.Friends)
+                .Include(x => x.Friends)
                 .ResolveAsync();
         }
     }
 
     public class DroidGraphType : ObjectGraphType<Droid>
     {
-        public DroidGraphType(TestDbContext dbContext)
+        public DroidGraphType()
         {
             Field(x => x.Id, type: typeof(IdGraphType));
             Field(x => x.Name)
@@ -140,7 +140,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .IsFilterable();
             Field<HumanGraphType, Human>()
                 .Name("Owner")
-                .Include(dbContext, x => x.Owner);
+                .Include(x => x.Owner);
         }
     }
 

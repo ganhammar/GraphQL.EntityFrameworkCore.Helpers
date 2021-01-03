@@ -11,24 +11,23 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
 {
-    public class BatchQueryBuilder<TSourceType, TReturnType, TDbContext> : QueryBuilderBase<TReturnType, IResolveFieldContext<object>>
-        where TDbContext : DbContext
+    public class BatchQueryBuilder<TSourceType, TReturnType> : QueryBuilderBase<TReturnType, IResolveFieldContext<object>>
     {
         private readonly FieldBuilder<TSourceType, TReturnType> _field;
-        private readonly TDbContext _dbContext;
         private readonly PropertyInfo _propertyToInclude;
+        private readonly Type _dbContextType;
 
         public BatchQueryBuilder(
             FieldBuilder<TSourceType, TReturnType> field,
-            TDbContext dbContext,
-            Expression<Func<TSourceType, TReturnType>> propertyToInclude)
+            Expression<Func<TSourceType, TReturnType>> propertyToInclude,
+            Type dbContextType = null)
         {
             _field = field;
-            _dbContext = dbContext;
             _propertyToInclude = FieldHelpers.GetPropertyInfo<TSourceType, TReturnType>(propertyToInclude);
+            _dbContextType = dbContextType != null ? dbContextType : DbContextTypeAccessor.DbContextType;
         }
 
-        public BatchQueryBuilder<TSourceType, TReturnType, TDbContext> Apply(
+        public BatchQueryBuilder<TSourceType, TReturnType> Apply(
             Func<IQueryable<TReturnType>, IResolveFieldContext<object>, IQueryable<TReturnType>> businessLogic)
         {
             BusinessLogic = businessLogic;
@@ -36,7 +35,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return this;
         }
 
-        public BatchQueryBuilder<TSourceType, TReturnType, TDbContext> Validate(
+        public BatchQueryBuilder<TSourceType, TReturnType> Validate(
             Func<IResolveFieldContext<object>, ValidationResult> action)
         {
             ValidationAction = action;
@@ -44,7 +43,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return this;
         }
 
-        public BatchQueryBuilder<TSourceType, TReturnType, TDbContext> ValidateAsync(
+        public BatchQueryBuilder<TSourceType, TReturnType> ValidateAsync(
             Func<IResolveFieldContext<object>, Task<ValidationResult>> action)
         {
             AsyncValidationAction = action;
@@ -57,7 +56,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             var sourceType = typeof(TSourceType);
             var returnType = typeof(TReturnType);
             var loaderName = $"DataLoader_Get_{sourceType.Name}_{_propertyToInclude.Name}";
-            var (sourceProperty, targetProperty) = GetRelationship(sourceType);
 
             _field.ResolveAsync(typedContext =>
             {
@@ -68,12 +66,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                     throw new Exception("ExecutionOptions.RequestServices is not defined (passed to ExecuteAsync), use GraphQL Server 4.0 and on");
                 }
 
+                var dbContext = (DbContext)context.RequestServices.GetRequiredService(_dbContextType);
+                var (sourceProperty, targetProperty) = GetRelationship(sourceType, dbContext.Model);
                 var dataLoaderContextAccessor = context.RequestServices.GetRequiredService<IDataLoaderContextAccessor>();
                 var loader = dataLoaderContextAccessor.Context.GetOrAddBatchLoader<object, TReturnType>(
                     loaderName,
                     async (sourceProperties) =>
                     {
-                        var isValid = await ValidateBusiness(context, _dbContext.Model);
+                        var isValid = await ValidateBusiness(context, dbContext.Model);
 
                         if (!isValid && ValidateFilterInput(context))
                         {
@@ -82,7 +82,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
                         var query = (IQueryable<TReturnType>)QueryableExtensions.GetSetMethod<TReturnType>()
                             .MakeGenericMethod(returnType)
-                            .Invoke(_dbContext, null);
+                            .Invoke(dbContext, null);
                         
                         query = ApplyBusinessLogic(query, context);
                         
@@ -106,7 +106,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                             .Invoke(genericMethod, new object[] { query, lambda });
                         
                         query = query
-                            .SelectFromContext(context, _dbContext.Model);
+                            .SelectFromContext(context, dbContext.Model);
 
                         return await query
                             .ToDictionaryAsync(
@@ -120,9 +120,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             });
         }
 
-        private (IProperty source, IProperty target) GetRelationship(Type sourceType)
+        private (IProperty source, IProperty target) GetRelationship(Type sourceType, IModel model)
         {
-            var model = _dbContext.Model;
             var entity = model.FindEntityType(sourceType);
             var navigationProperties = entity.GetNavigations();
 
