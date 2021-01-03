@@ -136,6 +136,47 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Builders
         }
 
         [Fact]
+        public async Task Should_HumanWithHomeplanet_When_IncludingThemInQuery()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var humans = await dbContext.Humans
+                .Include(x => x.Friends)
+                    .ThenInclude(x => x.HomePlanet)
+                .Select(x => new
+                {
+                    id = x.Id,
+                    name = x.Name,
+                    homePlanet = new {
+                        id = x.HomePlanet.Id,
+                        name = x.HomePlanet.Name,
+                    },
+                })
+                .ToListAsync();
+
+            humans.ShouldNotBeEmpty();
+
+            var query = $@"
+                query humans {{
+                    humans {{
+                        id
+                        name
+                        homePlanet {{
+                            id
+                            name
+                        }}
+                    }}
+                }}
+            ";
+
+            var expected = new
+            {
+                humans,
+            };
+
+            var result = AssertQuerySuccess(query, expected);
+        }
+
+        [Fact]
         public async Task Should_ReturnMyDroids_When_RequestingThem()
         {
             var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();

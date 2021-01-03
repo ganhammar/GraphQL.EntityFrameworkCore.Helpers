@@ -35,7 +35,7 @@ Connection<DroidGraphType>()
     .ResolveAsync();
 ```
 
-The helper methods can also be used to resolve data loaded properties. Read more about data loaded fields [here](documentation/DataLoadedFields.md).
+The helper methods can also be used to resolve data loaded properties. For this to work, all properties needs to be mapped, including join tables. Read more about data loaded fields [here](documentation/DataLoadedFields.md).
 
 ```c#
 Field<PlanetGraphType, Planet>()
