@@ -43,9 +43,15 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .Options;
             var dbContext = new TestDbContext(options);
 
+            var differentOptions = new DbContextOptionsBuilder<DifferentTestDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            var differentDbContext = new DifferentTestDbContext(differentOptions);
+
             if (dbContext.Humans.AnyAsync().GetAwaiter().GetResult() == false)
             {
                 StarWarsData.Seed(dbContext).GetAwaiter().GetResult();
+                StarWarsData.Seed(differentDbContext).GetAwaiter().GetResult();
             }
 
             services
@@ -56,7 +62,9 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .AddTransient<PlanetGraphType>()
                 .AddTransient<HumanGraphType>()
                 .AddTransient<DroidGraphType>()
-                .AddTransient<TestDbContext>(_ => dbContext);
+                .AddTransient<GalaxyGraphType>()
+                .AddTransient<TestDbContext>(_ => dbContext)
+                .AddTransient<DifferentTestDbContext>(_ => differentDbContext);
 
             return services.BuildServiceProvider();
         }

@@ -42,4 +42,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
         public string System { get; set; }
         public IEnumerable<Human> Habitants { get; set; }
     }
+
+    public class Galaxy : StarWarsCharacter
+    {
+    }
 }

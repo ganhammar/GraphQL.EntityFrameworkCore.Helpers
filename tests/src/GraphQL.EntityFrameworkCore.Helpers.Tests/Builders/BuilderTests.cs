@@ -241,8 +241,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Builders
         [Fact]
         public void Should_ReturnErrors_When_RequestingDroidThatDoesntExist()
         {
-            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
-
             var query = $@"
                 query droid {{
                     droid(id: ""{Guid.NewGuid()}"") {{
@@ -253,6 +251,35 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Builders
             ";
 
             AssertQueryWithErrors(query, expectedErrorCount: 1);
+        }
+
+        [Fact]
+        public async Task Should_ResolveGalaxiesFromOtherDbContext_When_ItsRegisteredToUseOtherDbContext()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<DifferentTestDbContext>();
+            var galaxies = await dbContext.Galaxies
+                .Select(x => new
+                {
+                    id = x.Id,
+                    name = x.Name,
+                })
+                .ToListAsync();
+
+            var query = $@"
+                query galaxies {{
+                    galaxies {{
+                        id
+                        name
+                    }}
+                }}
+            ";
+
+            var expected = new
+            {
+                galaxies,
+            };
+
+            var result = AssertQuerySuccess(query, expected);
         }
     }
 }

@@ -10,16 +10,16 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
 {
     public class TestSchema : Schema
     {
-        public TestSchema(IServiceProvider serviceProvider, TestDbContext dbContext)
+        public TestSchema(IServiceProvider serviceProvider, TestDbContext dbContext, DifferentTestDbContext differentTestDbContext)
             : base(serviceProvider)
         {
-            Query = new Query(dbContext);
+            Query = new Query(dbContext, differentTestDbContext);
         }
     }
 
     public class Query : ObjectGraphType
     {
-        public Query(TestDbContext dbContext)
+        public Query(TestDbContext dbContext, DifferentTestDbContext differentTestDbContext)
         {
             Field<ListGraphType<HumanGraphType>>()
                 .Name("Humans")
@@ -85,6 +85,11 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .Name("Planets")
                 .From(dbContext, x => x.Planets)
                 .ResolveCollectionAsync();
+
+            Field<ListGraphType<GalaxyGraphType>>()
+                .Name("Galaxies")
+                .From(differentTestDbContext, x => x.Galaxies)
+                .ResolveCollectionAsync();
         }
     }
 
@@ -141,6 +146,16 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             Field<HumanGraphType, Human>()
                 .Name("Owner")
                 .Include(x => x.Owner);
+        }
+    }
+
+    public class GalaxyGraphType : ObjectGraphType<Galaxy>
+    {
+        public GalaxyGraphType()
+        {
+            Field(x => x.Id, type: typeof(IdGraphType));
+            Field(x => x.Name)
+                .IsFilterable();
         }
     }
 

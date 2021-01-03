@@ -90,5 +90,16 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
 
             await dbContext.SaveChangesAsync();
         }
+
+        public static async Task Seed(DifferentTestDbContext dbContext)
+        {
+            dbContext.Galaxies.Add(new Galaxy
+            {
+                Id = new Guid(),
+                Name = "Far Far Away",
+            });
+
+            await dbContext.SaveChangesAsync();
+        }
     }
 }
