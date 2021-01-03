@@ -126,6 +126,13 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             var entity = model.FindEntityType(sourceType);
             var navigationProperties = entity.GetNavigations();
 
+            if (navigationProperties.Any() == false ||
+                navigationProperties.Any(x => x.Name == _propertyToInclude.Name) == false)
+            {
+                throw new Exception($@"All relationships needs to mapped to automatically be able 
+                    to resolve data loaded fields, missing navigation property for {_propertyToInclude.Name}");
+            }
+
             var property = navigationProperties
                 .Where(x => x.Name == _propertyToInclude.Name)
                 .First();

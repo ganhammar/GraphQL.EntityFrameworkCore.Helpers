@@ -1,6 +1,6 @@
 # Working with data loaded fields (navigation properties)
 
-The helper methods can only follow data loaded properties that is loaded through navigation properties (Foreign Keys).
+The helper methods can only follow data loaded properties that is loaded through navigation properties (Foreign Keys). For this reason EF Core 5.0's feature to map many-to-many relationships without mapping the join table isn't supported, the join table needs to be mapped.
 
 ## Setup
 
