@@ -43,7 +43,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return filter.Validate(context);
         }
 
-        private static FilterableInput GetFilter(IResolveFieldContext<object> context)
+        public static FilterableInput GetFilter(IResolveFieldContext<object> context)
         {
             if (context == default)
             {
@@ -108,11 +108,23 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         {
             var entityType = typeof(TQuery);
             var argument = Expression.Parameter(entityType);
-            var expressions = GetSelectionPaths(argument, filter.GetApplicableFilterFields(context), entityType, GetSelections(context.SubFields), model, query);
+
+            foreach (var expression in GetExpressions(argument, entityType, filter, context, model))
+            {
+                query = query.AddWhere(argument, entityType, expression);
+            }
+
+            return query;
+        }
+
+        public static List<Expression> GetExpressions(ParameterExpression argument, Type entityType, FilterableInput filter, IResolveFieldContext<object> context, IModel model)
+        {
+            var expressions = GetSelectionPaths(argument, filter.GetApplicableFilterFields(context), entityType, GetSelections(context.SubFields), model);
+            var result = new List<Expression>();
 
             if (expressions == default)
             {
-                return query;
+                return result;
             }
 
             if (expressions.ContainsKey(FilterableFieldOperators.Or) && expressions[FilterableFieldOperators.Or].Any())
@@ -124,18 +136,15 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                     clause = clause == default ? x : Expression.Or(clause, x);
                 });
 
-                query = query.AddWhere(argument, entityType, clause);
+                result.Add(clause);
             }
 
             if (expressions.ContainsKey(FilterableFieldOperators.And) && expressions[FilterableFieldOperators.And].Any())
             {
-                expressions[FilterableFieldOperators.And].ForEach(clause =>
-                {
-                    query = query.AddWhere(argument, entityType, clause);
-                });
+                result.AddRange(expressions[FilterableFieldOperators.And]);
             }
             
-            return query;
+            return result;
         }
 
         private static IDictionary<string, Field> GetSelections(IDictionary<string, Field> fields)
@@ -161,13 +170,12 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 .Invoke(genericMethod, new object[] { query, clause });
         }
 
-        private static Dictionary<FilterableFieldOperators, List<Expression>> GetSelectionPaths<TQuery>(
+        private static Dictionary<FilterableFieldOperators, List<Expression>> GetSelectionPaths(
             Expression argument,
             IEnumerable<FilterableInputField> fields,
             Type entityType,
             IDictionary<string, Field> selection,
-            IModel model,
-            IQueryable<TQuery> query)
+            IModel model)
         {
             var result = new Dictionary<FilterableFieldOperators, List<Expression>>();
             var entity = model.FindEntityType(entityType);
@@ -199,8 +207,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                                         GetFilterFields(field.Value.Name, fields),
                                         targetType,
                                         GetSelections(ToDictionary(field)),
-                                        model,
-                                        query),
+                                        model),
                                     x => Expression.Call(
                                         anyMethod,
                                         Expression.MakeMemberAccess(argument, property),
@@ -213,8 +220,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                                     GetFilterFields(field.Value.Name, fields),
                                     targetType,
                                     GetSelections(ToDictionary(field)),
-                                    model,
-                                    query));
+                                    model));
                             }
                         }
                     }
