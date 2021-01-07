@@ -27,7 +27,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
             var entityType = typeof(TSourceType);
 
-            ParameterExpression arg = Expression.Parameter(entityType, "x");
+            ParameterExpression arg = Expression.Parameter(entityType);
             Expression selector = null;
 
             var orderBy = GetOrderBy<TSourceType, TReturnType>(request, model);

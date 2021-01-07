@@ -134,7 +134,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             var compareToExpression = Expression.Constant(value);
 
             var concatMethod = typeof(string).GetMethod("Concat", new[] { typeof(string), typeof(string) });
-            ParameterExpression arg = Expression.Parameter(entityType, "x");
+            ParameterExpression arg = Expression.Parameter(entityType);
             var selector = GetLambda(query, request, arg, model);
 
             if (cursorType == typeof(string) || cursorType == typeof(Guid))
@@ -233,7 +233,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             var cursorType = ConnectionCursor.GetCursorType<TSourceType, TReturnType>(request, model);
             var entityType = typeof(TSourceType);
 
-            ParameterExpression arg = Expression.Parameter(entityType, "x");
+            ParameterExpression arg = Expression.Parameter(entityType);
 
             var selector = Expression.Lambda(GetLambda(query, request, arg, model), new ParameterExpression[] { arg });
 

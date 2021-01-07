@@ -21,20 +21,20 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             // The requested properties
             var properties = ResolveFieldContextHelpers.GetProperties(entityType, context.SubFields, model);
             
-            // Input parameter, x
-            var parameter = Expression.Parameter(entityType, "x");
+            // Input parameter
+            var parameter = Expression.Parameter(entityType);
             
             // New statement, new TQuery()
             var newEntity = Expression.New(entityType);
 
-            // Set value, Field = x.Field
+            // Set value, Field = Param.Field
             var bindings = properties.Select(propertyType =>
                 Expression.Bind(propertyType, Expression.Property(parameter, propertyType)));
 
-            // Initialization, new TQuery { Field = x.Field, ... }
+            // Initialization, new TQuery { Field = Param.Field, ... }
             var initializeEntity = Expression.MemberInit(newEntity, bindings);
 
-            // Lambda expression, x => new TQuery { Field = x.Field, ... }
+            // Lambda expression, x => new TQuery { Field = Param.Field, ... }
             var lambda = Expression.Lambda<Func<TQuery, TQuery>>(initializeEntity, parameter);
 
             return query.Select(lambda);
