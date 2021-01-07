@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -12,6 +13,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         protected Func<IQueryable<TReturnType>, TContextType, IQueryable<TReturnType>> BusinessLogic { get; set; }
         protected Func<TContextType, ValidationResult> ValidationAction { get; set; }
         protected Func<TContextType, Task<ValidationResult>> AsyncValidationAction { get; set; }
+        protected Func<IResolveFieldContext<object>, Expression<Func<TReturnType, bool>>> BusinuessCheck { get; set; }
 
         protected async Task<bool> ValidateBusiness(TContextType context, IModel model)
         {

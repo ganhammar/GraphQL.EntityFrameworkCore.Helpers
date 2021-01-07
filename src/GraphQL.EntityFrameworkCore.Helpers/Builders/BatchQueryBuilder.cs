@@ -28,10 +28,9 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             _dbContextType = dbContextType != null ? dbContextType : DbContextTypeAccessor.DbContextType;
         }
 
-        public BatchQueryBuilder<TSourceType, TReturnType> Apply(
-            Func<IQueryable<TReturnType>, IResolveFieldContext<object>, IQueryable<TReturnType>> businessLogic)
+        public BatchQueryBuilder<TSourceType, TReturnType> Where(Func<IResolveFieldContext<object>, Expression<Func<TReturnType, bool>>> clause)
         {
-            BusinessLogic = businessLogic;
+            BusinuessCheck = clause;
 
             return this;
         }
@@ -99,62 +98,9 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                         .Invoke(dbContext, null);
                     var argument = Expression.Parameter(sourceType);
 
-                    var nestedQuery = (IQueryable<TReturnType>)QueryableExtensions.GetSetMethod<TReturnType>()
-                        .MakeGenericMethod(targetType)
-                        .Invoke(dbContext, null);
-                    
-                    nestedQuery = nestedQuery.Filter(context, model);
-                    nestedQuery = ApplyBusinessLogic(nestedQuery, context);
+                    query = ApplyFilters(query, context, dbContext, targetType, argument, whereMethod);
 
-                    var targetArgument = Expression.Parameter(targetType);
-                    var filters = FilterList.GetFilter(context);
-                    var expressions = filters != default
-                        ? FilterList.GetExpressions(targetArgument, targetType, filters, context, model)
-                        : new List<Expression>();
-
-                    if (expressions.Any())
-                    {
-                        var existingWhere = (MethodCallExpression)nestedQuery.Expression;
-
-                        var targetDbContextProperty = _dbContextType
-                            .GetProperties()
-                            .Where(x => x.PropertyType.IsGenericType)
-                            .Where(x => x.PropertyType.GenericTypeArguments.Contains(targetType))
-                            .First();
-
-                        Expression dbContextAccess = Expression.MakeMemberAccess(Expression.Constant(dbContext), targetDbContextProperty);
-
-                        foreach (var expression in expressions)
-                        {
-                            var lambda = Expression.Lambda<Func<TReturnType, bool>>(
-                                expression, new ParameterExpression[] { targetArgument });
-                            dbContextAccess = Expression.Call(typeof(Queryable), "Where",
-                                new[] { _propertyToInclude.PropertyType }, dbContextAccess, lambda);
-                        }
-
-                        var targetPropertyAccess = Expression.MakeMemberAccess(argument, _propertyToInclude);
-                        var nestedCheck = Expression.Call(typeof(Queryable), "Contains",
-                            new[] { _propertyToInclude.PropertyType }, dbContextAccess, targetPropertyAccess);
-                        var nestedLambda = Expression.Lambda(nestedCheck, argument);
-
-                        query = (IQueryable<TSourceType>)whereMethod
-                            .Invoke(whereMethod, new object[] { query, nestedLambda });
-                    }
-
-                    var mappedProperties = new Dictionary<IProperty, List<object>>();
-
-                    foreach (var keyProperty in keyProperties)
-                    {
-                        foreach (var property in keyProperty)
-                        {
-                            if (mappedProperties.ContainsKey(property.Key) == false)
-                            {
-                                mappedProperties.Add(property.Key, new List<object>());
-                            }
-
-                            mappedProperties[property.Key].Add(property.Value);
-                        }
-                    }
+                    var mappedProperties = MapProperties(keyProperties);
 
                     foreach (var property in mappedProperties)
                     {
@@ -194,34 +140,120 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
                     var result = await query.ToListAsync();
 
-                    var response = new Dictionary<Dictionary<IProperty, object>, TReturnType>();
-
-                    foreach (var keyProperty in keyProperties)
-                    {
-                        var value = result;
-
-                        foreach (var property in keyProperty)
-                        {
-                            value = value
-                                .Where(x => sourceType
-                                    .GetProperty(property.Key.Name)
-                                    .GetValue(x)
-                                    .Equals(property.Value))
-                                .ToList();
-                        }
-
-                        if (value.Any())
-                        {
-                            response.Add(keyProperty, (TReturnType)value.Select(x => sourceType
-                                .GetProperty(_propertyToInclude.Name)
-                                .GetValue(x)).First());
-                        }
-                    }
-
-                    return response;
+                    return MapResponse(keyProperties, result, sourceType);
                 });
 
             return loader.LoadAsync(keyValues);
         });
+
+        private IQueryable<TSourceType> ApplyFilters(
+            IQueryable<TSourceType> query,
+            IResolveFieldContext<object> context,
+            DbContext dbContext,
+            Type targetType,
+            ParameterExpression argument,
+            MethodInfo whereMethod)
+        {
+            var model = dbContext.Model;
+            var targetArgument = Expression.Parameter(targetType);
+            var filters = FilterList.GetFilter(context);
+            var expressions = filters != default
+                ? FilterList.GetExpressions(targetArgument, targetType, filters, context, model)
+                : new List<Expression>();
+
+            if (expressions.Any() || BusinuessCheck != default)
+            {
+                var targetDbContextProperty = _dbContextType
+                    .GetProperties()
+                    .Where(x => x.PropertyType.IsGenericType)
+                    .Where(x => x.PropertyType.GenericTypeArguments.Contains(targetType))
+                    .First();
+
+                Expression dbContextAccess = Expression.MakeMemberAccess(
+                    Expression.Constant(dbContext), targetDbContextProperty);
+
+                foreach (var expression in expressions)
+                {
+                    var lambda = Expression.Lambda<Func<TReturnType, bool>>(
+                        expression, new ParameterExpression[] { targetArgument });
+                    dbContextAccess = Expression.Call(typeof(Queryable), "Where",
+                        new[] { _propertyToInclude.PropertyType }, dbContextAccess, lambda);
+                }
+
+                if (BusinuessCheck != default)
+                {
+                    var expression = BusinuessCheck(context);
+
+                    if (expression != default)
+                    {
+                        dbContextAccess = Expression.Call(typeof(Queryable), "Where",
+                            new[] { _propertyToInclude.PropertyType }, dbContextAccess, expression);
+                    }
+                }
+
+                var targetPropertyAccess = Expression.MakeMemberAccess(argument, _propertyToInclude);
+                var nestedCheck = Expression.Call(typeof(Queryable), "Contains",
+                    new[] { _propertyToInclude.PropertyType }, dbContextAccess, targetPropertyAccess);
+                var nestedLambda = Expression.Lambda(nestedCheck, argument);
+
+                return (IQueryable<TSourceType>)whereMethod
+                    .Invoke(whereMethod, new object[] { query, nestedLambda });
+            }
+
+            return query;
+        }
+
+        private Dictionary<IProperty, List<object>> MapProperties(
+            IEnumerable<Dictionary<IProperty, object>> keyProperties)
+        {
+            var mappedProperties = new Dictionary<IProperty, List<object>>();
+
+            foreach (var keyProperty in keyProperties)
+            {
+                foreach (var property in keyProperty)
+                {
+                    if (mappedProperties.ContainsKey(property.Key) == false)
+                    {
+                        mappedProperties.Add(property.Key, new List<object>());
+                    }
+
+                    mappedProperties[property.Key].Add(property.Value);
+                }
+            }
+
+            return mappedProperties;
+        }
+
+        private Dictionary<Dictionary<IProperty, object>, TReturnType> MapResponse(
+            IEnumerable<Dictionary<IProperty, object>> keyProperties,
+            IEnumerable<TSourceType> result,
+            Type sourceType)
+        {
+            var response = new Dictionary<Dictionary<IProperty, object>, TReturnType>();
+
+            foreach (var keyProperty in keyProperties)
+            {
+                var value = result;
+
+                foreach (var property in keyProperty)
+                {
+                    value = value
+                        .Where(x => sourceType
+                            .GetProperty(property.Key.Name)
+                            .GetValue(x)
+                            .Equals(property.Value))
+                        .ToList();
+                }
+
+                if (value.Any())
+                {
+                    response.Add(keyProperty, (TReturnType)value.Select(x => sourceType
+                        .GetProperty(_propertyToInclude.Name)
+                        .GetValue(x)).First());
+                }
+            }
+
+            return response;
+        }
     }
 }

@@ -125,7 +125,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             Field<PlanetGraphType, Planet>()
                 .Name("HomePlanet")
                 .Include(dbContext, x => x.HomePlanet)
-                .Apply((query, context) => query.Where(x => true))
+                .Where((context) => (item) => item.Name != default)
                 .ResolveAsync();
             Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
                 .Name("Friends")
