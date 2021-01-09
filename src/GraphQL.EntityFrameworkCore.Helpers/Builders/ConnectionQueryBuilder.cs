@@ -57,13 +57,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             _field.ResolveAsync(async typedContext =>
             {
                 var context = (IResolveConnectionContext<object>)typedContext;
-
-                if (context.RequestServices == default)
-                {
-                    throw new Exception("ExecutionOptions.RequestServices is not defined (passed to ExecuteAsync), use GraphQL Server 4.0 and on");
-                }
-
-                var dbContext = (DbContext)context.RequestServices.GetRequiredService(_dbContextType);
+                var dbContext = (DbContext)context.GetService(_dbContextType);
                 var isValid = await ValidateBusiness(context, dbContext.Model);
 
                 if (!isValid && ValidateFilterInput(context))

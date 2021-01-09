@@ -56,7 +56,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
 
             services
                 .AddGraphQLEntityFrameworkCoreHelpers<TestDbContext>()
-                .AddSingleton<IDataLoaderContextAccessor, DataLoaderContextAccessor>()
                 .AddSingleton<IDocumentExecutionListener, DataLoaderDocumentListener>()
                 .AddSingleton<ISchema, TestSchema>()
                 .AddTransient<PlanetGraphType>()

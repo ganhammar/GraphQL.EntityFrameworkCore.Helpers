@@ -55,12 +55,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         {
             var context = (IResolveFieldContext<object>)typedContext;
 
-            if (context.RequestServices == default)
-            {
-                throw new Exception("ExecutionOptions.RequestServices is not defined (passed to ExecuteAsync), use GraphQL Server 4.0 and on");
-            }
-
-            var dbContext = (DbContext)context.RequestServices.GetRequiredService(_dbContextType);
+            var dbContext = (DbContext)context.GetService(_dbContextType);
             var model = dbContext.Model;
 
             var sourceType = typeof(TSourceType);
@@ -78,7 +73,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             }
 
             var loaderName = $"DataLoader_Get_{sourceType.Name}_{_propertyToInclude.Name}";
-            var dataLoaderContextAccessor = context.RequestServices.GetRequiredService<IDataLoaderContextAccessor>();
+            var dataLoaderContextAccessor = context.GetService<IDataLoaderContextAccessor>();
             var loader = dataLoaderContextAccessor.Context.GetOrAddBatchLoader<Dictionary<IProperty, object>, TReturnType>(
                 loaderName,
                 async (keyProperties) =>

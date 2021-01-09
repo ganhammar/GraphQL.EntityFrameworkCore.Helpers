@@ -115,15 +115,9 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return typedContext =>
             {
                 var context = (IResolveFieldContext<object>)typedContext;
-
-                if (context.RequestServices == default)
-                {
-                    throw new Exception("ExecutionOptions.RequestServices is not defined (passed to ExecuteAsync), use GraphQL Server 4.0 and on");
-                }
-
-                var dbContext = (DbContext)context.RequestServices.GetRequiredService(_dbContextType);
+                var dbContext = (DbContext)context.GetService(_dbContextType);
                 var (sourceProperty, targetProperty) = GetRelationship(sourceType, dbContext.Model);
-                var dataLoaderContextAccessor = context.RequestServices.GetRequiredService<IDataLoaderContextAccessor>();
+                var dataLoaderContextAccessor = context.GetService<IDataLoaderContextAccessor>();
                 var loader = dataLoaderContextAccessor.Context.GetOrAddCollectionBatchLoader<object, TReturnType>(
                     loaderName,
                     async (sourceProperties) =>
@@ -169,15 +163,9 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return typedContext =>
             {
                 var context = (IResolveFieldContext<object>)typedContext;
-
-                if (context.RequestServices == default)
-                {
-                    throw new Exception("ExecutionOptions.RequestServices is not defined (passed to ExecuteAsync), use GraphQL Server 4.0 and on");
-                }
-
-                var dbContext = (DbContext)context.RequestServices.GetRequiredService(_dbContextType);
+                var dbContext = (DbContext)context.GetService(_dbContextType);
                 var (sourceProperty, targetProperty) = GetRelationship(sourceType, dbContext.Model);
-                var dataLoaderContextAccessor = context.RequestServices.GetRequiredService<IDataLoaderContextAccessor>();
+                var dataLoaderContextAccessor = context.GetService<IDataLoaderContextAccessor>();
                 var loader = dataLoaderContextAccessor.Context.GetOrAddCollectionBatchLoader<object, TReturnType>(
                     loaderName,
                     async (sourceProperties) =>
