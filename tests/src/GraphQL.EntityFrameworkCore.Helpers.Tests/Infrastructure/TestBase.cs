@@ -62,6 +62,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .AddTransient<PlanetGraphType>()
                 .AddTransient<HumanGraphType>()
                 .AddTransient<DroidGraphType>()
+                .AddTransient<HumanForceAlignmentGraphType>()
+                .AddTransient<ForceGraphType>()
                 .AddTransient<GalaxyGraphType>()
                 .AddTransient<TestDbContext>(_ => dbContext)
                 .AddTransient<DifferentTestDbContext>(_ => differentDbContext);

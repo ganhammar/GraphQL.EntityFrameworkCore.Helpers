@@ -101,23 +101,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                     query = ApplyFilters(query, context, dbContext, targetType, argument, whereMethod);
 
                     var mappedProperties = MapProperties(keyProperties);
-
-                    foreach (var property in mappedProperties)
-                    {
-                        var castMethod = QueryableExtensions.GetCastMethod()
-                            .MakeGenericMethod(property.Key.PropertyInfo.PropertyType);
-                        var castedSourceProperties = castMethod.Invoke(castMethod, new object[] { property.Value });
-                        var properties = Expression.Constant(castedSourceProperties);
-
-                        var propertyAccess = Expression.MakeMemberAccess(argument, property.Key.PropertyInfo);
-
-                        var check = Expression.Call(typeof(Enumerable), "Contains",
-                            new[] { property.Key.PropertyInfo.PropertyType }, properties, propertyAccess);
-                        var lambda = Expression.Lambda(check, argument);
-
-                        query = (IQueryable<TSourceType>)whereMethod
-                            .Invoke(whereMethod, new object[] { query, lambda });
-                    }
+                    query = FilterBasedOnKeyProperties(query, mappedProperties, argument, whereMethod);
 
                     var sourceInstance = Expression.New(sourceType);
                     var targetInstance = Expression.New(targetType);
@@ -222,6 +206,32 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             }
 
             return mappedProperties;
+        }
+
+        private IQueryable<TSourceType> FilterBasedOnKeyProperties(
+            IQueryable<TSourceType> query,
+            Dictionary<IProperty, List<object>> mappedKeyProperties,
+            ParameterExpression argument,
+            MethodInfo whereMethod)
+        {
+            foreach (var property in mappedKeyProperties)
+            {
+                var castMethod = QueryableExtensions.GetCastMethod()
+                    .MakeGenericMethod(property.Key.PropertyInfo.PropertyType);
+                var castedSourceProperties = castMethod.Invoke(castMethod, new object[] { property.Value });
+                var properties = Expression.Constant(castedSourceProperties);
+
+                var propertyAccess = Expression.MakeMemberAccess(argument, property.Key.PropertyInfo);
+
+                var check = Expression.Call(typeof(Enumerable), "Contains",
+                    new[] { property.Key.PropertyInfo.PropertyType }, properties, propertyAccess);
+                var lambda = Expression.Lambda(check, argument);
+
+                query = (IQueryable<TSourceType>)whereMethod
+                    .Invoke(whereMethod, new object[] { query, lambda });
+            }
+
+            return query;
         }
 
         private Dictionary<Dictionary<IProperty, object>, TReturnType> MapResponse(

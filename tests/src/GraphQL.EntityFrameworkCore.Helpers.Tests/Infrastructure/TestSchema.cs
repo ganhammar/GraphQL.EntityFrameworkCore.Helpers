@@ -90,6 +90,11 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .Name("Galaxies")
                 .From(differentTestDbContext.Galaxies)
                 .ResolveCollectionAsync();
+            
+            Field<ListGraphType<HumanForceAlignmentGraphType>>()
+                .Name("HumanForceAlignments")
+                .From(dbContext.HumanForceAlignments)
+                .ResolveCollectionAsync();
         }
     }
 
@@ -145,7 +150,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .IsFilterable();
             Field<HumanGraphType, Human>()
                 .Name("Owner")
-                .Include(x => x.Owner);
+                .Include(x => x.Owner)
+                .ResolveAsync();
         }
     }
 
@@ -156,6 +162,27 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             Field(x => x.Id, type: typeof(IdGraphType));
             Field(x => x.Name)
                 .IsFilterable();
+        }
+    }
+
+    public class ForceGraphType : ObjectGraphType<Force>
+    {
+        public ForceGraphType()
+        {
+            Field(x => x.Type);
+        }
+    }
+
+    public class HumanForceAlignmentGraphType : ObjectGraphType<HumanForceAlignment>
+    {
+        public HumanForceAlignmentGraphType()
+        {
+            Field(x => x.HumanId, type: typeof(IdGraphType));
+            Field(x => x.Alignment);
+            Field<ForceGraphType, Force>()
+                .Name("Force")
+                .Include(x => x.Force)
+                .ResolveAsync();
         }
     }
 

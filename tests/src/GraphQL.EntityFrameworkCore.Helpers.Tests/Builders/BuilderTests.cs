@@ -281,5 +281,37 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Builders
 
             var result = AssertQuerySuccess(query, expected);
         }
+
+        [Fact]
+        public async Task Should_ResolveHumanForceAlignmentWithForce_When_Requesting()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var humanForceAlignments = await dbContext.HumanForceAlignments
+                .Select(x => new
+                {
+                    force = new
+                    {
+                        type = x.Force.Type,
+                    },
+                })
+                .ToListAsync();
+
+            var query = @"
+                query humanForceAlignments {
+                    humanForceAlignments {
+                        force {
+                            type
+                        }
+                    }
+                }
+            ";
+
+            var expected = new
+            {
+                humanForceAlignments,
+            };
+
+            var result = AssertQuerySuccess(query, expected);
+        }
     }
 }

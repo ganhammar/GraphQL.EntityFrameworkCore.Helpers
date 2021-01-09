@@ -88,6 +88,35 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 Owner = luke,
             });
 
+            dbContext.Forces.AddRange(
+                new Force
+                {
+                    Type = "Dark",
+                },
+                new Force
+                {
+                    Type = "Light",
+                }
+            );
+
+            dbContext.HumanForceAlignments.AddRange(
+                new HumanForceAlignment
+                {
+                    HumanId = LukeId,
+                    Alignment = "Light",
+                },
+                new HumanForceAlignment
+                {
+                    HumanId = LeiaId,
+                    Alignment = "Light",
+                },
+                new HumanForceAlignment
+                {
+                    HumanId = AnakinId,
+                    Alignment = "Dark",
+                }
+            );
+
             await dbContext.SaveChangesAsync();
         }
 
