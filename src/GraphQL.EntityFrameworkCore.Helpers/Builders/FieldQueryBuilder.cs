@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using GraphQL.Builders;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
 {
