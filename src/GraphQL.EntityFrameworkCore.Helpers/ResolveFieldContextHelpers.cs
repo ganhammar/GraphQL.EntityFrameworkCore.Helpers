@@ -39,7 +39,9 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 }
 
                 var foreignKeyProperties = navigationProperty.ForeignKey.Properties
-                    .Where(x => x.PropertyInfo != null).Select(x => x.PropertyInfo);
+                    .Where(x => x.DeclaringEntityType.Name == entityType.FullName)
+                    .Where(x => x.PropertyInfo != null)
+                    .Select(x => x.PropertyInfo);
 
                 if (foreignKeyProperties.Any())
                 {
