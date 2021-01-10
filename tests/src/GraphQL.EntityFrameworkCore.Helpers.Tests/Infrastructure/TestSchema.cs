@@ -24,23 +24,23 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             Field<ListGraphType<HumanGraphType>>()
                 .Name("Humans")
                 .From(dbContext.Humans)
-                .Apply((query, context) => query.Where(x => true))
+                .Where((context) => x => true)
                 .ResolveCollectionAsync();
 
             Connection<DroidGraphType>()
                 .Name("Droids")
                 .From(dbContext.Droids)
-                .Apply((query, context) => query.Where(x => true))
+                .Where((context) => x => true)
                 .ResolveAsync();
 
             Field<ListGraphType<DroidGraphType>>()
                 .Name("MyDroids")
                 .Argument<NonNullGraphType<IdGraphType>>("HumanId")
                 .From(dbContext.Droids)
-                .Apply((query, context) =>
+                .Where(context =>
                 {
                     var humanId = context.GetArgument<Guid>("HumanId");
-                    return query.Where(x => x.OwnerId == humanId);
+                    return x => x.OwnerId == humanId;
                 })
                 .ValidateAsync(async context =>
                 {
@@ -61,10 +61,10 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .Name("Droid")
                 .Argument<NonNullGraphType<IdGraphType>>("Id")
                 .From(dbContext.Droids)
-                .Apply((query, context) =>
+                .Where(context =>
                 {
                     var id = context.GetArgument<Guid>("Id");
-                    return query.Where(x => x.Id == id);
+                    return x => x.Id == id;
                 })
                 .ValidateAsync(async context =>
                 {
@@ -114,7 +114,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .Name("Residents")
                 .MapsTo(x => x.Habitants)
                 .Include()
-                .Apply((query, context) => query.Where(x => true))
+                .Where((context) => (item) => item.Name != default)
                 .ResolveAsync();
         }
     }

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using GraphQL.Builders;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +12,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers
     {
         private readonly ConnectionBuilder<TSourceType> _field;
         private readonly Type _targetType;
-        private readonly Type _dbContextType;
 
         public ConnectionQueryBuilder(ConnectionBuilder<TSourceType> field, Type targetType, Type dbContextType = null)
         {
@@ -20,10 +20,10 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             _dbContextType = dbContextType != null ? dbContextType : DbContextTypeAccessor.DbContextType;
         }
 
-        public ConnectionQueryBuilder<TSourceType, TReturnType> Apply(
-            Func<IQueryable<TReturnType>, IResolveConnectionContext<object>, IQueryable<TReturnType>> businessLogic)
+        public ConnectionQueryBuilder<TSourceType, TReturnType> Where(
+            Func<IResolveFieldContext<object>, Expression<Func<TReturnType, bool>>> clause)
         {
-            BusinessLogic = businessLogic;
+            BusinuessCheck = clause;
 
             return this;
         }

@@ -14,8 +14,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers
     public class BatchQueryBuilder<TSourceType, TReturnType> : QueryBuilderBase<TReturnType, IResolveFieldContext<object>>
     {
         private readonly FieldBuilder<TSourceType, TReturnType> _field;
-        private readonly PropertyInfo _propertyToInclude;
-        private readonly Type _dbContextType;
 
         public BatchQueryBuilder(
             FieldBuilder<TSourceType, TReturnType> field,
@@ -27,7 +25,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             _dbContextType = dbContextType != null ? dbContextType : DbContextTypeAccessor.DbContextType;
         }
 
-        public BatchQueryBuilder<TSourceType, TReturnType> Where(Func<IResolveFieldContext<object>, Expression<Func<TReturnType, bool>>> clause)
+        public BatchQueryBuilder<TSourceType, TReturnType> Where(
+            Func<IResolveFieldContext<object>, Expression<Func<TReturnType, bool>>> clause)
         {
             BusinuessCheck = clause;
 
@@ -59,17 +58,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
             var sourceType = typeof(TSourceType);
             var targetType = typeof(TReturnType);
-            var entity = model.FindEntityType(sourceType);
-            var primaryKeys = entity.FindPrimaryKey().Properties;
-
-            var keyValues = new Dictionary<IProperty, object>();
-
-            foreach (var primaryKey in primaryKeys)
-            {
-                keyValues.Add(primaryKey, sourceType
-                    .GetProperty(primaryKey.Name)
-                    .GetValue(context.Source));
-            }
+            var keyValues = GetKeyValuePairs(sourceType, model, context);
 
             var loaderName = $"DataLoader_Get_{sourceType.Name}_{_propertyToInclude.Name}";
             var dataLoaderContextAccessor = context.GetService<IDataLoaderContextAccessor>();
@@ -77,9 +66,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 loaderName,
                 async (keyProperties) =>
                 {
-                    var isValid = await ValidateBusiness(context, dbContext.Model);
-
-                    if (!isValid && ValidateFilterInput(context))
+                    if (await IsValid(context, dbContext.Model) == false)
                     {
                         return default;
                     }
@@ -98,17 +85,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                     query = FilterBasedOnKeyProperties(query, mappedProperties, argument, whereMethod);
 
                     var sourceInstance = Expression.New(sourceType);
-                    var targetInstance = Expression.New(targetType);
 
-                    var targetProperty = Expression.Property(argument, _propertyToInclude);
-                    var propertiesToSelect = ResolveFieldContextHelpers.GetProperties(targetType, context.SubFields, model);
-                    var targetBindings = propertiesToSelect.Select(propertyType =>
-                        Expression.Bind(propertyType, Expression.Property(targetProperty, propertyType)));
+                    var initializeTargetInstance = InitTarget(targetType, argument, context, model);
 
-                    var initializeTargetInstance = Expression.MemberInit(targetInstance, targetBindings);
-
-                    var sourceBindings = mappedProperties.Select(x => x.Key.PropertyInfo).Select(propertyType =>
-                        Expression.Bind(propertyType, Expression.Property(argument, propertyType))).ToList();
+                    var sourceBindings = mappedProperties
+                        .Select(x => x.Key.PropertyInfo)
+                        .Select(propertyType =>
+                            Expression.Bind(propertyType, Expression.Property(argument, propertyType)))
+                        .ToList();
                     sourceBindings.Add(Expression.Bind(_propertyToInclude, initializeTargetInstance));
 
                     var initializeSourceInstance = Expression.MemberInit(sourceInstance, sourceBindings);
@@ -147,15 +131,15 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                     .Where(x => x.PropertyType.GenericTypeArguments.Contains(targetType))
                     .First();
 
-                Expression dbContextAccess = Expression.MakeMemberAccess(
+                Expression nestedQuery = Expression.MakeMemberAccess(
                     Expression.Constant(dbContext), targetDbContextProperty);
 
                 foreach (var expression in expressions)
                 {
                     var lambda = Expression.Lambda<Func<TReturnType, bool>>(
                         expression, new ParameterExpression[] { targetArgument });
-                    dbContextAccess = Expression.Call(typeof(Queryable), "Where",
-                        new[] { _propertyToInclude.PropertyType }, dbContextAccess, lambda);
+                    nestedQuery = Expression.Call(typeof(Queryable), nameof(Queryable.Where),
+                        new[] { _propertyToInclude.PropertyType }, nestedQuery, lambda);
                 }
 
                 if (BusinuessCheck != default)
@@ -164,14 +148,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
                     if (expression != default)
                     {
-                        dbContextAccess = Expression.Call(typeof(Queryable), "Where",
-                            new[] { _propertyToInclude.PropertyType }, dbContextAccess, expression);
+                        nestedQuery = Expression.Call(typeof(Queryable), nameof(Queryable.Where),
+                            new[] { _propertyToInclude.PropertyType }, nestedQuery, expression);
                     }
                 }
 
                 var targetPropertyAccess = Expression.MakeMemberAccess(argument, _propertyToInclude);
-                var nestedCheck = Expression.Call(typeof(Queryable), "Contains",
-                    new[] { _propertyToInclude.PropertyType }, dbContextAccess, targetPropertyAccess);
+                var nestedCheck = Expression.Call(typeof(Queryable), nameof(Queryable.Contains),
+                    new[] { _propertyToInclude.PropertyType }, nestedQuery, targetPropertyAccess);
                 var nestedLambda = Expression.Lambda(nestedCheck, argument);
 
                 return (IQueryable<TSourceType>)whereMethod
@@ -181,51 +165,20 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return query;
         }
 
-        private Dictionary<IProperty, List<object>> MapProperties(
-            IEnumerable<Dictionary<IProperty, object>> keyProperties)
+        private Expression InitTarget(
+            Type targetType,
+            Expression argument,
+            IResolveFieldContext<object> context,
+            IModel model)
         {
-            var mappedProperties = new Dictionary<IProperty, List<object>>();
+            var targetInstance = Expression.New(targetType);
 
-            foreach (var keyProperty in keyProperties)
-            {
-                foreach (var property in keyProperty)
-                {
-                    if (mappedProperties.ContainsKey(property.Key) == false)
-                    {
-                        mappedProperties.Add(property.Key, new List<object>());
-                    }
+            var targetProperty = Expression.Property(argument, _propertyToInclude);
+            var propertiesToSelect = ResolveFieldContextHelpers.GetProperties(targetType, context.SubFields, model);
+            var targetBindings = propertiesToSelect.Select(propertyType =>
+                Expression.Bind(propertyType, Expression.Property(targetProperty, propertyType)));
 
-                    mappedProperties[property.Key].Add(property.Value);
-                }
-            }
-
-            return mappedProperties;
-        }
-
-        private IQueryable<TSourceType> FilterBasedOnKeyProperties(
-            IQueryable<TSourceType> query,
-            Dictionary<IProperty, List<object>> mappedKeyProperties,
-            ParameterExpression argument,
-            MethodInfo whereMethod)
-        {
-            foreach (var property in mappedKeyProperties)
-            {
-                var castMethod = QueryableExtensions.GetCastMethod()
-                    .MakeGenericMethod(property.Key.PropertyInfo.PropertyType);
-                var castedSourceProperties = castMethod.Invoke(castMethod, new object[] { property.Value });
-                var properties = Expression.Constant(castedSourceProperties);
-
-                var propertyAccess = Expression.MakeMemberAccess(argument, property.Key.PropertyInfo);
-
-                var check = Expression.Call(typeof(Enumerable), "Contains",
-                    new[] { property.Key.PropertyInfo.PropertyType }, properties, propertyAccess);
-                var lambda = Expression.Lambda(check, argument);
-
-                query = (IQueryable<TSourceType>)whereMethod
-                    .Invoke(whereMethod, new object[] { query, lambda });
-            }
-
-            return query;
+            return Expression.MemberInit(targetInstance, targetBindings);
         }
 
         private Dictionary<Dictionary<IProperty, object>, TReturnType> MapResponse(

@@ -8,7 +8,6 @@ using GraphQL.Builders;
 using GraphQL.DataLoader;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
 {
@@ -16,9 +15,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers
     {
         private readonly FieldBuilder<TSourceType, IEnumerable<TReturnType>> _field;
         private readonly HelperFieldBuilder<TSourceType, IEnumerable<TReturnType>, TProperty> _helperField;
-        private readonly PropertyInfo _propertyToInclude;
-        private readonly bool _isManyToMany;
-        private readonly Type _dbContextType;
 
         public CollectionBatchQueryBuilder(
             FieldBuilder<TSourceType, IEnumerable<TReturnType>> field,
@@ -48,18 +44,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 throw new Exception(@"Can't resolve relationships further than 
                     two steps apart (.MapsTo().ThenTo())");
             }
-            else if (propertyPath.Count == 2)
-            {
-                _isManyToMany = true;
-            }
 
             _dbContextType = dbContextType != null ? dbContextType : DbContextTypeAccessor.DbContextType;
         }
 
-        public CollectionBatchQueryBuilder<TSourceType, TReturnType, TProperty> Apply(
-            Func<IQueryable<TReturnType>, IResolveFieldContext<object>, IQueryable<TReturnType>> businessLogic)
+        public CollectionBatchQueryBuilder<TSourceType, TReturnType, TProperty> Where(
+            Func<IResolveFieldContext<object>, Expression<Func<TReturnType, bool>>> clause)
         {
-            BusinessLogic = businessLogic;
+            BusinuessCheck = clause;
 
             return this;
         }
@@ -82,19 +74,66 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
         public void ResolveAsync()
         {
-            var sourceType = typeof(TSourceType);
-            var targetType = typeof(TReturnType);
-            var loaderName = $"DataLoader_Get_{sourceType.Name}_{_propertyToInclude.Name}";
-            Func<IResolveFieldContext<TSourceType>, IDataLoaderResult<IEnumerable<TReturnType>>> action;
+            Func<IResolveFieldContext<TSourceType>, IDataLoaderResult<IEnumerable<TReturnType>>> action = typedContext =>
+            {
+                var context = (IResolveFieldContext<object>)typedContext;
 
-            if (_isManyToMany == false && sourceType != targetType)
-            {
-                action = ResolveOneToMany(sourceType, targetType, loaderName);
-            }
-            else
-            {
-                action = ResolveManyToMany(sourceType, targetType, loaderName);
-            }
+                var dbContext = (DbContext)context.GetService(_dbContextType);
+                var model = dbContext.Model;
+
+                var sourceType = typeof(TSourceType);
+                var targetType = typeof(TReturnType);
+                var keyValues = GetKeyValuePairs(sourceType, model, context);
+
+                var loaderName = $"DataLoader_Get_{sourceType.Name}_{_propertyToInclude.Name}";
+                var dataLoaderContextAccessor = context.GetService<IDataLoaderContextAccessor>();
+                var loader = dataLoaderContextAccessor.Context.GetOrAddCollectionBatchLoader<Dictionary<IProperty, object>, TReturnType>(
+                    loaderName,
+                    async (keyProperties) =>
+                    {
+                        if (await IsValid(context, dbContext.Model) == false)
+                        {
+                            return default;
+                        }
+
+                        MethodInfo whereMethod = QueryableExtensions
+                            .GetWhereMethod()
+                            .MakeGenericMethod(sourceType);
+                        var query = (IQueryable<TSourceType>)QueryableExtensions.GetSetMethod<TSourceType>()
+                            .MakeGenericMethod(sourceType)
+                            .Invoke(dbContext, null);
+                        var argument = Expression.Parameter(sourceType);
+                        var targetArgument = Expression.Parameter(targetType);
+                        Expression targetMemberAccess = Expression.MakeMemberAccess(argument, _propertyToInclude);
+                        targetMemberAccess = ApplyFilters(
+                            targetMemberAccess, context, dbContext, targetType, argument, targetArgument, whereMethod);
+
+                        var mappedProperties = MapProperties(keyProperties);
+                        query = FilterBasedOnKeyProperties(query, mappedProperties, argument, whereMethod);
+
+                        var sourceInstance = Expression.New(sourceType);
+
+                        var initializeTargetInstance = InitTarget(
+                            targetType, argument, targetArgument, targetMemberAccess, context, model);
+                        var sourceBindings = mappedProperties
+                            .Select(x => x.Key.PropertyInfo)
+                            .Select(propertyType =>
+                                Expression.Bind(propertyType, Expression.Property(argument, propertyType)))
+                            .ToList();
+                        sourceBindings.Add(Expression.Bind(_propertyToInclude, initializeTargetInstance));
+
+                        var initializeSourceInstance = Expression.MemberInit(sourceInstance, sourceBindings);
+                        var selectLambda = Expression.Lambda<Func<TSourceType, TSourceType>>(initializeSourceInstance, argument);
+
+                        query = query.Select(selectLambda);
+
+                        var result = await query.ToListAsync();
+
+                        return MapResponse(keyProperties, result, sourceType);
+                    });
+                
+                return loader.LoadAsync(keyValues);
+            };
 
             if (_field != default)
             {
@@ -106,236 +145,108 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             }
         }
 
-        private Func<IResolveFieldContext<TSourceType>, IDataLoaderResult<IEnumerable<TReturnType>>> ResolveOneToMany(
-            Type sourceType,
+        private Expression ApplyFilters(
+            Expression memberAccess,
+            IResolveFieldContext<object> context,
+            DbContext dbContext,
             Type targetType,
-            string loaderName)
+            ParameterExpression argument,
+            ParameterExpression targetArgument,
+            MethodInfo whereMethod)
         {
-            return typedContext =>
+            var model = dbContext.Model;
+            var filters = FilterList.GetFilter(context);
+            var expressions = filters != default
+                ? FilterList.GetExpressions(targetArgument, targetType, filters, context, model)
+                : new List<Expression>();
+            var anyMethod = QueryableExtensions.GetAnyMethod()
+                .MakeGenericMethod(targetType); 
+
+            if (expressions.Any() || BusinuessCheck != default)
             {
-                var context = (IResolveFieldContext<object>)typedContext;
-                var dbContext = (DbContext)context.GetService(_dbContextType);
-                var (sourceProperty, targetProperty) = GetRelationship(sourceType, dbContext.Model);
-                var dataLoaderContextAccessor = context.GetService<IDataLoaderContextAccessor>();
-                var loader = dataLoaderContextAccessor.Context.GetOrAddCollectionBatchLoader<object, TReturnType>(
-                    loaderName,
-                    async (sourceProperties) =>
-                    {
-                        var isValid = await ValidateBusiness(context, dbContext.Model);
-
-                        if (!isValid && ValidateFilterInput(context))
-                        {
-                            return default;
-                        }
-
-                        var query = (IQueryable<TReturnType>)QueryableExtensions.GetSetMethod<TReturnType>()
-                            .MakeGenericMethod(targetType)
-                            .Invoke(dbContext, null);
-
-                        query = ApplyBusinessLogic(query, context);
-
-                        query = Where(query, targetType, GetContainsLambda(sourceProperties, targetType, targetProperty));
-
-                        query = query
-                            .SelectFromContext(context, dbContext.Model);
-                        
-                        var result = await query.ToListAsync();
-
-                        return result
-                            .Select(x => new KeyValuePair<object, TReturnType>(
-                                targetType.GetProperty(targetProperty.Name).GetValue(x),
-                                x))
-                            .ToLookup(x => x.Key, x => x.Value);
-                    });
-
-                return loader.LoadAsync(sourceType
-                    .GetProperty(sourceProperty.Name)
-                    .GetValue(context.Source));
-            };
-        }
-
-        private Func<IResolveFieldContext<TSourceType>, IDataLoaderResult<IEnumerable<TReturnType>>> ResolveManyToMany(
-            Type sourceType,
-            Type returnType,
-            string loaderName)
-        {
-            return typedContext =>
-            {
-                var context = (IResolveFieldContext<object>)typedContext;
-                var dbContext = (DbContext)context.GetService(_dbContextType);
-                var (sourceProperty, targetProperty) = GetRelationship(sourceType, dbContext.Model);
-                var dataLoaderContextAccessor = context.GetService<IDataLoaderContextAccessor>();
-                var loader = dataLoaderContextAccessor.Context.GetOrAddCollectionBatchLoader<object, TReturnType>(
-                    loaderName,
-                    async (sourceProperties) =>
-                    {
-                        var query = (IQueryable<TReturnType>)QueryableExtensions.GetSetMethod<TReturnType>()
-                            .MakeGenericMethod(returnType)
-                            .Invoke(dbContext, null);
-                        
-                        query = Include(query, returnType);
-
-                        query = ApplyBusinessLogic(query, context);
-
-                        var argument = Expression.Parameter(returnType);
-                        var property = Expression.MakeMemberAccess(argument, _propertyToInclude);
-
-                        var targetType = returnType == sourceType
-                            ? returnType : targetProperty.PropertyInfo.DeclaringType;
-
-                        MethodInfo anyMethod = QueryableExtensions.GetAnyMethod()
-                            .MakeGenericMethod(targetType);
-                        
-                        var check = Expression.Call(anyMethod, property,
-                            GetContainsLambda(sourceProperties, targetType, targetProperty));
-                        
-                        query = Where(query, returnType, Expression.Lambda(check, argument));
-
-                        query = query
-                            .Filter(context, dbContext.Model);
-
-                        var result = await query.ToListAsync();
-
-                        return SelectManyToMany(result, returnType, targetProperty);
-                    });
-
-                return loader.LoadAsync(sourceType
-                    .GetProperty(sourceProperty.Name)
-                    .GetValue(context.Source));
-            };
-        }
-        
-        private ILookup<object, TReturnType> SelectManyToMany(
-            List<TReturnType> result, Type returnType, IProperty targetProperty)
-        {
-            var mainArgument = Expression.Parameter(returnType);
-            var property = Expression.MakeMemberAccess(mainArgument, _propertyToInclude);
-
-            var innerArgument = Expression.Parameter(targetProperty.PropertyInfo.DeclaringType);
-            var keyValuePairType = typeof(KeyValuePair<,>).MakeGenericType(typeof(object), returnType);
-            var constructor = keyValuePairType.GetConstructor(new Type[] { typeof(object), returnType });
-            var lambda = Expression.Lambda(Expression.New(constructor, new Expression[]
-            {
-                Expression.Convert(
-                    Expression.Property(innerArgument, targetProperty.PropertyInfo),
-                    typeof(object)),
-                mainArgument,
-            }), innerArgument);
-
-            var selectMethod = QueryableExtensions.GetSelectMethod()
-                .MakeGenericMethod(
-                    targetProperty.PropertyInfo.DeclaringType,
-                    keyValuePairType);
-            var select = Expression.Call(selectMethod, property, lambda);
-
-            var selectManyMethod = QueryableExtensions.GetSelectManyMethod()
-                .MakeGenericMethod(
-                    returnType,
-                    keyValuePairType);
-            var selectMany = (IEnumerable<KeyValuePair<object, TReturnType>>)selectManyMethod
-                .Invoke(selectManyMethod, new object[]
+                foreach (var expression in expressions)
                 {
-                    result,
-                    Expression.Lambda(select, mainArgument).Compile()
-                });
-            
-            return selectMany.ToLookup(x => x.Key, x => x.Value);
+                    var lambda = Expression.Lambda<Func<TReturnType, bool>>(
+                        expression, new ParameterExpression[] { targetArgument });
+                    memberAccess = Expression.Call(typeof(Enumerable), nameof(Enumerable.Where),
+                        new [] { targetType }, memberAccess, lambda);
+                }
+
+                if (BusinuessCheck != default)
+                {
+                    var expression = BusinuessCheck(context);
+
+                    if (expression != default)
+                    {
+                        memberAccess = Expression.Call(typeof(Enumerable), nameof(Enumerable.Where),
+                            new [] { targetType }, memberAccess, expression);
+                    }
+                }
+                
+                return memberAccess;
+            }
+
+            return memberAccess;
         }
 
-        private LambdaExpression GetContainsLambda(
-            IEnumerable<object> sourceProperties, Type targetType, IProperty targetProperty)
+        private Expression InitTarget(
+            Type targetType,
+            ParameterExpression argument,
+            ParameterExpression targetArgument,
+            Expression targetMemberAccess,
+            IResolveFieldContext<object> context,
+            IModel model)
         {
-            var castMethod = QueryableExtensions.GetCastMethod()
-                .MakeGenericMethod(targetProperty.PropertyInfo.PropertyType);
-            var castedSourceProperties = castMethod.Invoke(castMethod, new object[] { sourceProperties });
-            var properties = Expression.Constant(castedSourceProperties);
+            var targetInstance = Expression.New(targetType);
 
-            var argument = Expression.Parameter(targetType);
-            var property = Expression.MakeMemberAccess(argument, targetProperty.PropertyInfo);
-
-            var check = Expression.Call(typeof(Enumerable), "Contains",
-                new[] { targetProperty.PropertyInfo.PropertyType }, properties, property);
-
-            return Expression.Lambda(check, argument);
+            var propertiesToSelect = ResolveFieldContextHelpers
+                .GetProperties(targetType, context.SubFields, model);
+            var targetBindings = propertiesToSelect.Select(propertyType =>
+                Expression.Bind(propertyType, Expression.Property(targetArgument, propertyType)));
+            var memberInit = Expression.MemberInit(targetInstance, targetBindings);
+            var lambda = Expression.Lambda(memberInit, targetArgument);
+            var selectMethod = QueryableExtensions
+                .GetSelectMethod()
+                .MakeGenericMethod(targetType, targetType);
+            return Expression.Call(selectMethod, targetMemberAccess, lambda);
         }
 
-        private IQueryable<TReturnType> Include(IQueryable<TReturnType> query, Type targetType)
+        private ILookup<Dictionary<IProperty, object>, TReturnType> MapResponse(
+            IEnumerable<Dictionary<IProperty, object>> keyProperties,
+            IEnumerable<TSourceType> result,
+            Type sourceType)
         {
-            var argument = Expression.Parameter(targetType);
-            var property = Expression.MakeMemberAccess(argument, _propertyToInclude);
-            var lambda = Expression.Lambda(property, argument);
+            var response = new List<KeyValuePair<Dictionary<IProperty, object>, TReturnType>>();
 
-            var method = QueryableExtensions.GetIncludeMethod();
-            var enumerableType = typeof(IEnumerable<>)
-                .MakeGenericType(_propertyToInclude.PropertyType.GenericTypeArguments[0]);
-            MethodInfo genericMethod = method
-                .MakeGenericMethod(targetType, enumerableType);
-
-            return (IQueryable<TReturnType>)genericMethod
-                .Invoke(genericMethod, new object[] { query, lambda });
-        }
-
-        private IQueryable<TReturnType> Where(IQueryable<TReturnType> query, Type targetType, LambdaExpression lambda)
-        {
-            var whereMethod = QueryableExtensions.GetWhereMethod();
-            MethodInfo genericMethod = whereMethod
-                .MakeGenericMethod(targetType);
-
-            return (IQueryable<TReturnType>)genericMethod
-                .Invoke(genericMethod, new object[] { query, lambda });
-        }
-
-        private (IProperty source, IProperty target) GetRelationship(Type sourceType, IModel model)
-        {
-            var entity = model.FindEntityType(sourceType);
-            var navigationProperties = entity.GetNavigations();
-
-            if (navigationProperties.Any() == false ||
-                navigationProperties.Any(x => x.Name == _propertyToInclude.Name) == false)
+            foreach (var keyProperty in keyProperties)
             {
-                throw new Exception($@"All relationships needs to mapped to automatically be able 
-                    to resolve data loaded fields, missing navigation property for {_propertyToInclude.Name}");
+                var value = result;
+
+                foreach (var property in keyProperty)
+                {
+                    value = value
+                        .Where(x => sourceType
+                            .GetProperty(property.Key.Name)
+                            .GetValue(x)
+                            .Equals(property.Value))
+                        .ToList();
+                }
+
+                if (value.Any())
+                {
+                    var list = value.SelectMany(x => (IEnumerable<TReturnType>)sourceType
+                        .GetProperty(_propertyToInclude.Name)
+                        .GetValue(x));
+                    
+                    foreach (var item in list)
+                    {
+                        response.Add(new KeyValuePair<Dictionary<IProperty, object>, TReturnType>(
+                            keyProperty, item));
+                    }
+                }
             }
 
-            var property = navigationProperties
-                .Where(x => x.Name == _propertyToInclude.Name)
-                .First();
-
-            if (property.ForeignKey.Properties.Count > 1)
-            {
-                throw new Exception("Composite keys is not supported");
-            }
-
-            var foreignKey = property.ForeignKey.Properties.First();
-
-            if (foreignKey.PropertyInfo == default && sourceType != typeof(TReturnType))
-            {
-                throw new Exception($@"All key fields must be mapped in data entity, missing key 
-                    field for {_propertyToInclude.Name} in {foreignKey.DeclaringType.Name}");
-            }
-
-            var principal = property.ForeignKey
-                .PrincipalKey
-                .Properties
-                .First();
-            
-            if (foreignKey.PropertyInfo == default && sourceType == typeof(TReturnType))
-            {
-                return (principal, principal);
-            }
-
-            if (principal.PropertyInfo == default)
-            {
-                throw new Exception($@"All key fields must be mapped in data entity, missing key 
-                    field for {_propertyToInclude.Name} in {principal.DeclaringType.Name}");
-            }
-            
-            if (property.DeclaringType.Name != sourceType.FullName)
-            {
-                return (foreignKey, principal);
-            }
-
-            return (principal, foreignKey);
+            return response.ToLookup(x => x.Key, x => x.Value);
         }
     }
 }
