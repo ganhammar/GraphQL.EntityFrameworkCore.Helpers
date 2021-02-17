@@ -9,6 +9,6 @@ namespace HeadlessCms.Data
         public string Content { get; set; }
         public int EditorId { get; set; }
         public User Editor { get; set; }
-        public IEnumerable<PageTag> PageTags { get; set; }
+        public IEnumerable<Tag> Tags { get; set; }
     }
 }

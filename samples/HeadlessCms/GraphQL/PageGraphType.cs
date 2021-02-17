@@ -23,8 +23,7 @@ namespace HeadlessCms.GraphQL
                 .ResolveAsync();
             Field<ListGraphType<TagGraphType>, IEnumerable<Tag>>()
                 .Name("Tags")
-                .MapsTo(x => x.PageTags)
-                    .ThenTo(x => x.Page)
+                .MapsTo(x => x.Tags)
                 .Include()
                 .ResolveAsync();
         }
