@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using GraphQL.DataLoader;
 using GraphQL.Types;
-using GraphQL.EntityFrameworkCore.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
