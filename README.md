@@ -1,6 +1,6 @@
 # GraphQL Helpers for EF Core
 
-Adds methods to resolve schema fields directly from a DbContext.
+Adds methods to resolve schema fields directly from a DbContext. See [sample project](samples/HeadlessCms) for full setup reference.
 
 ## Getting Started
 
