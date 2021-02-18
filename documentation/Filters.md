@@ -1,6 +1,6 @@
 # Filters
 
-Filters can be used by the client to limit the amount data returned for a collection or a connection. The clients can filter a specific column by a specific value or have a value that applies to all filterable columns.
+Filters can be used by the client to filter data in a collection or a connection. The clients can filter a specific column by a specific value or have a value that applies to all filterable columns.
 
 ## Setup
 Add the `IsFilterable`-attribute to columns that should be filterable.

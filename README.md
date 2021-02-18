@@ -8,21 +8,21 @@ Adds methods to resolve schema fields directly from a DbContext.
 dotnet add package GraphQL.EntityFrameworkCore.Helpers
 ```
 
-And edit `Startup.cs` to register dependencies by calling method below in `ConfigureServices(IServiceCollection services)`:
+And edit `Startup.cs` to register dependencies by calling method below in `ConfigureServices(IServiceCollection services)`. Passing `DbContext` as type parameter is optional, if it isn't passed here it would need to be passed when resolving graph fields from a `DbContext`.
 
 ```c#
 services
-    .AddGraphQLEntityFrameworkCoreHelpers();
+    .AddGraphQLEntityFrameworkCoreHelpers<AppDbContext>();
 ```
 
 ## Defining the Schema
 
-To resolve a root query from a DbContext using the helper methods you first need to define from what DbContext and what DbSet and then call either the `ResolveCollectionAsync` method or the `ResolvePropertyAsync` method.
+To resolve a root query from a DbContext using the helper methods you first need to call the `From` method with the `DbSet` to include and then call either `ResolveCollectionAsync` or `ResolvePropertyAsync`.
 
 ```c#
 Field<ListGraphType<HumanGraphType>>()
     .Name("Humans")
-    .From(dbContext, x => x.Humans)
+    .From(dbContext.Humans)
     .ResolveCollectionAsync();
 ```
 
@@ -31,38 +31,38 @@ You can also add connections in a similar way. With the connections the client h
 ```c#
 Connection<DroidGraphType>()
     .Name("Droids")
-    .From(dbContext, x => x.Droids)
+    .From(dbContext.Droids)
     .ResolveAsync();
 ```
 
-The helper methods can also be used to resolve data loaded properties. For this to work, all properties needs to be mapped, including join tables. Read more about data loaded fields [here](documentation/DataLoadedFields.md).
+The helper methods can also be used to resolve data loaded properties. Read more about data loaded fields [here](documentation/DataLoadedFields.md).
 
 ```c#
 Field<PlanetGraphType, Planet>()
     .Name("HomePlanet")
-    .Include(dbContext, x => x.HomePlanet)
+    .Include(x => x.HomePlanet)
     .ResolveAsync();
 ```
 
 ### Applying business logic when resolving fields
 
-With all builders you can apply your own business logic to for instance support multi-tenant solutions using the method `Apply`.
+With all builders you can apply your own business logic to for instance support authorization scenarios by calling the method `Where`.
 
 ```c#
 Field<PlanetGraphType, Planet>()
     .Name("HomePlanet")
-    .Include(dbContext, x => x.HomePlanet)
-    .Apply((query, context) =>
+    .Include(x => x.HomePlanet)
+    .Where(context =>
     {
         var id = context.GetArgument<int>("id");
-        return query.Where(x => x.Id == id);
+        return x => x.Id == id;
     })
     .ResolveAsync();
 ```
 
 ### Validating the context
 
-Similarly you can validate the arguments passed to a context using either the `Validate` method or the `ValidateAsync` method.
+Similarly you can validate the arguments passed to a context using either `Validate` or `ValidateAsync`.
 
 ```c#
 Field<PlanetGraphType, Planet>()

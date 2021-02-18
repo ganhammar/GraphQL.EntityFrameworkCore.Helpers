@@ -13,7 +13,7 @@ It is important that each resulting cursor points at a unique row in order to be
 ```c#
 Connection<DroidGraphType>()
     .Name("Droids")
-    .From(dbContext, x => x.Droids)
+    .From(dbContext.Droids)
     .ResolveAsync();
 ```
 
