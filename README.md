@@ -8,7 +8,7 @@ Adds methods to resolve schema fields directly from a DbContext. See [sample pro
 dotnet add package GraphQL.EntityFrameworkCore.Helpers
 ```
 
-And edit `Startup.cs` to register dependencies by calling method below in `ConfigureServices(IServiceCollection services)`. Passing `DbContext` as type parameter is optional, if it isn't passed here it would need to be passed when resolving graph fields from a `DbContext`.
+And edit `Startup.cs` to register dependencies by calling method below in `ConfigureServices(IServiceCollection services)`. Passing `DbContext` as type parameter is optional, if it isn't passed here it would need to be passed when defining the schema fields.
 
 ```c#
 services
