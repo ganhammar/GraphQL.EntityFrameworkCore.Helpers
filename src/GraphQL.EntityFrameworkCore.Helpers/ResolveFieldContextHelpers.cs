@@ -21,7 +21,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             {
                 // Ignore case, camelCase vs PascalCase
                 var propertyPath = FieldHelpers.GetPropertyPath(entityType, field.Value.Name);
-                var property = entityType.GetProperty(propertyPath.First(), BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                var property = entityType.GetProperty(propertyPath, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
                 if (property != null && (property.PropertyType.IsClass == false ||
                     property.PropertyType.FullName.StartsWith("System.")) &&

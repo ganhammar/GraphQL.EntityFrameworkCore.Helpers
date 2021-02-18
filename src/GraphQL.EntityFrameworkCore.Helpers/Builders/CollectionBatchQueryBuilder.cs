@@ -14,7 +14,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers
     public class CollectionBatchQueryBuilder<TSourceType, TReturnType, TProperty> : QueryBuilderBase<TReturnType, IResolveFieldContext<object>>
     {
         private readonly FieldBuilder<TSourceType, IEnumerable<TReturnType>> _field;
-        private readonly HelperFieldBuilder<TSourceType, IEnumerable<TReturnType>, TProperty> _helperField;
 
         public CollectionBatchQueryBuilder(
             FieldBuilder<TSourceType, IEnumerable<TReturnType>> field,
@@ -24,27 +23,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             _field = field;
             _propertyToInclude = FieldHelpers
                 .GetPropertyInfo<TSourceType, IEnumerable<TProperty>>(collectionToInclude);
-            _dbContextType = dbContextType != null ? dbContextType : DbContextTypeAccessor.DbContextType;
-        }
-
-        public CollectionBatchQueryBuilder(
-            HelperFieldBuilder<TSourceType, IEnumerable<TReturnType>, TProperty> helperField,
-            List<string> propertyPath,
-            Type dbContextType = null)
-        {
-            var sourceType = typeof(TSourceType);
-            var returnType = typeof(TReturnType);
-
-            _helperField = helperField;
-            _propertyToInclude = (propertyPath.Count == 1 ? sourceType : returnType)
-                .GetProperty(propertyPath.First());
-
-            if (propertyPath.Count > 2)
-            {
-                throw new Exception(@"Can't resolve relationships further than 
-                    two steps apart (.MapsTo().ThenTo())");
-            }
-
             _dbContextType = dbContextType != null ? dbContextType : DbContextTypeAccessor.DbContextType;
         }
 
@@ -72,78 +50,66 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return this;
         }
 
-        public void ResolveAsync()
+        public void ResolveAsync() => _field.ResolveAsync(typedContext =>
         {
-            Func<IResolveFieldContext<TSourceType>, IDataLoaderResult<IEnumerable<TReturnType>>> action = typedContext =>
-            {
-                var context = (IResolveFieldContext<object>)typedContext;
+            var context = (IResolveFieldContext<object>)typedContext;
 
-                var dbContext = (DbContext)context.GetService(_dbContextType);
-                var model = dbContext.Model;
+            var dbContext = (DbContext)context.GetService(_dbContextType);
+            var model = dbContext.Model;
 
-                var sourceType = typeof(TSourceType);
-                var targetType = typeof(TReturnType);
-                var keyValues = GetKeyValuePairs(sourceType, model, context);
+            var sourceType = typeof(TSourceType);
+            var targetType = typeof(TReturnType);
+            var keyValues = GetKeyValuePairs(sourceType, model, context);
 
-                var loaderName = $"DataLoader_Get_{sourceType.Name}_{_propertyToInclude.Name}";
-                var dataLoaderContextAccessor = context.GetService<IDataLoaderContextAccessor>();
-                var loader = dataLoaderContextAccessor.Context.GetOrAddCollectionBatchLoader<Dictionary<IProperty, object>, TReturnType>(
-                    loaderName,
-                    async (keyProperties) =>
+            var loaderName = $"DataLoader_Get_{sourceType.Name}_{_propertyToInclude.Name}";
+            var dataLoaderContextAccessor = context.GetService<IDataLoaderContextAccessor>();
+            var loader = dataLoaderContextAccessor.Context.GetOrAddCollectionBatchLoader<Dictionary<IProperty, object>, TReturnType>(
+                loaderName,
+                async (keyProperties) =>
+                {
+                    if (await IsValid(context, dbContext.Model) == false)
                     {
-                        if (await IsValid(context, dbContext.Model) == false)
-                        {
-                            return default;
-                        }
+                        return default;
+                    }
 
-                        MethodInfo whereMethod = QueryableExtensions
-                            .GetWhereMethod()
-                            .MakeGenericMethod(sourceType);
-                        var query = (IQueryable<TSourceType>)QueryableExtensions.GetSetMethod<TSourceType>()
-                            .MakeGenericMethod(sourceType)
-                            .Invoke(dbContext, null);
-                        var argument = Expression.Parameter(sourceType);
-                        var targetArgument = Expression.Parameter(targetType);
-                        Expression targetMemberAccess = Expression.MakeMemberAccess(argument, _propertyToInclude);
-                        targetMemberAccess = ApplyFilters(
-                            targetMemberAccess, context, dbContext, targetType, argument, targetArgument, whereMethod);
+                    MethodInfo whereMethod = QueryableExtensions
+                        .GetWhereMethod()
+                        .MakeGenericMethod(sourceType);
+                    var query = (IQueryable<TSourceType>)QueryableExtensions.GetSetMethod<TSourceType>()
+                        .MakeGenericMethod(sourceType)
+                        .Invoke(dbContext, null);
+                    var argument = Expression.Parameter(sourceType);
+                    var targetArgument = Expression.Parameter(targetType);
+                    Expression targetMemberAccess = Expression.MakeMemberAccess(argument, _propertyToInclude);
+                    targetMemberAccess = ApplyFilters(
+                        targetMemberAccess, context, dbContext, targetType, argument, targetArgument, whereMethod);
 
-                        var mappedProperties = MapProperties(keyProperties);
-                        query = FilterBasedOnKeyProperties(query, mappedProperties, argument, whereMethod);
+                    var mappedProperties = MapProperties(keyProperties);
+                    query = FilterBasedOnKeyProperties(query, mappedProperties, argument, whereMethod);
 
-                        var sourceInstance = Expression.New(sourceType);
+                    var sourceInstance = Expression.New(sourceType);
 
-                        var initializeTargetInstance = InitTarget(
-                            targetType, argument, targetArgument, targetMemberAccess, context, model);
-                        var sourceBindings = mappedProperties
-                            .Select(x => x.Key.PropertyInfo)
-                            .Select(propertyType =>
-                                Expression.Bind(propertyType, Expression.Property(argument, propertyType)))
-                            .ToList();
-                        sourceBindings.Add(Expression.Bind(_propertyToInclude, initializeTargetInstance));
+                    var initializeTargetInstance = InitTarget(
+                        targetType, argument, targetArgument, targetMemberAccess, context, model);
+                    var sourceBindings = mappedProperties
+                        .Select(x => x.Key.PropertyInfo)
+                        .Select(propertyType =>
+                            Expression.Bind(propertyType, Expression.Property(argument, propertyType)))
+                        .ToList();
+                    sourceBindings.Add(Expression.Bind(_propertyToInclude, initializeTargetInstance));
 
-                        var initializeSourceInstance = Expression.MemberInit(sourceInstance, sourceBindings);
-                        var selectLambda = Expression.Lambda<Func<TSourceType, TSourceType>>(initializeSourceInstance, argument);
+                    var initializeSourceInstance = Expression.MemberInit(sourceInstance, sourceBindings);
+                    var selectLambda = Expression.Lambda<Func<TSourceType, TSourceType>>(initializeSourceInstance, argument);
 
-                        query = query.Select(selectLambda);
+                    query = query.Select(selectLambda);
 
-                        var result = await query.ToListAsync();
+                    var result = await query.ToListAsync();
 
-                        return MapResponse(keyProperties, result, sourceType);
-                    });
-                
-                return loader.LoadAsync(keyValues);
-            };
-
-            if (_field != default)
-            {
-                _field.ResolveAsync(action);
-            }
-            else if (_helperField != default)
-            {
-                _helperField.ResolveAsync(action);
-            }
-        }
+                    return MapResponse(keyProperties, result, sourceType);
+                });
+            
+            return loader.LoadAsync(keyValues);
+        });
 
         private Expression ApplyFilters(
             Expression memberAccess,

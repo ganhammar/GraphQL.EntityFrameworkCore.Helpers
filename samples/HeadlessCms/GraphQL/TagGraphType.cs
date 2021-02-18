@@ -17,8 +17,7 @@ namespace HeadlessCms.GraphQL
                 .IsFilterable();
             Field<ListGraphType<PageGraphType>, IEnumerable<Page>>()
                 .Name("Pages")
-                .MapsTo(x => x.Pages)
-                .Include()
+                .Include(x => x.Pages)
                 .ResolveAsync();
         }
     }

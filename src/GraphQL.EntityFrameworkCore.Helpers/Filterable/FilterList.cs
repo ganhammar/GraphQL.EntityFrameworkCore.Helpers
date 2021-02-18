@@ -183,45 +183,43 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
             foreach (var field in selection)
             {
-                foreach (var propertyName in FieldHelpers.GetPropertyPath(entityType, field.Value.Name))
+                var propertyName = FieldHelpers.GetPropertyPath(entityType, field.Value.Name);
+                var property = entityType.GetProperty(propertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+
+                if (property != default)
                 {
-                    var property = entityType.GetProperty(propertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                    var navigationProperty = navigationProperties.Where(x => x.Name == property.Name).FirstOrDefault();
 
-                    if (property != default)
+                    if (navigationProperty != default)
                     {
-                        var navigationProperty = navigationProperties.Where(x => x.Name == property.Name).FirstOrDefault();
+                        var targetType = property.PropertyType;
 
-                        if (navigationProperty != default)
+                        if (typeof(IEnumerable).IsAssignableFrom(targetType))
                         {
-                            var targetType = property.PropertyType;
+                            targetType = targetType.GetGenericArguments().First();
+                            var subArgument = Expression.Parameter(targetType);
+                            var anyMethod = QueryableExtensions.GetAnyMethod()
+                                .MakeGenericMethod(targetType);
 
-                            if (typeof(IEnumerable).IsAssignableFrom(targetType))
-                            {
-                                targetType = targetType.GetGenericArguments().First();
-                                var subArgument = Expression.Parameter(targetType);
-                                var anyMethod = QueryableExtensions.GetAnyMethod()
-                                    .MakeGenericMethod(targetType);
-
-                                result.Merge(GetSelectionPaths(
-                                        subArgument,
-                                        GetFilterFields(field.Value.Name, fields),
-                                        targetType,
-                                        GetSelections(ToDictionary(field)),
-                                        model),
-                                    x => Expression.Call(
-                                        anyMethod,
-                                        Expression.MakeMemberAccess(argument, property),
-                                        Expression.Lambda(x, subArgument)));
-                            }
-                            else
-                            {
-                                result.Merge(GetSelectionPaths(
-                                    Expression.Property(argument, property.Name),
+                            result.Merge(GetSelectionPaths(
+                                    subArgument,
                                     GetFilterFields(field.Value.Name, fields),
                                     targetType,
                                     GetSelections(ToDictionary(field)),
-                                    model));
-                            }
+                                    model),
+                                x => Expression.Call(
+                                    anyMethod,
+                                    Expression.MakeMemberAccess(argument, property),
+                                    Expression.Lambda(x, subArgument)));
+                        }
+                        else
+                        {
+                            result.Merge(GetSelectionPaths(
+                                Expression.Property(argument, property.Name),
+                                GetFilterFields(field.Value.Name, fields),
+                                targetType,
+                                GetSelections(ToDictionary(field)),
+                                model));
                         }
                     }
                 }

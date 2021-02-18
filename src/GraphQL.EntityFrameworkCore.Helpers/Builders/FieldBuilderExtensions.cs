@@ -10,30 +10,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public static class FieldBuilderExtensions
     {
-        public static HelperFieldBuilder<TSourceType, TReturnType, TProperty> MapsTo<TSourceType, TReturnType, TProperty>(
-            this FieldBuilder<TSourceType, TReturnType> field, 
-            Expression<Func<TSourceType, IEnumerable<TProperty>>> accessor)
-        {
-            var type = typeof(TSourceType);
-            var property = FieldHelpers.GetPropertyInfo(accessor);
-
-            FieldHelpers.Map(type, field.FieldType, property);
-
-            return new HelperFieldBuilder<TSourceType, TReturnType, TProperty>(field.FieldType);
-        }
-
-        public static HelperFieldBuilder<TSourceType, TReturnType, TProperty> MapsTo<TSourceType, TReturnType, TProperty>(
-            this FieldBuilder<TSourceType, TReturnType> field, 
-            Expression<Func<TSourceType, TProperty>> accessor)
-        {
-            var type = typeof(TSourceType);
-            var property = FieldHelpers.GetPropertyInfo(accessor);
-
-            FieldHelpers.Map(type, field.FieldType, property);
-
-            return new HelperFieldBuilder<TSourceType, TReturnType, TProperty>(field.FieldType);
-        }
-
         public static FieldBuilder<TSourceType, TReturnType> Filtered<TSourceType, TReturnType>(
             this FieldBuilder<TSourceType, TReturnType> builder)
         {
