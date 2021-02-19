@@ -1,23 +1,28 @@
 # GraphQL Helpers for EF Core
 
-Adds methods to resolve schema fields directly from a DbContext. See [sample project](samples/HeadlessCms) for full setup reference.
+Adds methods to resolve schema fields directly from a DbContext. See [sample project](samples/HeadlessCms) for a full setup reference.
 
 ## Getting Started
 
+You can install the lastest version via [`NuGet`](https://www.nuget.org/packages/GraphQL.EntityFrameworkCore.Helpers/).
+
 ```
-dotnet add package GraphQL.EntityFrameworkCore.Helpers
+> dotnet add package GraphQL.EntityFrameworkCore.Helpers
 ```
 
 And edit `Startup.cs` to register dependencies by calling method below in `ConfigureServices(IServiceCollection services)`. Passing `DbContext` as type parameter is optional, if it isn't passed here it would need to be passed when defining the schema fields.
 
 ```c#
-services
-    .AddGraphQLEntityFrameworkCoreHelpers<AppDbContext>();
+public void ConfigureServices(IServiceCollection services)
+{
+    services
+        .AddGraphQLEntityFrameworkCoreHelpers<AppDbContext>();
+}
 ```
 
 ## Defining the Schema
 
-To resolve a root query from a DbContext using the helper methods you first need to call the `From` method with the `DbSet` to include and then call either `ResolveCollectionAsync` or `ResolvePropertyAsync`.
+To resolve a root query from the DbContext using the helper methods you first need to call the `From` method with the `DbSet` to be included and then call either `ResolveCollectionAsync` for a list graph or `ResolvePropertyAsync` for a non list graph.
 
 ```c#
 Field<ListGraphType<HumanGraphType>>()
@@ -26,7 +31,7 @@ Field<ListGraphType<HumanGraphType>>()
     .ResolveCollectionAsync();
 ```
 
-You can also add connections in a similar way. With the connections the client has the option to define what property/properties should be used to order the connection with. Read more about connections [here](documentation/Connections.md).
+You can also add connections in a similar way. With the connections the client has the option to define what property/properties should be used to order the connection. Read more about connections [here](documentation/Connections.md).
 
 ```c#
 Connection<DroidGraphType>()
@@ -38,10 +43,16 @@ Connection<DroidGraphType>()
 The helper methods can also be used to resolve data loaded properties. Read more about data loaded fields [here](documentation/DataLoadedFields.md).
 
 ```c#
-Field<PlanetGraphType, Planet>()
-    .Name("HomePlanet")
-    .Include(x => x.HomePlanet)
-    .ResolveAsync();
+public class HumanGraphType : ObjectGraphType<Human>
+{
+    public HumanGraphType()
+    {
+        Field<PlanetGraphType, Planet>()
+            .Name("HomePlanet")
+            .Include(x => x.HomePlanet)
+            .ResolveAsync();
+    }
+}
 ```
 
 ### Applying business logic when resolving fields
@@ -49,13 +60,14 @@ Field<PlanetGraphType, Planet>()
 With all builders you can apply your own business logic to for instance support authorization scenarios by calling the method `Where`.
 
 ```c#
-Field<PlanetGraphType, Planet>()
-    .Name("HomePlanet")
-    .Include(x => x.HomePlanet)
+Field<HumanGraphType, Human>()
+    .Name("BestFriend")
+    .Argument<NonNullGraphType<IdGraphType>>("HumanId")
+    .Include(x => x.Friends)
     .Where(context =>
     {
-        var id = context.GetArgument<int>("id");
-        return x => x.Id == id;
+        var humanId = context.GetArgument<int>("HumanId");
+        return x => x.BestFriendId == humanId;
     })
     .ResolveAsync();
 ```
@@ -91,7 +103,3 @@ All collection fields can be filtered by either applying a string to all filtera
 ## Avoiding Over-Fetching
 
 All helper methods tries to limit the amount data fetched from data store by looking at what was requested, read more about this [here](documentation/SelectFromRequest.md).
-
-## Requirements
-
-Requires [GraphQL for .NET Server](https://github.com/graphql-dotnet/server) minimum version 4.0 or that ExecutionOptions.RequestServices is defined when calling ExecuteAsync.
