@@ -28,5 +28,5 @@ jobs:
     - name: Publish coverage report to coveralls.io
       uses: coverallsapp/github-action@master
       with:
-        github-token: ${{ secrets.COVERALLS_TOKEN }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         path-to-lcov: tests/src/GraphQL.EntityFrameworkCore.Helpers.Tests/TestResults/coverage.net5.0.info
