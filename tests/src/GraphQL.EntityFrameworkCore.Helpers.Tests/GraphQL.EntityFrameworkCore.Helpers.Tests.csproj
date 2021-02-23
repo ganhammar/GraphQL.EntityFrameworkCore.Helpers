@@ -7,6 +7,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="coverlet.msbuild" Version="$(CoverletMsbuildVersion)">
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+          <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
         <PackageReference Include="GraphQL" Version="$(GraphQLVersion)" />
         <PackageReference Include="GraphQL.SystemTextJson" Version="$(GraphQLVersion)" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="$(MicrosoftEntityFrameworkCoreVersion)" />

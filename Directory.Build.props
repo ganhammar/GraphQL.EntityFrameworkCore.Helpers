@@ -5,6 +5,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
+        <CoverletMsbuildVersion>3.0.3</CoverletMsbuildVersion>
         <GraphQLVersion>3.2.0</GraphQLVersion>
         <GraphQLServerVersion>4.4.0</GraphQLServerVersion>
         <MicrosoftNetTestSdkVersion>16.8.3</MicrosoftNetTestSdkVersion>
