@@ -55,7 +55,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 })
                 .ResolveCollectionAsync();
 
-            Field<DroidGraphType>()
+            Field<DroidGraphType, Droid>()
                 .Name("Droid")
                 .Argument<NonNullGraphType<IdGraphType>>("Id")
                 .From(dbContext.Droids)

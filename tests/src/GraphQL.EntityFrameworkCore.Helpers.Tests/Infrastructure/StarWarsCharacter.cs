@@ -27,6 +27,9 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
         public IEnumerable<Human> Friends { get; set; }
         public IEnumerable<Droid> Droids { get; set; }
         public HumanForceAlignment ForceAlignment { get; set; }
+
+        public string Field = "Field";
+        public string Method() => "Method";
     }
 
     public class Droid : StarWarsCharacter
