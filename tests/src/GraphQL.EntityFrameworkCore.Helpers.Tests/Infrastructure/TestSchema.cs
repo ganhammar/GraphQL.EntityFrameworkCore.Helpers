@@ -110,7 +110,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .IsFilterable();
             Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
                 .Name("Residents")
-                .Include(x => x.Habitants)
+                .Include(dbContext, x => x.Habitants)
                 .Where((context) => (item) => item.Name != default)
                 .ResolveAsync();
         }
