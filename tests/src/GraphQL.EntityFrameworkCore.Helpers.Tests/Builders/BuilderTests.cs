@@ -313,5 +313,57 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Builders
 
             var result = AssertQuerySuccess(query, expected);
         }
+
+        [Fact]
+        public void Should_ThrowException_When_RequestServicesIsNotSetOnProperty()
+        {
+            var query = @"
+                query humans {
+                    humans {
+                        id
+                        homePlanet {
+                            id
+                        }
+                    }
+                }
+            ";
+
+            var runResult = Executer.ExecuteAsync(x =>
+            {
+                x.Schema = Schema;
+                x.Query = query;
+            }).GetAwaiter().GetResult();
+
+            var expectedError = "ExecutionOptions.RequestServices is not defined (passed to ExecuteAsync), use GraphQL Server 4.0 and on";
+
+            Assert.NotEmpty(runResult.Errors);
+            Assert.Equal(runResult.Errors.First().InnerException.Message, expectedError);
+        }
+
+        [Fact]
+        public void Should_ThrowException_When_RequestServicesIsNotSetOnCollection()
+        {
+            var query = @"
+                query humans {
+                    humans {
+                        id
+                        friends {
+                            id
+                        }
+                    }
+                }
+            ";
+
+            var runResult = Executer.ExecuteAsync(x =>
+            {
+                x.Schema = Schema;
+                x.Query = query;
+            }).GetAwaiter().GetResult();
+
+            var expectedError = "ExecutionOptions.RequestServices is not defined (passed to ExecuteAsync), use GraphQL Server 4.0 and on";
+
+            Assert.NotEmpty(runResult.Errors);
+            Assert.Equal(runResult.Errors.First().InnerException.Message, expectedError);
+        }
     }
 }
