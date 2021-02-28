@@ -1,5 +1,4 @@
 using System;
-using GraphQL.EntityFrameworkCore.Helpers;
 using GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;

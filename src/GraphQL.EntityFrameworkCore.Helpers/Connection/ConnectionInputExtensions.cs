@@ -22,6 +22,9 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             input.Context = context;
         }
 
+        public static ValidationResult Validate<T>(this IConnectionInput<T> request, IModel model)
+            => Validate<T, T>(request, model);
+
         public static ValidationResult Validate<TSourceType, TReturnType>(this IConnectionInput<TReturnType> request, IModel model)
         {
             var result = new ValidationResult();

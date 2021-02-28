@@ -87,6 +87,12 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             orderBy.ForEach(x =>
             {
                 var sourceProperty = sourceType.GetProperty(x, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+
+                if (sourceProperty == default)
+                {
+                    return;
+                }
+
                 var property = entityType?.FindProperty(sourceProperty.Name);
                 var isUnique = Attribute.IsDefined(sourceProperty, typeof(UniqueAttribute));
 
