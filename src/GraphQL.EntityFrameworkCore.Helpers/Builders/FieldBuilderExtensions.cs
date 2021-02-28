@@ -1,37 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using GraphQL.Builders;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public static class FieldBuilderExtensions
     {
-        public static HelperFieldBuilder<TSourceType, TReturnType, TProperty> MapsTo<TSourceType, TReturnType, TProperty>(
-            this FieldBuilder<TSourceType, TReturnType> field, 
-            Expression<Func<TSourceType, IEnumerable<TProperty>>> accessor)
-        {
-            var type = typeof(TSourceType);
-            var property = FieldHelpers.GetPropertyInfo(accessor);
-
-            FieldHelpers.Map(type, field.FieldType, property);
-
-            return new HelperFieldBuilder<TSourceType, TReturnType, TProperty>(field.FieldType);
-        }
-
-        public static HelperFieldBuilder<TSourceType, TReturnType, TProperty> MapsTo<TSourceType, TReturnType, TProperty>(
-            this FieldBuilder<TSourceType, TReturnType> field, 
-            Expression<Func<TSourceType, TProperty>> accessor)
-        {
-            var type = typeof(TSourceType);
-            var property = FieldHelpers.GetPropertyInfo(accessor);
-
-            FieldHelpers.Map(type, field.FieldType, property);
-
-            return new HelperFieldBuilder<TSourceType, TReturnType, TProperty>(field.FieldType);
-        }
-
         public static FieldBuilder<TSourceType, TReturnType> Filtered<TSourceType, TReturnType>(
             this FieldBuilder<TSourceType, TReturnType> builder)
         {
@@ -63,38 +41,61 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return field;
         }
 
-        public static FieldQueryBuilder<TSourceType, object, TDbContext, TProperty> From<TSourceType, TDbContext, TProperty>(
+        public static FieldQueryBuilder<TSourceType, object, TProperty> From<TSourceType, TDbContext, TProperty>(
                 this FieldBuilder<TSourceType, object> builder,
-                TDbContext dbContext,
+                TDbContext _,
                 Expression<Func<TDbContext, DbSet<TProperty>>> accessor)
             where TDbContext : DbContext
             where TProperty : class
         {
-            var queryBuilder = new FieldQueryBuilder<TSourceType, object, TDbContext, TProperty>(builder, dbContext);
-
-            queryBuilder.Set(accessor);
+            var targetType = FieldHelpers.GetPropertyInfo(accessor).PropertyType
+                .GetGenericArguments().First();
+            var queryBuilder = new FieldQueryBuilder<TSourceType, object, TProperty>(builder, targetType, typeof(TDbContext));
 
             return queryBuilder;
         }
 
-        public static FieldQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty> From<TSourceType, TReturnType, TDbContext, TProperty>(
+        public static FieldQueryBuilder<TSourceType, TReturnType, TProperty> From<TSourceType, TReturnType, TDbContext, TProperty>(
                 this FieldBuilder<TSourceType, TReturnType> builder,
-                TDbContext dbContext,
+                TDbContext _,
                 Expression<Func<TDbContext, DbSet<TProperty>>> accessor)
             where TDbContext : DbContext
             where TProperty : class
         {
-
-            var queryBuilder = new FieldQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty>(builder, dbContext);
-
-            queryBuilder.Set(accessor);
+            var targetType = FieldHelpers.GetPropertyInfo(accessor).PropertyType
+                .GetGenericArguments().First();
+            var queryBuilder = new FieldQueryBuilder<TSourceType, TReturnType, TProperty>(builder, targetType, typeof(TDbContext));
 
             return queryBuilder;
         }
 
-        public static BatchQueryBuilder<TSourceType, TReturnType, TDbContext> Include<TSourceType, TReturnType, TDbContext>(
+        public static FieldQueryBuilder<TSourceType, object, TProperty> From<TSourceType, TProperty>(
+                this FieldBuilder<TSourceType, object> builder,
+                DbSet<TProperty> property)
+            where TProperty : class
+        {
+            var targetType = property.GetType().GetGenericArguments().First();
+            var dbContext = property.GetService<ICurrentDbContext>().Context;
+            var queryBuilder = new FieldQueryBuilder<TSourceType, object, TProperty>(builder, targetType, dbContext.GetType());
+
+            return queryBuilder;
+        }
+
+        public static FieldQueryBuilder<TSourceType, TReturnType, TProperty> From<TSourceType, TReturnType, TProperty>(
+                this FieldBuilder<TSourceType, TReturnType> builder,
+                DbSet<TProperty> property)
+            where TProperty : class
+        {
+            var targetType = property.GetType().GetGenericArguments().First();
+            var dbContext = property.GetService<ICurrentDbContext>().Context;
+            var queryBuilder = new FieldQueryBuilder<TSourceType, TReturnType, TProperty>(builder, targetType, dbContext.GetType());
+
+            return queryBuilder;
+        }
+
+        public static BatchQueryBuilder<TSourceType, TReturnType> Include<TSourceType, TReturnType, TDbContext>(
                 this FieldBuilder<TSourceType, TReturnType> field,
-                TDbContext dbContext,
+                TDbContext _,
                 Expression<Func<TSourceType, TReturnType>> propertyToInclude)
             where TDbContext : DbContext
             where TReturnType : class
@@ -104,13 +105,27 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
             FieldHelpers.Map(type, field.FieldType, property);
 
-            return new BatchQueryBuilder<TSourceType, TReturnType, TDbContext>(
-                field, dbContext, propertyToInclude);
+            return new BatchQueryBuilder<TSourceType, TReturnType>(
+                field, propertyToInclude, typeof(TDbContext));
         }
 
-        public static CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty> Include<TSourceType, TReturnType, TDbContext, TProperty>(
+        public static BatchQueryBuilder<TSourceType, TReturnType> Include<TSourceType, TReturnType>(
+                this FieldBuilder<TSourceType, TReturnType> field,
+                Expression<Func<TSourceType, TReturnType>> propertyToInclude)
+            where TReturnType : class
+        {
+            var type = typeof(TSourceType);
+            var property = FieldHelpers.GetPropertyInfo(propertyToInclude);
+
+            FieldHelpers.Map(type, field.FieldType, property);
+
+            return new BatchQueryBuilder<TSourceType, TReturnType>(
+                field, propertyToInclude);
+        }
+
+        public static CollectionBatchQueryBuilder<TSourceType, TReturnType, TProperty> Include<TSourceType, TReturnType, TDbContext, TProperty>(
                 this FieldBuilder<TSourceType, IEnumerable<TReturnType>> field,
-                TDbContext dbContext,
+                TDbContext _,
                 Expression<Func<TSourceType, IEnumerable<TProperty>>> collectionToInclude)
             where TDbContext : DbContext
         {
@@ -119,8 +134,21 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
             FieldHelpers.Map(type, field.FieldType, property);
 
-            return new CollectionBatchQueryBuilder<TSourceType, TReturnType, TDbContext, TProperty>(
-                field, dbContext, collectionToInclude);
+            return new CollectionBatchQueryBuilder<TSourceType, TReturnType, TProperty>(
+                field, collectionToInclude, typeof(TDbContext));
+        }
+
+        public static CollectionBatchQueryBuilder<TSourceType, TReturnType, TProperty> Include<TSourceType, TReturnType, TProperty>(
+                this FieldBuilder<TSourceType, IEnumerable<TReturnType>> field,
+                Expression<Func<TSourceType, IEnumerable<TProperty>>> collectionToInclude)
+        {
+            var type = typeof(TSourceType);
+            var property = FieldHelpers.GetPropertyInfo(collectionToInclude);
+
+            FieldHelpers.Map(type, field.FieldType, property);
+
+            return new CollectionBatchQueryBuilder<TSourceType, TReturnType, TProperty>(
+                field, collectionToInclude);
         }
     }
 }

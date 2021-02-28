@@ -10,9 +10,9 @@ namespace HeadlessCms.Migrations
                 name: "Tags",
                 columns: table => new
                 {
-                    Id = table.Column<int>(nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    Value = table.Column<string>(nullable: true)
+                    Value = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -23,10 +23,10 @@ namespace HeadlessCms.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<int>(nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    Name = table.Column<string>(nullable: true),
-                    Email = table.Column<string>(nullable: true)
+                    Name = table.Column<string>(type: "TEXT", nullable: true),
+                    Email = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -37,11 +37,11 @@ namespace HeadlessCms.Migrations
                 name: "Pages",
                 columns: table => new
                 {
-                    Id = table.Column<int>(nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    Title = table.Column<string>(nullable: true),
-                    Content = table.Column<string>(nullable: true),
-                    EditorId = table.Column<int>(nullable: false)
+                    Title = table.Column<string>(type: "TEXT", nullable: true),
+                    Content = table.Column<string>(type: "TEXT", nullable: true),
+                    EditorId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -55,24 +55,24 @@ namespace HeadlessCms.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "PageTags",
+                name: "PageTag",
                 columns: table => new
                 {
-                    PageId = table.Column<int>(nullable: false),
-                    TagId = table.Column<int>(nullable: false)
+                    PagesId = table.Column<int>(type: "INTEGER", nullable: false),
+                    TagsId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_PageTags", x => new { x.PageId, x.TagId });
+                    table.PrimaryKey("PK_PageTag", x => new { x.PagesId, x.TagsId });
                     table.ForeignKey(
-                        name: "FK_PageTags_Pages_PageId",
-                        column: x => x.PageId,
+                        name: "FK_PageTag_Pages_PagesId",
+                        column: x => x.PagesId,
                         principalTable: "Pages",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_PageTags_Tags_TagId",
-                        column: x => x.TagId,
+                        name: "FK_PageTag_Tags_TagsId",
+                        column: x => x.TagsId,
                         principalTable: "Tags",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -84,15 +84,15 @@ namespace HeadlessCms.Migrations
                 column: "EditorId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_PageTags_TagId",
-                table: "PageTags",
-                column: "TagId");
+                name: "IX_PageTag_TagsId",
+                table: "PageTag",
+                column: "TagsId");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "PageTags");
+                name: "PageTag");
 
             migrationBuilder.DropTable(
                 name: "Pages");

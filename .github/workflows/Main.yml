@@ -1,4 +1,4 @@
-name: CI/CD
+name: Build
 
 on: [push]
 
@@ -23,4 +23,10 @@ jobs:
     - name: Restore and Test .NET Core
       run: |
         dotnet restore
-        dotnet test
+        dotnet test /p:CollectCoverage=true /p:CoverletOutput=TestResults/ /p:CoverletOutputFormat=lcov
+
+    - name: Publish coverage report to coveralls.io
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: tests/src/GraphQL.EntityFrameworkCore.Helpers.Tests/TestResults/coverage.net5.0.info

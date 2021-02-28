@@ -27,7 +27,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
             var entityType = typeof(TSourceType);
 
-            ParameterExpression arg = Expression.Parameter(entityType, "x");
+            ParameterExpression arg = Expression.Parameter(entityType);
             Expression selector = null;
 
             var orderBy = GetOrderBy<TSourceType, TReturnType>(request, model);
@@ -87,6 +87,12 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             orderBy.ForEach(x =>
             {
                 var sourceProperty = sourceType.GetProperty(x, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+
+                if (sourceProperty == default)
+                {
+                    return;
+                }
+
                 var property = entityType?.FindProperty(sourceProperty.Name);
                 var isUnique = Attribute.IsDefined(sourceProperty, typeof(UniqueAttribute));
 

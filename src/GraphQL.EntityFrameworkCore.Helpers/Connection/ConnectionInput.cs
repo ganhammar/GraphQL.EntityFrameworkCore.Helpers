@@ -7,7 +7,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         public int First { get; set; }
         public bool IsAsc { get; set; }
         public string[] OrderBy { get; set; }
-        public string Filter { get; set; }
         public IResolveFieldContext<object> Context { get; set; }
     }
 }

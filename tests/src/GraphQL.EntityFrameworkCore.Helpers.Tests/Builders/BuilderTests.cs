@@ -241,8 +241,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Builders
         [Fact]
         public void Should_ReturnErrors_When_RequestingDroidThatDoesntExist()
         {
-            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
-
             var query = $@"
                 query droid {{
                     droid(id: ""{Guid.NewGuid()}"") {{
@@ -250,6 +248,133 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Builders
                         name
                     }}
                 }}
+            ";
+
+            AssertQueryWithErrors(query, expectedErrorCount: 1);
+        }
+
+        [Fact]
+        public async Task Should_ResolveGalaxiesFromOtherDbContext_When_ItsRegisteredToUseOtherDbContext()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<DifferentTestDbContext>();
+            var galaxies = await dbContext.Galaxies
+                .Select(x => new
+                {
+                    id = x.Id,
+                    name = x.Name,
+                })
+                .ToListAsync();
+
+            var query = $@"
+                query galaxies {{
+                    galaxies {{
+                        id
+                        name
+                    }}
+                }}
+            ";
+
+            var expected = new
+            {
+                galaxies,
+            };
+
+            var result = AssertQuerySuccess(query, expected);
+        }
+
+        [Fact]
+        public async Task Should_ResolveHumanForceAlignmentWithForce_When_Requesting()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var humanForceAlignments = await dbContext.HumanForceAlignments
+                .Select(x => new
+                {
+                    force = new
+                    {
+                        type = x.Force.Type,
+                    },
+                })
+                .ToListAsync();
+
+            var query = @"
+                query humanForceAlignments {
+                    humanForceAlignments {
+                        force {
+                            type
+                        }
+                    }
+                }
+            ";
+
+            var expected = new
+            {
+                humanForceAlignments,
+            };
+
+            var result = AssertQuerySuccess(query, expected);
+        }
+
+        [Fact]
+        public void Should_ThrowException_When_RequestServicesIsNotSetOnProperty()
+        {
+            var query = @"
+                query humans {
+                    humans {
+                        id
+                        homePlanet {
+                            id
+                        }
+                    }
+                }
+            ";
+
+            var runResult = Executer.ExecuteAsync(x =>
+            {
+                x.Schema = Schema;
+                x.Query = query;
+            }).GetAwaiter().GetResult();
+
+            var expectedError = "ExecutionOptions.RequestServices is not defined (passed to ExecuteAsync), use GraphQL Server 4.0 and on";
+
+            Assert.NotEmpty(runResult.Errors);
+            Assert.Equal(runResult.Errors.First().InnerException.Message, expectedError);
+        }
+
+        [Fact]
+        public void Should_ThrowException_When_RequestServicesIsNotSetOnCollection()
+        {
+            var query = @"
+                query humans {
+                    humans {
+                        id
+                        friends {
+                            id
+                        }
+                    }
+                }
+            ";
+
+            var runResult = Executer.ExecuteAsync(x =>
+            {
+                x.Schema = Schema;
+                x.Query = query;
+            }).GetAwaiter().GetResult();
+
+            var expectedError = "ExecutionOptions.RequestServices is not defined (passed to ExecuteAsync), use GraphQL Server 4.0 and on";
+
+            Assert.NotEmpty(runResult.Errors);
+            Assert.Equal(runResult.Errors.First().InnerException.Message, expectedError);
+        }
+
+        [Fact]
+        public void Should_NotReturnResult_When_ValidationLogicFails()
+        {
+            var query = @"
+                query invalidDroids {
+                    invalidDroids {
+                        id
+                    }
+                }
             ";
 
             AssertQueryWithErrors(query, expectedErrorCount: 1);

@@ -16,34 +16,19 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             var entity = model.FindEntityType(entityType);
             var properties = new List<PropertyInfo>();
             var selection = GetSelection(fields);
-            var navigationProperties = entity.GetNavigations();
 
             foreach (var field in selection)
             {
                 // Ignore case, camelCase vs PascalCase
                 var propertyPath = FieldHelpers.GetPropertyPath(entityType, field.Value.Name);
-                var property = entityType.GetProperty(propertyPath.First(), BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                var property = entityType.GetProperty(propertyPath, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
-                if (property != null && navigationProperties.Any(x => x.Name == property.Name) == false)
+                if (property != null && (property.PropertyType.IsClass == false ||
+                    property.PropertyType.FullName.StartsWith("System.")) &&
+                    (typeof(IEnumerable).IsAssignableFrom(property.PropertyType) == false ||
+                    property.PropertyType == typeof(string)))
                 {
                     properties.Add(property);
-                }
-            }
-
-            // Include foreign key value(s) and expect data loader or is data loaded
-            foreach (var navigationProperty in navigationProperties)
-            {
-                if (typeof(IEnumerable).IsAssignableFrom(navigationProperty.PropertyInfo.PropertyType))
-                {
-                    continue;
-                }
-
-                var foreignKeyProperties = navigationProperty.ForeignKey.Properties
-                    .Where(x => x.PropertyInfo != null).Select(x => x.PropertyInfo);
-
-                if (foreignKeyProperties.Any())
-                {
-                    properties.AddRange(foreignKeyProperties);
                 }
             }
 

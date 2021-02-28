@@ -26,6 +26,10 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
         public Planet HomePlanet { get; set; }
         public IEnumerable<Human> Friends { get; set; }
         public IEnumerable<Droid> Droids { get; set; }
+        public HumanForceAlignment ForceAlignment { get; set; }
+
+        public string Field = "Field";
+        public string Method() => "Method";
     }
 
     public class Droid : StarWarsCharacter
@@ -41,5 +45,23 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
         public string Sector { get; set; }
         public string System { get; set; }
         public IEnumerable<Human> Habitants { get; set; }
+    }
+
+    public class Force
+    {
+        public string Type { get; set; }
+        public IEnumerable<HumanForceAlignment> HumanForceAlignments { get; set; }
+    }
+
+    public class HumanForceAlignment
+    {
+        public Guid HumanId { get; set; }
+        public string Alignment { get; set; }
+        public Human Human { get; set; }
+        public Force Force { get; set; }
+    }
+
+    public class Galaxy : StarWarsCharacter
+    {
     }
 }

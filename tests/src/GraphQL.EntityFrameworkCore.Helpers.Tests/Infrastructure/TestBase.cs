@@ -43,20 +43,29 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .Options;
             var dbContext = new TestDbContext(options);
 
+            var differentOptions = new DbContextOptionsBuilder<DifferentTestDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            var differentDbContext = new DifferentTestDbContext(differentOptions);
+
             if (dbContext.Humans.AnyAsync().GetAwaiter().GetResult() == false)
             {
                 StarWarsData.Seed(dbContext).GetAwaiter().GetResult();
+                StarWarsData.Seed(differentDbContext).GetAwaiter().GetResult();
             }
 
             services
-                .AddGraphQLEntityFrameworkCoreHelpers()
-                .AddSingleton<IDataLoaderContextAccessor, DataLoaderContextAccessor>()
+                .AddGraphQLEntityFrameworkCoreHelpers<TestDbContext>()
                 .AddSingleton<IDocumentExecutionListener, DataLoaderDocumentListener>()
                 .AddSingleton<ISchema, TestSchema>()
                 .AddTransient<PlanetGraphType>()
                 .AddTransient<HumanGraphType>()
                 .AddTransient<DroidGraphType>()
-                .AddTransient<TestDbContext>(_ => dbContext);
+                .AddTransient<HumanForceAlignmentGraphType>()
+                .AddTransient<ForceGraphType>()
+                .AddTransient<GalaxyGraphType>()
+                .AddTransient<TestDbContext>(_ => dbContext)
+                .AddTransient<DifferentTestDbContext>(_ => differentDbContext);
 
             return services.BuildServiceProvider();
         }

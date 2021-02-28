@@ -7,42 +7,28 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
 {
-    public class ConnectionQueryBuilder<TSourceType, TReturnType, TDbContext> : QueryBuilderBase<TReturnType, IResolveConnectionContext<object>>
-        where TDbContext : DbContext
+    public class ConnectionQueryBuilder<TSourceType, TReturnType> : QueryBuilderBase<TReturnType, IResolveConnectionContext<object>>
         where TReturnType : class
     {
         private readonly ConnectionBuilder<TSourceType> _field;
-        private readonly TDbContext _dbContext;
-        private IQueryable<TReturnType> _query { get; set; }
+        private readonly Type _targetType;
 
-        public ConnectionQueryBuilder(ConnectionBuilder<TSourceType> field, TDbContext dbContext)
+        public ConnectionQueryBuilder(ConnectionBuilder<TSourceType> field, Type targetType, Type dbContextType = null)
         {
             _field = field;
-            _dbContext = dbContext;
+            _targetType = targetType;
+            _dbContextType = dbContextType != null ? dbContextType : DbContextTypeAccessor.DbContextType;
         }
 
-        public ConnectionQueryBuilder<TSourceType, TReturnType, TDbContext> Set(
-            Expression<Func<TDbContext, DbSet<TReturnType>>> accessor)
+        public ConnectionQueryBuilder<TSourceType, TReturnType> Where(
+            Func<IResolveFieldContext<object>, Expression<Func<TReturnType, bool>>> clause)
         {
-            var type = FieldHelpers.GetPropertyInfo(accessor).PropertyType
-                .GetGenericArguments().First();
-
-            _query = (IQueryable<TReturnType>)QueryableExtensions.GetSetMethod<TReturnType>()
-                .MakeGenericMethod(type)
-                .Invoke(_dbContext, null);
+            BusinuessCheck = clause;
 
             return this;
         }
 
-        public ConnectionQueryBuilder<TSourceType, TReturnType, TDbContext> Apply(
-            Func<IQueryable<TReturnType>, IResolveConnectionContext<object>, IQueryable<TReturnType>> businessLogic)
-        {
-            BusinessLogic = businessLogic;
-
-            return this;
-        }
-
-        public ConnectionQueryBuilder<TSourceType, TReturnType, TDbContext> Validate(
+        public ConnectionQueryBuilder<TSourceType, TReturnType> Validate(
             Func<IResolveFieldContext<object>, ValidationResult> action)
         {
             ValidationAction = action;
@@ -50,7 +36,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return this;
         }
 
-        public ConnectionQueryBuilder<TSourceType, TReturnType, TDbContext> ValidateAsync(
+        public ConnectionQueryBuilder<TSourceType, TReturnType> ValidateAsync(
             Func<IResolveFieldContext<object>, Task<ValidationResult>> action)
         {
             AsyncValidationAction = action;
@@ -70,25 +56,30 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             _field.ResolveAsync(async typedContext =>
             {
                 var context = (IResolveConnectionContext<object>)typedContext;
-                var isValid = await ValidateBusiness(context, _dbContext.Model);
+                var dbContext = (DbContext)context.GetService(_dbContextType);
+                var isValid = await ValidateBusiness(context, dbContext.Model);
 
                 if (!isValid && ValidateFilterInput(context))
                 {
                     return default;
                 }
 
-                _query = ApplyBusinessLogic(_query, context);
+                var query = (IQueryable<TReturnType>)QueryableExtensions.GetSetMethod<TReturnType>()
+                    .MakeGenericMethod(_targetType)
+                    .Invoke(dbContext, null);
+
+                query = ApplyBusinessLogic(query, context);
 
                 var input = (IConnectionInput<TReturnType>)Activator.CreateInstance(connectionInputType);
                 input.SetConnectionInput(context);
 
-                if (!ValidateConnectionInput(context, input, _dbContext.Model))
+                if (!ValidateConnectionInput(context, input, dbContext.Model))
                 {
                     return default;
                 }
 
-                return await _query
-                    .ToConnection(input, _dbContext.Model);
+                return await query
+                    .ToConnection(input, dbContext.Model);
             });
         }
     }

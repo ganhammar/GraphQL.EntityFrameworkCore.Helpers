@@ -9,7 +9,6 @@ namespace HeadlessCms.Data
         public DbSet<Page> Pages { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Tag> Tags { get; set; }
-        public DbSet<PageTag> PageTags { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -17,9 +16,6 @@ namespace HeadlessCms.Data
                 .HasOne(x => x.Editor)
                 .WithMany(x => x.Pages)
                 .HasForeignKey(x => x.EditorId);
-
-            modelBuilder.Entity<PageTag>()
-                .HasKey(x => new { x.PageId, x.TagId });
         }
 
          protected override void OnConfiguring(DbContextOptionsBuilder options)

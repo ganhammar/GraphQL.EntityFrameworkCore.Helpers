@@ -6,6 +6,6 @@ namespace HeadlessCms.Data
     {
         public int Id { get; set; }
         public string Value { get; set; }
-        public IEnumerable<PageTag> PageTags { get; set; }
+        public IEnumerable<Page> Pages { get; set; }
     }
 }

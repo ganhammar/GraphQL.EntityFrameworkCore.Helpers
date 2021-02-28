@@ -42,6 +42,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             if (input.Fields == default || input.Fields.Any() == false)
             {
                 result.Failures.Add(new ValidationFailure("Fields", "At least one field is required"));
+                return result;
             }
 
             var selectedFields = GetSelection(

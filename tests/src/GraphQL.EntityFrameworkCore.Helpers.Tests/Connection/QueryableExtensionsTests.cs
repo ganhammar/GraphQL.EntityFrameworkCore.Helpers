@@ -419,6 +419,39 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Connection
             item.CloneColor.ShouldNotBeNullOrEmpty();
         }
 
+        [Fact]
+        public void Should_CreateInstanceAndIgnorePrivate_When_CreatingFromSource()
+        {
+            var parent = new Parent()
+            {
+                Name = "Test",
+                EyeColor = "Blue",
+                Address = "Somewhere",
+            };
+
+            var child = QueryableExtensions.Create<Child>(parent);
+
+            child.Name.ShouldBe("Test");
+            child.EyeColor.ShouldBeNullOrEmpty();
+            child.Balance.ShouldBe(default(double));
+        }
+
+        public class Parent
+        {
+            public string Name { get; set; }
+            public string EyeColor { get; set; }
+            public string Address { get; set; }
+            public int Balance { get; set; }
+        }
+
+        public class Child
+        {
+            public string Name { get; set; }
+            public string EyeColor { get; private set; }
+            public static string Address { get; set; }
+            public double Balance { get; set; }
+        }
+
         public class Request : IConnectionInput<Human>
         {
             public IResolveFieldContext<object> Context { get; set; }

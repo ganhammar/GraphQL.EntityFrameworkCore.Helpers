@@ -1,46 +1,62 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading.Tasks;
 using GraphQL.DataLoader;
 using GraphQL.Types;
-using GraphQL.EntityFrameworkCore.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
 {
     public class TestSchema : Schema
     {
-        public TestSchema(IServiceProvider serviceProvider, TestDbContext dbContext)
+        public TestSchema(IServiceProvider serviceProvider, TestDbContext dbContext, DifferentTestDbContext differentTestDbContext)
             : base(serviceProvider)
         {
-            Query = new Query(dbContext);
+            Query = new Query(dbContext, differentTestDbContext);
         }
     }
 
     public class Query : ObjectGraphType
     {
-        public Query(TestDbContext dbContext)
+        public Query(TestDbContext dbContext, DifferentTestDbContext differentTestDbContext)
         {
             Field<ListGraphType<HumanGraphType>>()
                 .Name("Humans")
-                .From(dbContext, x => x.Humans)
-                .Apply((query, context) => query.Where(x => true))
+                .From(dbContext.Humans)
+                .ValidateAsync((context) => Task.FromResult(new ValidationResult()))
+                .Where((context) => x => true)
                 .ResolveCollectionAsync();
 
             Connection<DroidGraphType>()
                 .Name("Droids")
                 .From(dbContext, x => x.Droids)
-                .Apply((query, context) => query.Where(x => true))
+                .Validate((context) => new ValidationResult())
+                .ValidateAsync((context) => Task.FromResult(new ValidationResult()))
+                .Where((context) => x => true)
+                .ResolveAsync();
+
+            Connection<DroidGraphType>()
+                .Name("InvalidDroids")
+                .From(dbContext.Droids)
+                .Validate((context) =>
+                {
+                    var result = new ValidationResult();
+
+                    result.Failures.Add(new ValidationFailure(
+                        "Name", "Those are not the droids you're looking for"));
+
+                    return result;
+                })
                 .ResolveAsync();
 
             Field<ListGraphType<DroidGraphType>>()
                 .Name("MyDroids")
                 .Argument<NonNullGraphType<IdGraphType>>("HumanId")
-                .From(dbContext, x => x.Droids)
-                .Apply((query, context) =>
+                .From(dbContext.Droids)
+                .Where(context =>
                 {
                     var humanId = context.GetArgument<Guid>("HumanId");
-                    return query.Where(x => x.OwnerId == humanId);
+                    return x => x.OwnerId == humanId;
                 })
                 .ValidateAsync(async context =>
                 {
@@ -57,14 +73,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 })
                 .ResolveCollectionAsync();
 
-            Field<DroidGraphType>()
+            Field<DroidGraphType, Droid>()
                 .Name("Droid")
                 .Argument<NonNullGraphType<IdGraphType>>("Id")
-                .From(dbContext, x => x.Droids)
-                .Apply((query, context) =>
+                .From(dbContext.Droids)
+                .Where(context =>
                 {
                     var id = context.GetArgument<Guid>("Id");
-                    return query.Where(x => x.Id == id);
+                    return x => x.Id == id;
                 })
                 .ValidateAsync(async context =>
                 {
@@ -85,6 +101,16 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .Name("Planets")
                 .From(dbContext, x => x.Planets)
                 .ResolveCollectionAsync();
+
+            Field<ListGraphType<GalaxyGraphType>>()
+                .Name("Galaxies")
+                .From(differentTestDbContext.Galaxies)
+                .ResolveCollectionAsync();
+            
+            Field<ListGraphType<HumanForceAlignmentGraphType>>()
+                .Name("HumanForceAlignments")
+                .From(dbContext.HumanForceAlignments)
+                .ResolveCollectionAsync();
         }
     }
 
@@ -102,9 +128,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .IsFilterable();
             Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
                 .Name("Residents")
-                .MapsTo(x => x.Habitants)
-                .Include(dbContext)
-                .Apply((query, context) => query.Where(x => true))
+                .Include(dbContext, x => x.Habitants)
+                .Where((context) => (item) => item.Name != default)
                 .ResolveAsync();
         }
     }
@@ -120,18 +145,18 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             Field<PlanetGraphType, Planet>()
                 .Name("HomePlanet")
                 .Include(dbContext, x => x.HomePlanet)
-                .Apply((query, context) => query.Where(x => true))
+                .Where((context) => (item) => item.Name != default)
                 .ResolveAsync();
             Field<ListGraphType<HumanGraphType>, IEnumerable<Human>>()
                 .Name("Friends")
-                .Include(dbContext, x => x.Friends)
+                .Include(x => x.Friends)
                 .ResolveAsync();
         }
     }
 
     public class DroidGraphType : ObjectGraphType<Droid>
     {
-        public DroidGraphType(TestDbContext dbContext)
+        public DroidGraphType()
         {
             Field(x => x.Id, type: typeof(IdGraphType));
             Field(x => x.Name)
@@ -140,7 +165,39 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .IsFilterable();
             Field<HumanGraphType, Human>()
                 .Name("Owner")
-                .Include(dbContext, x => x.Owner);
+                .Include(x => x.Owner)
+                .ResolveAsync();
+        }
+    }
+
+    public class GalaxyGraphType : ObjectGraphType<Galaxy>
+    {
+        public GalaxyGraphType()
+        {
+            Field(x => x.Id, type: typeof(IdGraphType));
+            Field(x => x.Name)
+                .IsFilterable();
+        }
+    }
+
+    public class ForceGraphType : ObjectGraphType<Force>
+    {
+        public ForceGraphType()
+        {
+            Field(x => x.Type);
+        }
+    }
+
+    public class HumanForceAlignmentGraphType : ObjectGraphType<HumanForceAlignment>
+    {
+        public HumanForceAlignmentGraphType()
+        {
+            Field(x => x.HumanId, type: typeof(IdGraphType));
+            Field(x => x.Alignment);
+            Field<ForceGraphType, Force>()
+                .Name("Force")
+                .Include(x => x.Force)
+                .ResolveAsync();
         }
     }
 

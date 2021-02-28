@@ -134,7 +134,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             var compareToExpression = Expression.Constant(value);
 
             var concatMethod = typeof(string).GetMethod("Concat", new[] { typeof(string), typeof(string) });
-            ParameterExpression arg = Expression.Parameter(entityType, "x");
+            ParameterExpression arg = Expression.Parameter(entityType);
             var selector = GetLambda(query, request, arg, model);
 
             if (cursorType == typeof(string) || cursorType == typeof(Guid))
@@ -233,7 +233,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             var cursorType = ConnectionCursor.GetCursorType<TSourceType, TReturnType>(request, model);
             var entityType = typeof(TSourceType);
 
-            ParameterExpression arg = Expression.Parameter(entityType, "x");
+            ParameterExpression arg = Expression.Parameter(entityType);
 
             var selector = Expression.Lambda(GetLambda(query, request, arg, model), new ParameterExpression[] { arg });
 
@@ -266,28 +266,10 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             .Where(m => m.Name == "Any" && m.IsGenericMethodDefinition)
             .Where(m => m.GetParameters().ToList().Count == 2)
             .First();
-        
-        public static MethodInfo GetToDictionaryAsyncMethod() => typeof(EntityFrameworkQueryableExtensions)
-            .GetMethods()
-            .Where(m => m.Name == "ToDictionaryAsync" && m.IsGenericMethodDefinition)
-            .Where(m => m.GetParameters().ToList().Count == 3)
-            .First();
-        
-        public static MethodInfo GetIncludeMethod() => typeof(EntityFrameworkQueryableExtensions)
-            .GetMethods()
-            .Where(m => m.Name == "Include" && m.IsGenericMethodDefinition)
-            .Where(m => m.GetParameters().ToList().Count == 2)
-            .First();
-        
+
         public static MethodInfo GetSelectMethod() => typeof(Enumerable)
             .GetMethods()
             .Where(m => m.Name == "Select" && m.IsGenericMethodDefinition)
-            .Where(m => m.GetParameters().ToList().Count == 2)
-            .First();
-
-        public static MethodInfo GetSelectManyMethod() => typeof(Enumerable)
-            .GetMethods()
-            .Where(m => m.Name == "SelectMany" && m.IsGenericMethodDefinition)
             .Where(m => m.GetParameters().ToList().Count == 2)
             .First();
         

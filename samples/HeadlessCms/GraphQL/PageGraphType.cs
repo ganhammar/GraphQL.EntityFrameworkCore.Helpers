@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using GraphQL.DataLoader;
 using GraphQL.EntityFrameworkCore.Helpers;
 using GraphQL.Types;
 using HeadlessCms.Data;
@@ -9,7 +8,7 @@ namespace HeadlessCms.GraphQL
 {
     public class PageGraphType : ObjectGraphType<Page>
     {
-        public PageGraphType(IDataLoaderContextAccessor accessor, CmsDbContext dbContext)
+        public PageGraphType()
         {
             Name = "Page";
 
@@ -20,13 +19,11 @@ namespace HeadlessCms.GraphQL
                 .IsFilterable();
             Field<UserGraphType, User>()
                 .Name("Editor")
-                .Include(dbContext, x => x.Editor)
+                .Include(x => x.Editor)
                 .ResolveAsync();
             Field<ListGraphType<TagGraphType>, IEnumerable<Tag>>()
                 .Name("Tags")
-                .MapsTo(x => x.PageTags)
-                    .ThenTo(x => x.Page)
-                .Include(dbContext)
+                .Include(x => x.Tags)
                 .ResolveAsync();
         }
     }

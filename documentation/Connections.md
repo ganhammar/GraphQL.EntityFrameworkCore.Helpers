@@ -13,7 +13,7 @@ It is important that each resulting cursor points at a unique row in order to be
 ```c#
 Connection<DroidGraphType>()
     .Name("Droids")
-    .From(dbContext, x => x.Droids)
+    .From(dbContext.Droids)
     .ResolveAsync();
 ```
 
@@ -36,6 +36,12 @@ Connection<DroidGraphType>()
 ### Validating the request
 
 You can validate the request outside of `ToConnection` if you want to ensure it's valid in your validation pipeline, the first generic type parameter is the `DbSet` and the second parameter is the resulting type of the request. It needs the `IModel` to determine that the `orderBy` is valid, it doesn't need a `orderBy` if there is primary key it could use instead.
+
+```c#
+var validationResult = request.Validate(dbContext.Model);
+```
+
+Or, if returned type is different from source type:
 
 ```c#
 var validationResult = request.Validate<Human, Clone>(dbContext.Model);

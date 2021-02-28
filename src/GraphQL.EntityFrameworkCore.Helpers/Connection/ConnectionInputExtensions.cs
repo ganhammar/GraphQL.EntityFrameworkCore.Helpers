@@ -22,6 +22,9 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             input.Context = context;
         }
 
+        public static ValidationResult Validate<T>(this IConnectionInput<T> request, IModel model)
+            => Validate<T, T>(request, model);
+
         public static ValidationResult Validate<TSourceType, TReturnType>(this IConnectionInput<TReturnType> request, IModel model)
         {
             var result = new ValidationResult();
@@ -87,20 +90,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
         private static Type GetOrderByType<TSourceType, TReturnType>(IConnectionInput<TReturnType> request, IModel model)
         {
-            if (request.OrderBy == default || request.OrderBy.Length == 0)
-            {
-                return null;
-            }
-
-            Type type = null;
-            try
-            {
-                type = ConnectionCursor.GetCursorType<TSourceType, TReturnType>(request, model);
-            }
-            catch
-            { }
-
-            return type;
+            return ConnectionCursor.GetCursorType<TSourceType, TReturnType>(request, model);
         }
     }
 }

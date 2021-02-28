@@ -1,68 +1,86 @@
 # GraphQL Helpers for EF Core
 
-Adds methods to resolve schema fields directly from a DbContext.
+![Build Status](https://github.com/ganhammar/GraphQL.EntityFrameworkCore.Helpers/actions/workflows/Main.yml/badge.svg)
+
+[![NuGet](https://img.shields.io/nuget/v/GraphQL.EntityFrameworkCore.Helpers)](https://www.nuget.org/packages/GraphQL.EntityFrameworkCore.Helpers)
+
+[![Coverage Status](https://coveralls.io/repos/github/ganhammar/GraphQL.EntityFrameworkCore.Helpers/badge.svg?branch=main)](https://coveralls.io/github/ganhammar/GraphQL.EntityFrameworkCore.Helpers?branch=main)
+
+Adds methods to resolve schema fields directly from a DbContext. See [sample project](samples/HeadlessCms) for a full setup reference.
 
 ## Getting Started
 
+You can install the lastest version via [`NuGet`](https://www.nuget.org/packages/GraphQL.EntityFrameworkCore.Helpers/).
+
 ```
-dotnet add package GraphQL.EntityFrameworkCore.Helpers
+> dotnet add package GraphQL.EntityFrameworkCore.Helpers
 ```
 
-And edit `Startup.cs` to register dependencies by calling method below in `ConfigureServices(IServiceCollection services)`:
+And edit `Startup.cs` to register dependencies by calling method below in `ConfigureServices(IServiceCollection services)`. Passing `DbContext` as type parameter is optional, if it isn't passed here it would need to be passed when defining the schema fields.
 
 ```c#
-services
-    .AddGraphQLEntityFrameworkCoreHelpers();
+public void ConfigureServices(IServiceCollection services)
+{
+    services
+        .AddGraphQLEntityFrameworkCoreHelpers<AppDbContext>();
+}
 ```
 
 ## Defining the Schema
 
-To resolve a root query from a DbContext using the helper methods you first need to define from what DbContext and what DbSet and then call either the `ResolveCollectionAsync` method or the `ResolvePropertyAsync` method.
+To resolve a root query from the DbContext using the helper methods you first need to call the `From` method with the `DbSet` to be included and then call either `ResolveCollectionAsync` for a list graph or `ResolvePropertyAsync` for a non list graph.
 
 ```c#
 Field<ListGraphType<HumanGraphType>>()
     .Name("Humans")
-    .From(dbContext, x => x.Humans)
+    .From(dbContext.Humans)
     .ResolveCollectionAsync();
 ```
 
-You can also add connections in a similar way. With the connections the client has the option to define what property/properties should be used to order the connection with. Read more about connections [here](documentation/Connections.md).
+You can also add connections in a similar way. With the connections the client has the option to define what property/properties should be used to order the connection. Read more about connections [here](documentation/Connections.md).
 
 ```c#
 Connection<DroidGraphType>()
     .Name("Droids")
-    .From(dbContext, x => x.Droids)
+    .From(dbContext.Droids)
     .ResolveAsync();
 ```
 
-The helper methods can also be used to resolve data loaded properties. For this to work, all properties needs to be mapped, including join tables. Read more about data loaded fields [here](documentation/DataLoadedFields.md).
+The helper methods can also be used to resolve data loaded properties. Read more about data loaded fields [here](documentation/DataLoadedFields.md).
 
 ```c#
-Field<PlanetGraphType, Planet>()
-    .Name("HomePlanet")
-    .Include(dbContext, x => x.HomePlanet)
-    .ResolveAsync();
+public class HumanGraphType : ObjectGraphType<Human>
+{
+    public HumanGraphType()
+    {
+        Field<PlanetGraphType, Planet>()
+            .Name("HomePlanet")
+            .Include(x => x.HomePlanet)
+            .ResolveAsync();
+    }
+}
 ```
 
 ### Applying business logic when resolving fields
 
-With all builders you can apply your own business logic to for instance support multi-tenant solutions using the method `Apply`.
+With all builders you can apply your own business logic to for instance support authorization scenarios by calling the method `Where`.
 
 ```c#
-Field<PlanetGraphType, Planet>()
-    .Name("HomePlanet")
-    .Include(dbContext, x => x.HomePlanet)
-    .Apply((query, context) =>
+Field<HumanGraphType, Human>()
+    .Name("BestFriend")
+    .Argument<NonNullGraphType<IdGraphType>>("HumanId")
+    .Include(x => x.Friends)
+    .Where(context =>
     {
-        var id = context.GetArgument<int>("id");
-        return query.Where(x => x.Id == id);
+        var humanId = context.GetArgument<int>("HumanId");
+        return x => x.BestFriendId == humanId;
     })
     .ResolveAsync();
 ```
 
 ### Validating the context
 
-Similarly you can validate the arguments passed to a context using either the `Validate` method or the `ValidateAsync` method.
+Similarly you can validate the arguments passed to a context using either `Validate` or `ValidateAsync`.
 
 ```c#
 Field<PlanetGraphType, Planet>()
@@ -91,7 +109,3 @@ All collection fields can be filtered by either applying a string to all filtera
 ## Avoiding Over-Fetching
 
 All helper methods tries to limit the amount data fetched from data store by looking at what was requested, read more about this [here](documentation/SelectFromRequest.md).
-
-## Requirements
-
-Requires [GraphQL for .NET Server](https://github.com/graphql-dotnet/server) minimum version 4.0 or that ExecutionOptions.RequestServices is defined when calling ExecuteAsync.

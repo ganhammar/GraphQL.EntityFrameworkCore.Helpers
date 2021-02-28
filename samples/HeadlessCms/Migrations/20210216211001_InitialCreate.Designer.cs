@@ -8,14 +8,14 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HeadlessCms.Migrations
 {
     [DbContext(typeof(CmsDbContext))]
-    [Migration("20200808070842_InitialCreate")]
+    [Migration("20210216211001_InitialCreate")]
     partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "3.1.6");
+                .HasAnnotation("ProductVersion", "5.0.1");
 
             modelBuilder.Entity("HeadlessCms.Data.Page", b =>
                 {
@@ -37,21 +37,6 @@ namespace HeadlessCms.Migrations
                     b.HasIndex("EditorId");
 
                     b.ToTable("Pages");
-                });
-
-            modelBuilder.Entity("HeadlessCms.Data.PageTag", b =>
-                {
-                    b.Property<int>("PageId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("TagId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("PageId", "TagId");
-
-                    b.HasIndex("TagId");
-
-                    b.ToTable("PageTags");
                 });
 
             modelBuilder.Entity("HeadlessCms.Data.Tag", b =>
@@ -85,6 +70,21 @@ namespace HeadlessCms.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("PageTag", b =>
+                {
+                    b.Property<int>("PagesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TagsId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("PagesId", "TagsId");
+
+                    b.HasIndex("TagsId");
+
+                    b.ToTable("PageTag");
+                });
+
             modelBuilder.Entity("HeadlessCms.Data.Page", b =>
                 {
                     b.HasOne("HeadlessCms.Data.User", "Editor")
@@ -92,21 +92,28 @@ namespace HeadlessCms.Migrations
                         .HasForeignKey("EditorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Editor");
                 });
 
-            modelBuilder.Entity("HeadlessCms.Data.PageTag", b =>
+            modelBuilder.Entity("PageTag", b =>
                 {
-                    b.HasOne("HeadlessCms.Data.Page", "Page")
-                        .WithMany("PageTags")
-                        .HasForeignKey("PageId")
+                    b.HasOne("HeadlessCms.Data.Page", null)
+                        .WithMany()
+                        .HasForeignKey("PagesId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("HeadlessCms.Data.Tag", "Tag")
-                        .WithMany("PageTags")
-                        .HasForeignKey("TagId")
+                    b.HasOne("HeadlessCms.Data.Tag", null)
+                        .WithMany()
+                        .HasForeignKey("TagsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("HeadlessCms.Data.User", b =>
+                {
+                    b.Navigation("Pages");
                 });
 #pragma warning restore 612, 618
         }
