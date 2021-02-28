@@ -27,7 +27,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
 
             Connection<DroidGraphType>()
                 .Name("Droids")
-                .From(dbContext.Droids)
+                .From(dbContext, x => x.Droids)
                 .Where((context) => x => true)
                 .ResolveAsync();
 
