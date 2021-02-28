@@ -1,5 +1,9 @@
 # GraphQL Helpers for EF Core
 
+![Build Status](https://github.com/ganhammar/GraphQL.EntityFrameworkCore.Helpers/actions/workflows/Main.yml/badge.svg)
+
+[![NuGet](https://img.shields.io/nuget/v/GraphQL.EntityFrameworkCore.Helpers)](https://www.nuget.org/packages/GraphQL.EntityFrameworkCore.Helpers)
+
 [![Coverage Status](https://coveralls.io/repos/github/ganhammar/GraphQL.EntityFrameworkCore.Helpers/badge.svg?branch=main)](https://coveralls.io/github/ganhammar/GraphQL.EntityFrameworkCore.Helpers?branch=main)
 
 Adds methods to resolve schema fields directly from a DbContext. See [sample project](samples/HeadlessCms) for a full setup reference.
