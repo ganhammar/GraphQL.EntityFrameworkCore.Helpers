@@ -149,5 +149,20 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests
             droid.Id.ShouldNotBe(default);
             droid.Name.ShouldBeNullOrEmpty();
         }
+
+        [Fact]
+        public async Task Should_NotDoAnySpecificSelects_When_ContextIsntPassed()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+
+            var result = await dbContext.Droids.SelectFromContext(default, dbContext.Model).ToListAsync();
+
+            result.ShouldNotBeNull();
+
+            var droid = result.First();
+
+            droid.Id.ShouldNotBe(default);
+            droid.Name.ShouldNotBe(default);
+        }
     }
 }

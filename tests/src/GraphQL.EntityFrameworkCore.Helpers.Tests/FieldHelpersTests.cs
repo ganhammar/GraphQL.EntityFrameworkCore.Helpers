@@ -32,5 +32,13 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests
 
             Assert.Throws<ArgumentException>(() => FieldHelpers.GetPropertyInfo(accessor));
         }
+
+        [Fact]
+        public void Should_ReturnPropertyName_When_PropertyNotInMap()
+        {
+            var type = typeof(Human);
+            var property = "Id";
+            Assert.Equal(type.GetProperty(property).Name, FieldHelpers.GetSchemaName(type, property));
+        }
     }
 }

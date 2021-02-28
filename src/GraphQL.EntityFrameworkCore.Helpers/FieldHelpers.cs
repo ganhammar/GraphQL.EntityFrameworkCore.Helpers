@@ -40,9 +40,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return property?.Value ?? schemaName;
         }
 
-        public static string GetPropertyPath(Type entityType, EventStreamFieldType field)
-            => _properties[entityType.FullName][field];
-
         public static string GetSchemaName(Type entityType, string propertyName)
         {
             if (_properties.ContainsKey(entityType.FullName) == false)
@@ -74,13 +71,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 throw new ArgumentException(string.Format(
                     "Expression '{0}' refers to a field, not a property.",
                     accessor.ToString()));
-            }
-
-            if (type != propInfo.ReflectedType && !type.IsSubclassOf(propInfo.ReflectedType)) {
-                throw new ArgumentException(string.Format(
-                    "Expression '{0}' refers to a property that is not from type {1}.",
-                    accessor.ToString(),
-                    type));
             }
 
             return propInfo;
