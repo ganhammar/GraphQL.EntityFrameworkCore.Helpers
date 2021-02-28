@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using GraphQL.DataLoader;
 using GraphQL.Types;
 using Microsoft.EntityFrameworkCore;
@@ -22,13 +23,30 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             Field<ListGraphType<HumanGraphType>>()
                 .Name("Humans")
                 .From(dbContext.Humans)
+                .ValidateAsync((context) => Task.FromResult(new ValidationResult()))
                 .Where((context) => x => true)
                 .ResolveCollectionAsync();
 
             Connection<DroidGraphType>()
                 .Name("Droids")
                 .From(dbContext, x => x.Droids)
+                .Validate((context) => new ValidationResult())
+                .ValidateAsync((context) => Task.FromResult(new ValidationResult()))
                 .Where((context) => x => true)
+                .ResolveAsync();
+
+            Connection<DroidGraphType>()
+                .Name("InvalidDroids")
+                .From(dbContext.Droids)
+                .Validate((context) =>
+                {
+                    var result = new ValidationResult();
+
+                    result.Failures.Add(new ValidationFailure(
+                        "Name", "Those are not the droids you're looking for"));
+
+                    return result;
+                })
                 .ResolveAsync();
 
             Field<ListGraphType<DroidGraphType>>()

@@ -90,20 +90,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
         private static Type GetOrderByType<TSourceType, TReturnType>(IConnectionInput<TReturnType> request, IModel model)
         {
-            if (request.OrderBy == default || request.OrderBy.Length == 0)
-            {
-                return null;
-            }
-
-            Type type = null;
-            try
-            {
-                type = ConnectionCursor.GetCursorType<TSourceType, TReturnType>(request, model);
-            }
-            catch
-            { }
-
-            return type;
+            return ConnectionCursor.GetCursorType<TSourceType, TReturnType>(request, model);
         }
     }
 }

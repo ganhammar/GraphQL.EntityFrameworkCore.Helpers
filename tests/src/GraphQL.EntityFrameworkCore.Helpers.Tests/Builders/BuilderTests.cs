@@ -365,5 +365,19 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Builders
             Assert.NotEmpty(runResult.Errors);
             Assert.Equal(runResult.Errors.First().InnerException.Message, expectedError);
         }
+
+        [Fact]
+        public void Should_NotReturnResult_When_ValidationLogicFails()
+        {
+            var query = @"
+                query invalidDroids {
+                    invalidDroids {
+                        id
+                    }
+                }
+            ";
+
+            AssertQueryWithErrors(query, expectedErrorCount: 1);
+        }
     }
 }
