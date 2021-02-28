@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using GraphQL.EntityFrameworkCore.Helpers;
@@ -1434,6 +1435,36 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
             };
 
             var result = AssertQuerySuccess(query, expected, inputs);
+        }
+
+        [Fact]
+        public void Should_NotBeValid_When_FilterableInputsDoesHaveAnyFields()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+
+            var result = new FilterableInput().Validate(GetContext());
+
+            result.IsValid.ShouldBeFalse();
+        }
+
+        [Fact]
+        public void Should_NotBeValid_When_FieldDoesntHaveTarget()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+
+            var result = new FilterableInput
+            {
+                Fields = new List<FilterableInputField>
+                {
+                    new FilterableInputField
+                    {
+                        Target = default,
+                        Value = "Something",
+                    },
+                },
+            }.Validate(GetContext());
+
+            result.IsValid.ShouldBeFalse();
         }
     }
 }
