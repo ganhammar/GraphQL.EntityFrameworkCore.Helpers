@@ -4,7 +4,7 @@
 
 [![NuGet](https://img.shields.io/nuget/v/GraphQL.EntityFrameworkCore.Helpers)](https://www.nuget.org/packages/GraphQL.EntityFrameworkCore.Helpers)
 
-[![Coverage Status](https://coveralls.io/repos/github/ganhammar/GraphQL.EntityFrameworkCore.Helpers/badge.svg?branch=main)](https://coveralls.io/github/ganhammar/GraphQL.EntityFrameworkCore.Helpers?branch=main)
+[![Coverage Status](https://coveralls.io/repos/github/ganhammar/GraphQL.EntityFrameworkCore.Helpers/badge.svg)](https://coveralls.io/github/ganhammar/GraphQL.EntityFrameworkCore.Helpers)
 
 Adds methods to resolve schema fields directly from a DbContext. See [sample project](samples/HeadlessCms) for a full setup reference.
 
