@@ -57,7 +57,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             {
                 var context = (IResolveConnectionContext<object>)typedContext;
                 var dbContext = (DbContext)context.GetService(_dbContextType);
-                var isValid = await ValidateBusiness(context, dbContext.Model);
+                var isValid = await IsValid(context, dbContext.Model);
 
                 if (!isValid && ValidateFilterInput(context))
                 {
@@ -68,7 +68,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                     .MakeGenericMethod(_targetType)
                     .Invoke(dbContext, null);
 
-                query = ApplyBusinessLogic(query, context);
+                query = ApplyBusinessCheck(query, context);
 
                 var input = (IConnectionInput<TReturnType>)Activator.CreateInstance(connectionInputType);
                 input.SetConnectionInput(context);

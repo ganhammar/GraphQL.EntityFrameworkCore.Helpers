@@ -47,9 +47,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         private async Task<IQueryable<TProperty>> GetQuery(IResolveFieldContext<object> context)
         {
             var dbContext = (DbContext)context.GetService(_dbContextType);
-            var isValid = await ValidateBusiness(context, dbContext.Model);
 
-            if (!isValid)
+            if (await IsValid(context, dbContext.Model) == false)
             {
                 return default;
             }
@@ -58,7 +57,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 .MakeGenericMethod(_targetType)
                 .Invoke(dbContext, null);
 
-            query = ApplyBusinessLogic(query, context);
+            query = ApplyBusinessCheck(query, context);
 
             return query.SelectFromContext(context, dbContext.Model);
         }

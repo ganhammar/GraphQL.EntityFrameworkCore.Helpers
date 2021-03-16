@@ -14,12 +14,11 @@ namespace GraphQL.EntityFrameworkCore.Helpers
     {
         protected PropertyInfo _propertyToInclude;
         protected Type _dbContextType;
-        protected Func<IQueryable<TReturnType>, TContextType, IQueryable<TReturnType>> BusinessLogic { get; set; }
         protected Func<TContextType, ValidationResult> ValidationAction { get; set; }
         protected Func<TContextType, Task<ValidationResult>> AsyncValidationAction { get; set; }
         protected Func<IResolveFieldContext<object>, Expression<Func<TReturnType, bool>>> BusinuessCheck { get; set; }
 
-        protected async Task<bool> ValidateBusiness(TContextType context, IModel model)
+        private async Task<bool> ValidateBusiness(TContextType context, IModel model)
         {
             if (ValidationAction != default)
             {
@@ -83,14 +82,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return result.IsValid;
         }
 
-        protected IQueryable<TReturnType> ApplyBusinessLogic(IQueryable<TReturnType> query, TContextType context)
+        protected IQueryable<TReturnType> ApplyBusinessCheck(IQueryable<TReturnType> query, IResolveFieldContext<object> context)
         {
-            if (BusinessLogic == default)
+            if (BusinuessCheck == default)
             {
                 return query;
             }
 
-            return BusinessLogic(query, context);
+            return query.Where(BusinuessCheck(context));
         }
 
         protected Dictionary<IProperty, object> GetKeyValuePairs(Type sourceType, IModel model, IResolveFieldContext<object> context)

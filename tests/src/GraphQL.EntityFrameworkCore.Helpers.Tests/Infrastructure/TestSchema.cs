@@ -53,11 +53,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .Name("MyDroids")
                 .Argument<NonNullGraphType<IdGraphType>>("HumanId")
                 .From(dbContext.Droids)
-                .Where(context =>
-                {
-                    var humanId = context.GetArgument<Guid>("HumanId");
-                    return x => x.OwnerId == humanId;
-                })
                 .ValidateAsync(async context =>
                 {
                     var result = new ValidationResult();
@@ -70,6 +65,11 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                     }
 
                     return result;
+                })
+                .Where(context =>
+                {
+                    var humanId = context.GetArgument<Guid>("HumanId");
+                    return x => x.OwnerId == humanId;
                 })
                 .ResolveCollectionAsync();
 
