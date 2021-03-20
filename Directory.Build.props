@@ -6,22 +6,22 @@
 
     <PropertyGroup>
         <CoverletMsbuildVersion>3.0.3</CoverletMsbuildVersion>
-        <GraphQLVersion>3.2.0</GraphQLVersion>
-        <GraphQLServerVersion>4.4.0</GraphQLServerVersion>
-        <MicrosoftNetTestSdkVersion>16.8.3</MicrosoftNetTestSdkVersion>
+        <GraphQLVersion>4.0.2</GraphQLVersion>
+        <GraphQLServerVersion>5.0.0</GraphQLServerVersion>
+        <MicrosoftNetTestSdkVersion>16.9.1</MicrosoftNetTestSdkVersion>
         <ShouldlyVersion>4.0.3</ShouldlyVersion>
         <XunitVersion>2.4.1</XunitVersion>
         <XunitRunnerVisualstudioVersion>2.4.3</XunitRunnerVisualstudioVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(IsNetCore5OnwardsTarget)' == 'False'">
-        <MicrosoftAspNetCoreMvcTestingVersion>3.1.10</MicrosoftAspNetCoreMvcTestingVersion>
-        <MicrosoftEntityFrameworkCoreVersion>3.1.10</MicrosoftEntityFrameworkCoreVersion>
+        <MicrosoftAspNetCoreMvcTestingVersion>3.1.13</MicrosoftAspNetCoreMvcTestingVersion>
+        <MicrosoftEntityFrameworkCoreVersion>3.1.13</MicrosoftEntityFrameworkCoreVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(IsNetCore5OnwardsTarget)' == 'True'">
-        <MicrosoftAspNetCoreMvcTestingVersion>5.0.1</MicrosoftAspNetCoreMvcTestingVersion>
-        <MicrosoftEntityFrameworkCoreVersion>5.0.1</MicrosoftEntityFrameworkCoreVersion>
+        <MicrosoftAspNetCoreMvcTestingVersion>5.0.4</MicrosoftAspNetCoreMvcTestingVersion>
+        <MicrosoftEntityFrameworkCoreVersion>5.0.4</MicrosoftEntityFrameworkCoreVersion>
     </PropertyGroup>
 
 </Project>

@@ -1,5 +1,5 @@
 using System;
-using GraphQL.Utilities;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace GraphQL.EntityFrameworkCore.Helpers
 {
