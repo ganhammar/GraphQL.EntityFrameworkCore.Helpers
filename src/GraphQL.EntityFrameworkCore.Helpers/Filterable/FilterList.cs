@@ -50,7 +50,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 return default;
             }
 
-            var fields = GetOperationBranch(context.Operation.SelectionSet, context.FieldName);
+            var fields = GetOperationBranch(context.Operation.SelectionSet, context.FieldDefinition.Name);
 
             foreach (Field field in fields)
             {
@@ -61,7 +61,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                     var filterInputReference = (VariableReference)filter.Children.First(x => x.GetType() == typeof(VariableReference));
                     var input = GetFilterableInput(filterInputReference.Name, context);
 
-                    if (context.FieldName == field.Name || input.Mode == FilterableModes.Deep)
+                    if (context.FieldDefinition.Name == field.Name || input.Mode == FilterableModes.Deep)
                     {
                         return input;
                     }
@@ -74,9 +74,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         private static FilterableInput GetFilterableInput(string inputName, IResolveFieldContext<object> context)
         {
             var variable = context.Variables.First(x => x.Name == inputName);
-            var arguments = variable.Value as IDictionary<string, object>;
 
-            return (FilterableInput)arguments.ToObject(typeof(FilterableInput));
+            return (FilterableInput)variable.Value;
         }
 
         private static List<Field> GetOperationBranch(SelectionSet operation, string target)

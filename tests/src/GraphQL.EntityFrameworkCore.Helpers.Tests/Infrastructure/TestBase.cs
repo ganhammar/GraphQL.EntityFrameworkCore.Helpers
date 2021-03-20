@@ -57,6 +57,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             services
                 .AddGraphQLEntityFrameworkCoreHelpers<TestDbContext>()
                 .AddSingleton<IDocumentExecutionListener, DataLoaderDocumentListener>()
+                .AddSingleton<INameConverter, CamelCaseNameConverter>()
                 .AddSingleton<ISchema, TestSchema>()
                 .AddTransient<PlanetGraphType>()
                 .AddTransient<HumanGraphType>()
@@ -178,7 +179,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 x.UserContext = userContext;
                 x.CancellationToken = cancellationToken;
                 x.ValidationRules = rules;
-                x.NameConverter = new CamelCaseNameConverter();
                 x.RequestServices = ServiceProvider;
                 foreach (var listener in ServiceProvider.GetService<IEnumerable<IDocumentExecutionListener>>())
                 {
@@ -204,11 +204,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
         }
 
         public static ExecutionResult CreateQueryResult(string result, ExecutionErrors errors = null)
-            => new ExecutionResult
-            {
-                Data = string.IsNullOrWhiteSpace(result) ? null : result.ToDictionary(),
-                Errors = errors
-            };
+            => result.ToExecutionResult(errors);
 
         protected static IResolveFieldContext<object> GetContext(string queryName = "humans", string filter = default, string[] fields = default)
         {
@@ -226,10 +222,12 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 context.SubFields.Add(fieldName, new Field(new NameNode(fieldName), new NameNode(fieldName)));
             }
 
-            context.FieldName = queryName;
+            context.FieldDefinition = new FieldType();
+
+            context.FieldDefinition.Name = queryName;
             context.Path = new List<string> { queryName };
 
-            var field = new Field(new NameNode(context.FieldName), new NameNode(context.FieldName));
+            var field = new Field(new NameNode(context.FieldDefinition.Name), new NameNode(context.FieldDefinition.Name));
             field.SelectionSet = new SelectionSet();
 
             foreach(var fieldName in fields)
@@ -240,13 +238,12 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             if (filter != default)
             {
                 field.Arguments = new Arguments();
-                field.Arguments.Add(new Argument(new NameNode("filter"))
-                {
-                    Value = new VariableReference(new NameNode("filter")),
-                });
+                field.Arguments.Add(new Argument(
+                    new NameNode("filter"),
+                    new VariableReference(new NameNode("filter"))));
             }
 
-            context.Operation = new Operation(new NameNode(context.FieldName));
+            context.Operation = new Operation(new NameNode(context.FieldDefinition.Name));
             context.Operation.SelectionSet = new SelectionSet();
             context.Operation.SelectionSet.Add(field);
 
@@ -255,11 +252,18 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 return context;
             }
 
-            var fieldsInput = new Dictionary<string, object>();
-            fieldsInput.Add("value", filter);
+            var fieldsInput = new List<FilterableInputField>
+            {
+                new FilterableInputField
+                {
+                    Value = filter,
+                },
+            };
 
-            var filterInput = new Dictionary<string, object>();
-            filterInput.Add("fields", new List<Dictionary<string, object>> { fieldsInput });
+            var filterInput = new FilterableInput
+            {
+                Fields = fieldsInput,
+            };
 
             context.Variables = new Variables();
             context.Variables.Add(new Variable

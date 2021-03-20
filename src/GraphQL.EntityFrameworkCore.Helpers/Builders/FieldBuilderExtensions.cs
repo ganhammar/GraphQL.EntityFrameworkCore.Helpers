@@ -55,20 +55,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return queryBuilder;
         }
 
-        public static FieldQueryBuilder<TSourceType, TReturnType, TProperty> From<TSourceType, TReturnType, TDbContext, TProperty>(
-                this FieldBuilder<TSourceType, TReturnType> builder,
-                TDbContext _,
-                Expression<Func<TDbContext, DbSet<TProperty>>> accessor)
-            where TDbContext : DbContext
-            where TProperty : class
-        {
-            var targetType = FieldHelpers.GetPropertyInfo(accessor).PropertyType
-                .GetGenericArguments().First();
-            var queryBuilder = new FieldQueryBuilder<TSourceType, TReturnType, TProperty>(builder, targetType, typeof(TDbContext));
-
-            return queryBuilder;
-        }
-
         public static FieldQueryBuilder<TSourceType, object, TProperty> From<TSourceType, TProperty>(
                 this FieldBuilder<TSourceType, object> builder,
                 DbSet<TProperty> property)
