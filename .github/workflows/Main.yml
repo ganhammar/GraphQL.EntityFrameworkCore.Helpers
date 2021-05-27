@@ -25,11 +25,12 @@ jobs:
         dotnet restore
         dotnet test /p:CollectCoverage=true /p:CoverletOutput=TestResults/ /p:CoverletOutputFormat=lcov
 
-    - name: Publish coverage report to coveralls.io
-      uses: coverallsapp/github-action@master
+    - name: Publish Code Coverage
+      uses: codecov/codecov-action@v1
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: tests/src/GraphQL.EntityFrameworkCore.Helpers.Tests/TestResults/coverage.net5.0.info
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: tests/src/GraphQL.EntityFrameworkCore.Helpers.Tests/TestResults/coverage.net5.0.info
+        fail_ci_if_error: false
 
   publish:
 
