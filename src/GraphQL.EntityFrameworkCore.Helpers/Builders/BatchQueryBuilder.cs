@@ -174,7 +174,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             var targetInstance = Expression.New(targetType);
 
             var targetProperty = Expression.Property(argument, _propertyToInclude);
-            var propertiesToSelect = ResolveFieldContextHelpers.GetProperties(targetType, context.SubFields, model);
+            var propertiesToSelect = ResolveFieldContextHelpers.GetProperties(targetType, context.SubFields, model, context);
             var targetBindings = propertiesToSelect.Select(propertyType =>
                 Expression.Bind(propertyType, Expression.Property(targetProperty, propertyType)));
 

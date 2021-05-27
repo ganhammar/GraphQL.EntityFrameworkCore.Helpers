@@ -11,11 +11,11 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 {
     public static class ResolveFieldContextHelpers
     {
-        public static List<PropertyInfo> GetProperties(Type entityType, IDictionary<string, Field> fields, IModel model)
+        public static List<PropertyInfo> GetProperties(Type entityType, IDictionary<string, Field> fields, IModel model, IResolveFieldContext<object> context)
         {
             var entity = model.FindEntityType(entityType);
             var properties = new List<PropertyInfo>();
-            var selection = GetSelection(fields);
+            var selection = GetSelection(fields, context);
 
             foreach (var field in selection)
             {
@@ -44,17 +44,39 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return properties;
         }
 
-        public static IDictionary<string, Field> GetSelection(IDictionary<string, Field> fields)
+        public static IDictionary<string, Field> GetSelection(IDictionary<string, Field> fields, IResolveFieldContext<object> context)
         {
             // The query is a connection, get the selection from node instead
             if (fields.Any(x => x.Key == "edges"))
             {
-                return fields["edges"]
-                    .SelectionSet.Selections.Cast<Field>().First(x => x.Name == "node")
-                    .SelectionSet.Selections.Cast<Field>().ToDictionary(x => x.Name, x => x);
+                return ToDictionary(fields["edges"]
+                    .SelectionSet.Selections.Cast<Field>().First(x => x.Name == "node").SelectionSet.Selections, context);
             }
 
             return fields;
+        }
+
+        public static IDictionary<string, Field> ToDictionary(IList<ISelection> selections, IResolveFieldContext<object> context)
+        {
+            var result = new Dictionary<string, Field>();
+
+            foreach (var selection in selections)
+            {
+                if (selection is Field childField)
+                {
+                    result.Add(childField.Name, childField);
+                }
+                else if (selection is FragmentSpread fragmentSpread)
+                {
+                    var fragmentSelection = context.Document.Fragments
+                        .First(x => x.Name == fragmentSpread.Name);
+
+                    result = result.Concat(ToDictionary(fragmentSelection.SelectionSet.Selections, context))
+                        .ToDictionary(x => x.Key, x => x.Value);
+                }
+            }
+
+            return result;
         }
     }
 }

@@ -164,5 +164,48 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests
             droid.Id.ShouldNotBe(default);
             droid.Name.ShouldNotBe(default);
         }
+
+        [Fact]
+        public async Task Should_ReturnSelectedFields_When_UsingFragments()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var planets = await dbContext.Planets
+                .Include(x => x.Habitants)
+                .Select(x => new
+                {
+                    id = x.Id,
+                    name = x.Name,
+                    residents = x.Habitants.Select(y => new
+                    {
+                        id = y.Id,
+                    }),
+                })
+                .ToListAsync();
+
+            planets.Count().ShouldBe(2);
+            planets.First().residents.ShouldNotBeEmpty();
+
+            var query = @"
+                fragment planetParts on Planet {
+                    id
+                    name
+                    residents {
+                        id
+                    }
+                }
+                query planets {
+                    planets {
+                        ...planetParts
+                    }
+                }
+            ";
+
+            var expected = new
+            {
+                planets,
+            };
+
+            var result = AssertQuerySuccess(query, expected);
+        }
     }
 }

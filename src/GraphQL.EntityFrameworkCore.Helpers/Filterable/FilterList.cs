@@ -50,7 +50,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 return default;
             }
 
-            var fields = GetOperationBranch(context.Operation.SelectionSet, context.FieldDefinition.Name);
+            var fields = GetOperationBranch(context.Operation.SelectionSet, context.FieldDefinition.Name, context);
 
             foreach (Field field in fields)
             {
@@ -78,25 +78,32 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return (FilterableInput)variable.Value;
         }
 
-        private static List<Field> GetOperationBranch(SelectionSet operation, string target)
+        private static List<Field> GetOperationBranch(SelectionSet operation, string target, IResolveFieldContext<object> context)
         {
             var result = new List<Field>();
 
-            foreach (Field selection in operation.Selections)
+            foreach (var selection in operation.Selections)
             {
-                if (selection.Name == target)
+                if (selection is Field field)
                 {
-                    result.Add(selection);
-                }
-                else
-                {
-                    var children = GetOperationBranch(selection.SelectionSet, target);
-
-                    if (children.Any())
+                    if (field.Name == target)
                     {
-                        result.AddRange(children);
-                        result.Add(selection);
+                        result.Add(field);
                     }
+                    else
+                    {
+                        var children = GetOperationBranch(field.SelectionSet, target, context);
+
+                        if (children.Any())
+                        {
+                            result.AddRange(children);
+                            result.Add(field);
+                        }
+                    }
+                }
+                else if (selection is FragmentSpread fragmentSpread)
+                {
+                    
                 }
             }
 
@@ -118,7 +125,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
         public static List<Expression> GetExpressions(ParameterExpression argument, Type entityType, FilterableInput filter, IResolveFieldContext<object> context, IModel model)
         {
-            var expressions = GetSelectionPaths(argument, filter.GetApplicableFilterFields(context), entityType, GetSelections(context.SubFields), model);
+            var expressions = GetSelectionPaths(argument, filter.GetApplicableFilterFields(context), entityType, ResolveFieldContextHelpers.GetSelection(context.SubFields, context), model, context);
             var result = new List<Expression>();
 
             if (expressions == default)
@@ -146,17 +153,6 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return result;
         }
 
-        private static IDictionary<string, Field> GetSelections(IDictionary<string, Field> fields)
-        {
-            if (fields.Any(x => x.Key.Equals("edges", StringComparison.InvariantCultureIgnoreCase)))
-            {
-                return ToDictionary(ToDictionary(fields.First(x => x.Key.Equals("edges", StringComparison.InvariantCultureIgnoreCase)))
-                    .First(x => x.Key.Equals("node", StringComparison.InvariantCultureIgnoreCase)));
-            }
-
-            return fields;
-        }
-
         private static IQueryable<TQuery> AddWhere<TQuery>(this IQueryable<TQuery> query, ParameterExpression argument, Type entityType, Expression clause)
         {
             clause = Expression.Lambda(clause, argument);
@@ -174,7 +170,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             IEnumerable<FilterableInputField> fields,
             Type entityType,
             IDictionary<string, Field> selection,
-            IModel model)
+            IModel model,
+            IResolveFieldContext<object> context)
         {
             var result = new Dictionary<FilterableFieldOperators, List<Expression>>();
             var entity = model.FindEntityType(entityType);
@@ -204,8 +201,9 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                                     subArgument,
                                     GetFilterFields(field.Value.Name, fields),
                                     targetType,
-                                    GetSelections(ToDictionary(field)),
-                                    model),
+                                    ResolveFieldContextHelpers.ToDictionary(field.Value.SelectionSet.Selections, context),
+                                    model,
+                                    context),
                                 x => Expression.Call(
                                     anyMethod,
                                     Expression.MakeMemberAccess(argument, property),
@@ -217,14 +215,15 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                                 Expression.Property(argument, property.Name),
                                 GetFilterFields(field.Value.Name, fields),
                                 targetType,
-                                GetSelections(ToDictionary(field)),
-                                model));
+                                ResolveFieldContextHelpers.ToDictionary(field.Value.SelectionSet.Selections, context),
+                                model,
+                                context));
                         }
                     }
                 }
             }
 
-            result.Merge(GetExpression(argument, fields, entityType, selection, model));
+            result.Merge(GetExpression(argument, fields, entityType, selection, model, context));
 
             return result;
         }
@@ -281,15 +280,13 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return matches.Any() ? matches : fields.Where(x => x.Target.Equals("All", StringComparison.InvariantCultureIgnoreCase));
         }
 
-        private static Dictionary<string, Field> ToDictionary(KeyValuePair<string, Field> field)
-            => field.Value.SelectionSet.Selections.ToDictionary(x => (x as Field).Name, x => x as Field);
-
         private static Dictionary<FilterableFieldOperators, List<Expression>> GetExpression(
             Expression argument,
             IEnumerable<FilterableInputField> fields,
             Type entityType,
             IDictionary<string, Field> selection,
-            IModel model)
+            IModel model,
+            IResolveFieldContext<object> context)
         {
             var result = new Dictionary<FilterableFieldOperators, List<Expression>>();
             result.Add(FilterableFieldOperators.Or, new List<Expression>());
@@ -302,7 +299,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
             Expression orClause = default;
             ResolveFieldContextHelpers
-                .GetProperties(entityType, selection, model)
+                .GetProperties(entityType, selection, model, context)
                 .Where(FilterableHelpers.IsFilterable)
                 .ToList()
                 .ForEach(field =>

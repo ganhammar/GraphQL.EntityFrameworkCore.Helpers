@@ -19,7 +19,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             var entityType = typeof(TQuery);
             
             // The requested properties
-            var properties = ResolveFieldContextHelpers.GetProperties(entityType, context.SubFields, model);
+            var properties = ResolveFieldContextHelpers.GetProperties(entityType, context.SubFields, model, context);
             
             // Input parameter
             var parameter = Expression.Parameter(entityType);
