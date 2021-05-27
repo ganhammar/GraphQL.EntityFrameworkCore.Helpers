@@ -8,17 +8,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - name: Setup .NET Core 3.1.x
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 3.1.100
+        dotnet-version: 3.1.x
 
     - name: Setup .NET Core 5.0.x
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 5.0.101
+        dotnet-version: 5.0.x
 
     - name: Restore and Test .NET Core
       run: |
@@ -30,3 +30,22 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         path-to-lcov: tests/src/GraphQL.EntityFrameworkCore.Helpers.Tests/TestResults/coverage.net5.0.info
+
+  publish:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup .NET Core 5.0.x
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 5.0.x
+
+      - name: Publish to NuGet
+        id: publish_nuget
+        uses: rohith/publish-nuget@v2
+        with:
+          PROJECT_FILE_PATH: src/GraphQL.EntityFrameworkCore.Helpers/GraphQL.EntityFrameworkCore.Helpers.csproj
+          NUGET_KEY: ${{ secrets.NUGET_API_KEY }}
