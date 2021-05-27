@@ -62,7 +62,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
             foreach (var selection in selections)
             {
-                if (selection is Field childField)
+                if (selection is Field childField && result.ContainsKey(childField.Name) == false)
                 {
                     result.Add(childField.Name, childField);
                 }
@@ -72,6 +72,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                         .First(x => x.Name == fragmentSpread.Name);
 
                     result = result.Concat(ToDictionary(fragmentSelection.SelectionSet.Selections, context))
+                        .Distinct()
                         .ToDictionary(x => x.Key, x => x.Value);
                 }
             }

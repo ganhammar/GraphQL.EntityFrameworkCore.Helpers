@@ -1594,5 +1594,72 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
 
             var result = AssertQuerySuccess(query, expected, inputs);
         }
+
+        [Fact]
+        public async Task Should_RemovesDuplicates_When_FieldIsInFragmentAndQuery()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var humanName = "luke";
+            var droids = await dbContext.Droids
+                .Include(x => x.Owner)
+                .Where(x => EF.Functions.Like(x.Owner.Name, $"%{humanName}%"))
+                .OrderBy(x => x.Id)
+                .ToListAsync();
+
+            droids.Count().ShouldBe(2);
+
+            var query = $@"
+                fragment humanParts on Human {{
+                    name
+                    __typename
+                }}
+                query droids($filterInput: FilterInput) {{
+                    droids(filter: $filterInput) {{
+                        edges {{
+                            node {{
+                                name
+                                owner {{
+                                    ...humanParts
+                                    __typename
+                                }}
+                            }}
+                        }}
+                    }}
+                }}
+            ";
+
+            var inputs = $@"
+                {{
+                    ""filterInput"": {{
+                        ""fields"": [
+                            {{
+                                ""value"": ""{humanName}""
+                            }}
+                        ]
+                    }}
+                }}
+            ".ToInputs();
+
+            var expected = new
+            {
+                droids = new
+                {
+                    edges = droids.Select(x => new
+                    {
+                        node = new
+                        {
+                            name = x.Name,
+                            owner = new
+                            {
+                                name = x.Owner.Name,
+                                __typename = "Human",
+                            },
+                        },
+                    }),
+                },
+            };
+
+            var result = AssertQuerySuccess(query, expected, inputs);
+        }
     }
 }
