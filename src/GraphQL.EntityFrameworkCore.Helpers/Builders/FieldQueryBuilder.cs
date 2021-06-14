@@ -12,6 +12,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
     {
         private readonly FieldBuilder<TSourceType, TReturnType> _field;
         private readonly Type _targetType;
+        private Func<IResolveFieldContext<object>, IQueryable<TProperty>, IQueryable<TProperty>> _customQueryBuilderLogic = null;
 
         public FieldQueryBuilder(FieldBuilder<TSourceType, TReturnType> field, Type targetType, Type dbContextType = null)
         {
@@ -25,6 +26,13 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         {
             BusinuessCheck = clause;
 
+            return this;
+        }
+
+        public FieldQueryBuilder<TSourceType, TReturnType, TProperty> Apply(
+            Func<IResolveFieldContext<object>, IQueryable<TProperty>, IQueryable<TProperty>> customQueryBuilderLogic)
+        {
+            _customQueryBuilderLogic = customQueryBuilderLogic;
             return this;
         }
 
@@ -57,6 +65,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 .MakeGenericMethod(_targetType)
                 .Invoke(dbContext, null);
 
+            query = _customQueryBuilderLogic != null
+                ? _customQueryBuilderLogic(context, query) : query;
             query = ApplyBusinessCheck(query, context);
 
             return query.SelectFromContext(context, dbContext.Model);

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using GraphQL.DataLoader;
 using GraphQL.Types;
@@ -25,6 +26,14 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .From(dbContext.Humans)
                 .ValidateAsync((context) => Task.FromResult(new ValidationResult()))
                 .Where((context) => x => true)
+                .ResolveCollectionAsync();
+
+            Field<ListGraphType<HumanGraphType>>()
+                .Name("HumansOrderedByEyeColor")
+                .From(dbContext.Humans)
+                .ValidateAsync((context) => Task.FromResult(new ValidationResult()))
+                .Where((context) => x => true)
+                .Apply((context, query) => query.OrderBy(x => x.EyeColor))
                 .ResolveCollectionAsync();
 
             Connection<DroidGraphType>()

@@ -379,5 +379,35 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Builders
 
             AssertQueryWithErrors(query, expectedErrorCount: 1);
         }
+
+        [Fact]
+        public async void Should_ReturnHumansInOrderOfEyeColor_When_UsingFieldWithApply()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var humansOrderedByEyeColor = await dbContext.Humans
+                .OrderBy(x => x.EyeColor)
+                .Select(x => new
+                {
+                    name = x.Name,
+                })
+                .ToListAsync();
+
+            humansOrderedByEyeColor.ShouldNotBeEmpty();
+
+            var query = $@"
+                query humansOrderedByEyeColor {{
+                    humansOrderedByEyeColor {{
+                        name
+                    }}
+                }}
+            ";
+
+            var expected = new
+            {
+                humansOrderedByEyeColor,
+            };
+
+            var result = AssertQuerySuccess(query, expected);
+        }
     }
 }

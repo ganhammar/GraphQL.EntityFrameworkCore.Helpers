@@ -98,8 +98,21 @@ Field<PlanetGraphType, Planet>()
 
         return result;
     }))
-    .Apply((query, context) => query.Where(x => x.Id == context.GetArgument<int>("id")))
     .ResolveAsync();
+```
+
+### Applying custom logic (such as OrderBy) to root fields
+
+You can access the query builder for root fields to apply your own custom logic, such as `OrderBy` on collections through the method `Apply`.
+
+```c#
+Field<ListGraphType<PlanetGraphType>>()
+    .Name("Planets")
+    .From(dbContext.Humans)
+    .Apply((context, query) => query
+        .OrderBy(x => x.Name)
+        .ThenBy(x => x.Region))
+    .ResolveCollectionAsync();
 ```
 
 ## Filters
