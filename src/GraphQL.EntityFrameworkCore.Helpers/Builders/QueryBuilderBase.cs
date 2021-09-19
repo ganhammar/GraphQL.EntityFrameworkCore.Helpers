@@ -70,7 +70,10 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                             data.Add("FieldName", x.FieldName);
                         }
 
-                        context.Errors.Add(new ExecutionError(x.Message, data));
+                        context.Errors.Add(new ExecutionError(x.Message, data)
+                        {
+                            Code = x.Code,
+                        });
                     });
                 }
                 else

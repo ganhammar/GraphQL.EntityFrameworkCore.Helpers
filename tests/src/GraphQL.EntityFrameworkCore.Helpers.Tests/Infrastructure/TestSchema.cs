@@ -99,7 +99,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
 
                     if (exists == false)
                     {
-                        result.Failures.Add(new ValidationFailure("Id", $"No Droid found with the Id '{id}'"));
+                        result.Failures.Add(new ValidationFailure("Id", $"No Droid found with the Id '{id}'", "NotFound"));
                     }
 
                     return result;
@@ -110,6 +110,17 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .Name("Planets")
                 .From(dbContext, x => x.Planets)
                 .ResolveCollectionAsync();
+
+            Field<ListGraphType<PlanetGraphType>>()
+                .Name("Planet")
+                .Argument<NonNullGraphType<IdGraphType>>("Id")
+                .From(dbContext, x => x.Planets)
+                .Where(context =>
+                {
+                    var id = context.GetArgument<Guid>("Id");
+                    return x => x.Id == id;
+                })
+                .ResolvePropertyAsync();
 
             Field<ListGraphType<GalaxyGraphType>>()
                 .Name("Galaxies")

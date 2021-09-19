@@ -11,13 +11,15 @@ namespace GraphQL.EntityFrameworkCore.Helpers
 
     public class ValidationFailure
     {
-        public ValidationFailure(string fieldName, string message)
+        public ValidationFailure(string fieldName, string message, string code = default)
         {
             FieldName = fieldName;
             Message = message;
+            Code = code;
         }
 
         public string FieldName { get; set; }
         public string Message { get; set; }
+        public string Code { get; set; }
     }
 }

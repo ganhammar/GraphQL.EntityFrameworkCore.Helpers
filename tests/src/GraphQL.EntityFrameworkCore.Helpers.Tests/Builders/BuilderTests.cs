@@ -210,7 +210,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Builders
         }
 
         [Fact]
-        public async Task Should_ReturnMyDroid_When_Requesting()
+        public async Task Should_ReturnDroid_When_Requesting()
         {
             var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
             var droid = await dbContext.Droids
@@ -233,6 +233,26 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Builders
             var expected = new
             {
                 droid,
+            };
+
+            var result = AssertQuerySuccess(query, expected);
+        }
+
+        [Fact]
+        public void Should_NotReturnPlanet_When_ItDoesntExist()
+        {
+            var query = $@"
+                query planet {{
+                    planet(id: ""{Guid.NewGuid()}"") {{
+                        id
+                        name
+                    }}
+                }}
+            ";
+
+            var expected = new
+            {
+                planet = (object)null,
             };
 
             var result = AssertQuerySuccess(query, expected);

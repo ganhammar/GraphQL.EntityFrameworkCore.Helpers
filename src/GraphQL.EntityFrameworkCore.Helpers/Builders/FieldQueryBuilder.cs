@@ -106,7 +106,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                 }
 
                 return (dynamic)await query
-                    .FirstAsync();
+                    .FirstOrDefaultAsync();
             });
         }
     }
