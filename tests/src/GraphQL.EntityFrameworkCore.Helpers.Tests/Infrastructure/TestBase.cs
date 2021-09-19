@@ -243,8 +243,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                     new VariableReference(new NameNode("filter"))));
             }
 
-            context.Operation = new Operation(new NameNode(context.FieldDefinition.Name));
-            context.Operation.SelectionSet = new SelectionSet();
+            context.Operation = new Operation(new NameNode(context.FieldDefinition.Name), new SelectionSet());
             context.Operation.SelectionSet.Add(field);
 
             if (filter == default)
@@ -266,9 +265,8 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
             };
 
             context.Variables = new Variables();
-            context.Variables.Add(new Variable
+            context.Variables.Add(new Variable("filter")
             {
-                Name = "filter",
                 Value = filterInput,
             });
 
