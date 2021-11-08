@@ -48,17 +48,17 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             var selectedFields = GetSelection(
                 ref result,
                 context.Operation.SelectionSet.Selections,
-                context.Path.First().ToString());
+                context.Path.First().ToString(),
+                context);
 
             ValidateFields(ref result, input.Fields, selectedFields, context);
 
             return result;
         }
 
-        private static IList<ISelection> GetSelection(ref ValidationResult result, IList<ISelection> selections, string target)
+        private static IList<ISelection> GetSelection(ref ValidationResult result, IList<ISelection> selections, string target, IResolveFieldContext<object> context)
         {
-            var selectedFields = ((Field)selections
-                .First(x => ((Field)x).Name == target)).SelectionSet.Selections;
+            var selectedFields = ((Field)FindField(target, selections, context)).SelectionSet.Selections;
 
             if (selectedFields.Any(x => ((Field)x).Name.Equals("edges", StringComparison.InvariantCultureIgnoreCase)))
             {
@@ -79,6 +79,29 @@ namespace GraphQL.EntityFrameworkCore.Helpers
             return selectedFields;
         }
 
+        private static ISelection FindField(string name, IList<ISelection> selectedFields, IResolveFieldContext<object> context)
+        {
+            var field = selectedFields.FirstOrDefault(x => x is Field && ((Field)x).Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+
+            if (field == default && selectedFields.Any(x => x is FragmentSpread))
+            {
+                foreach (var selection in selectedFields.Where(x => x is FragmentSpread))
+                {
+                    var fragmentSelection = context.Document.Fragments
+                        .First(y => y.Name == ((FragmentSpread)selection).Name).SelectionSet.Selections;
+
+                    field = fragmentSelection.FirstOrDefault(y => y is Field && ((Field)y).Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+
+                    if (field == default && fragmentSelection.Any(y => y is FragmentSpread))
+                    {
+                        field = FindField(name, fragmentSelection, context);
+                    }
+                }
+            }
+
+            return field;
+        }
+
         private static void ValidateFields(ref ValidationResult result, IEnumerable<FilterableInputField> fields, IList<ISelection> selectedFields, IResolveFieldContext<object> context)
         {
             foreach (var field in fields)
@@ -88,12 +111,9 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                     result.Failures.Add(new ValidationFailure("Target", "All fields needs to have an target"));
                 }
 
-                if (field.Target != "All")
+                if (field.Target != "All" && FindField(field.Target, selectedFields, context) == default)
                 {
-                    if (selectedFields.Any(x => ((Field)x).Name.Equals(field.Target, StringComparison.InvariantCultureIgnoreCase)) == false)
-                    {
-                        result.Failures.Add(new ValidationFailure("Target", $"Filtered field '{field.Target}' needs to be included in selection"));
-                    }
+                    result.Failures.Add(new ValidationFailure("Target", $"Filtered field '{field.Target}' needs to be included in selection"));
                 }
 
                 if (string.IsNullOrEmpty(field.Value) && (field.Fields == default || field.Fields.Any() == false))
@@ -106,7 +126,7 @@ namespace GraphQL.EntityFrameworkCore.Helpers
                     ValidateFields(
                         ref result,
                         field.Fields,
-                        GetSelection(ref result, selectedFields, field.Target),
+                        GetSelection(ref result, selectedFields, field.Target, context),
                         context);
                 }
             }
