@@ -1605,13 +1605,13 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
         public async Task Should_ApplyFilterToFieldsInFragment_When_FilteringHumansWithFragmentInQueryAndTarget()
         {
             var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
-            var eyeColor = "Blue";
+            var eyeColor = "Brown";
             var humans = await dbContext.Humans
                 .Where(x => EF.Functions.Like(x.EyeColor, $"%{eyeColor}%"))
                 .OrderBy(x => x.Id)
                 .ToListAsync();
 
-            humans.Count().ShouldBe(2);
+            humans.Count().ShouldBe(1);
 
             var query = $@"
                 fragment humanParts on Human {{
@@ -1654,13 +1654,13 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
         public async Task Should_ApplyFilterToFieldsInFragment_When_FilteringPaginatedHumansWithFragmentInQueryAndTarget()
         {
             var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
-            var eyeColor = "Brown";
+            var eyeColor = "Blue";
             var paginatedHumans = await dbContext.Humans
                 .Where(x => EF.Functions.Like(x.EyeColor, $"%{eyeColor}%"))
                 .OrderBy(x => x.Id)
                 .ToListAsync();
 
-            paginatedHumans.Count().ShouldBe(1);
+            paginatedHumans.Count().ShouldBe(2);
 
             var query = $@"
                 fragment humanParts on Human {{
