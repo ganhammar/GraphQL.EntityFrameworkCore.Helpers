@@ -60,20 +60,16 @@ namespace GraphQL.EntityFrameworkCore.Helpers
         {
             var selectedFields = ((Field)FindField(target, selections, context)).SelectionSet.Selections;
 
-            if (selectedFields.Any(x => ((Field)x).Name.Equals("edges", StringComparison.InvariantCultureIgnoreCase)))
+            if (FindField("edges", selectedFields, context) != default)
             {
-                selectedFields = ((Field)selectedFields
-                    .First(x => ((Field)x).Name.Equals("edges", StringComparison.InvariantCultureIgnoreCase)))
-                    .SelectionSet.Selections;
+                selectedFields = ((Field)FindField("edges", selectedFields, context)).SelectionSet.Selections;
 
-                if (selectedFields.Any(x => ((Field)x).Name.Equals("node", StringComparison.InvariantCultureIgnoreCase)) == false)
+                if (FindField("node", selectedFields, context) == default)
                 {
                     result.Failures.Add(new ValidationFailure("Fields", "No selections for connection found"));
                 }
 
-                selectedFields = ((Field)selectedFields
-                    .First(x => ((Field)x).Name.Equals("node", StringComparison.InvariantCultureIgnoreCase)))
-                    .SelectionSet.Selections;
+                selectedFields = ((Field)FindField("node", selectedFields, context)).SelectionSet.Selections;
             }
 
             return selectedFields;

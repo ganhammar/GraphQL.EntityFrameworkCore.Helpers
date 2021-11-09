@@ -1602,6 +1602,114 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Filterable
         }
 
         [Fact]
+        public async Task Should_ApplyFilterToFieldsInFragment_When_FilteringHumansWithFragmentInQueryAndTarget()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var eyeColor = "Blue";
+            var humans = await dbContext.Humans
+                .Where(x => EF.Functions.Like(x.EyeColor, $"%{eyeColor}%"))
+                .OrderBy(x => x.Id)
+                .ToListAsync();
+
+            humans.Count().ShouldBe(2);
+
+            var query = $@"
+                fragment humanParts on Human {{
+                    name
+                    eyeColor
+                }}
+                query humans($filterInput: FilterInput) {{
+                    humans(filter: $filterInput) {{
+                        ...humanParts
+                    }}
+                }}
+            ";
+
+            var inputs = $@"
+                {{
+                    ""filterInput"": {{
+                        ""fields"": [
+                            {{
+                                ""target"": ""eyeColor"",
+                                ""value"": ""{eyeColor}""
+                            }}
+                        ]
+                    }}
+                }}
+            ".ToInputs();
+
+            var expected = new
+            {
+                humans = humans.Select(x => new
+                {
+                    name = x.Name,
+                    eyeColor,
+                }),
+            };
+
+            var result = AssertQuerySuccess(query, expected, inputs);
+        }
+
+        [Fact]
+        public async Task Should_ApplyFilterToFieldsInFragment_When_FilteringPaginatedHumansWithFragmentInQueryAndTarget()
+        {
+            var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();
+            var eyeColor = "Brown";
+            var paginatedHumans = await dbContext.Humans
+                .Where(x => EF.Functions.Like(x.EyeColor, $"%{eyeColor}%"))
+                .OrderBy(x => x.Id)
+                .ToListAsync();
+
+            paginatedHumans.Count().ShouldBe(1);
+
+            var query = $@"
+                fragment humanParts on Human {{
+                    name
+                    eyeColor
+                }}
+                query paginatedHumans($filterInput: FilterInput) {{
+                    paginatedHumans(filter: $filterInput) {{
+                        edges {{
+                            node {{
+                                ...humanParts
+                            }}
+                        }}
+                    }}
+                }}
+            ";
+
+            var inputs = $@"
+                {{
+                    ""filterInput"": {{
+                        ""fields"": [
+                            {{
+                                ""target"": ""eyeColor"",
+                                ""value"": ""{eyeColor}""
+                            }}
+                        ]
+                    }}
+                }}
+            ".ToInputs();
+
+            var expected = new
+            {
+                paginatedHumans = new
+                {
+                    edges = paginatedHumans.Select(x => new
+                    {
+                        node = new
+                        {
+                            name = x.Name,
+                            eyeColor,
+                        }
+                    }),
+                },
+            };
+
+            var result = AssertQuerySuccess(query, expected, inputs);
+        }
+
+        [Fact]
         public async Task Should_ApplyFilterToFieldsInFragment_When_FragmentIsOneLevelDown()
         {
             var dbContext = ServiceProvider.GetRequiredService<TestDbContext>();

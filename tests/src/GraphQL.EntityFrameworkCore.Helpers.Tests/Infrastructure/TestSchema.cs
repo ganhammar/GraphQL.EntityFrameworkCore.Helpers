@@ -28,6 +28,13 @@ namespace GraphQL.EntityFrameworkCore.Helpers.Tests.Infrastructure
                 .Where((context) => x => true)
                 .ResolveCollectionAsync();
 
+            Connection<HumanGraphType>()
+                .Name("PaginatedHumans")
+                .From(dbContext.Humans)
+                .ValidateAsync((context) => Task.FromResult(new ValidationResult()))
+                .Where((context) => x => true)
+                .ResolveAsync();
+
             Field<ListGraphType<HumanGraphType>>()
                 .Name("HumansOrderedByEyeColor")
                 .From(dbContext.Humans)
